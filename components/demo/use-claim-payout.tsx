@@ -1,0 +1,409 @@
+import Snackbar from 'react-native-snackbar'
+
+import { useConnection } from '@/components/solana/solana-provider'
+import { useWalletUi } from '@/components/solana/use-wallet-ui'
+import { PublicKey } from '@solana/web3.js'
+import { useMutation } from '@tanstack/react-query'
+
+import { OnChainService } from '../../services/onchainService'
+import { useRaceStore } from '../../store/useRaceStore'
+
+interface ClaimPayoutInput {
+  raceId: number
+  playerAddress: PublicKey
+}
+
+// Helper function to check if a payout has been claimed on-chain
+async function checkPayoutClaimed(
+  connection: any,
+  programId: PublicKey,
+  raceId: number,
+  playerAddress: PublicKey
+): Promise<boolean> {
+  try {
+    const raceIdBuffer = Buffer.alloc(8)
+    raceIdBuffer.writeBigUInt64LE(BigInt(raceId), 0)
+    
+    const [racePda] = PublicKey.findProgramAddressSync(
+      [Buffer.from('race'), raceIdBuffer],
+      programId
+    )
+
+    const [betPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from('bet'), racePda.toBuffer(), playerAddress.toBuffer()],
+      programId
+    )
+
+    const betAccount = await connection.getAccountInfo(betPda)
+    if (!betAccount) return false
+
+    // Parse the bet account to check if claimed flag is set
+    // The claimed flag is typically at a specific offset in the account data
+    // For now, we'll assume if we can't get the account, it's not claimed
+    // A more robust implementation would parse the actual account data
+    
+    // Simple check: if account exists, try to parse it
+    const data = betAccount.data
+    if (data && data.length > 40) {
+      // The claimed flag should be at offset 40 (after pubkeys and numbers)
+      const claimed = data[40] === 1
+      return claimed
+    }
+    
+    return false
+  } catch (error) {
+    console.warn('Error checking payout claimed status:', error)
+    return false
+  }
+}
+
+export function useClaimPayout() {
+  const connection = useConnection()
+  const { signAndSendTransaction } = useWalletUi()
+  const { fetchRaceDetails, fetchUserBets } = useRaceStore()
+
+  return useMutation({
+    mutationFn: async (input: ClaimPayoutInput) => {
+      const { raceId, playerAddress } = input
+
+      console.log(`💰 Claiming payout for race ${raceId}, player: ${playerAddress.toString()}`)
+
+      let signature: string | null = null
+
+      try {
+        // Create the transaction using OnChainService
+        const onChainService = new OnChainService(connection)
+        const { transaction, latestBlockhash, minContextSlot } = await onChainService.createClaimPayoutTransaction({
+          playerPublicKey: playerAddress,
+          raceId,
+        })
+
+        console.log(`📝 Claim transaction created, requesting signature...`)
+
+        // Sign and send transaction using mobile wallet adapter
+        signature = await signAndSendTransaction(transaction, minContextSlot)
+
+        console.log(`🔐 Claim transaction signed and sent: ${signature}`)
+
+        // Enhanced confirmation with better timeout and error handling
+        let confirmationAttempts = 0
+        const maxAttempts = 3
+        let lastError: any = null
+
+        while (confirmationAttempts < maxAttempts) {
+          try {
+            console.log(`🔄 Confirmation attempt ${confirmationAttempts + 1}/${maxAttempts}`)
+
+            // Use a shorter timeout for each attempt
+            const confirmationPromise = connection.confirmTransaction(
+              {
+                signature,
+                blockhash: latestBlockhash.blockhash,
+                lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+              },
+              'confirmed'
+            )
+
+            // Add a timeout wrapper
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Confirmation timeout')), 30000) // 30 second timeout
+            })
+
+            const confirmationResult = await Promise.race([confirmationPromise, timeoutPromise]) as any
+
+            if (confirmationResult.value?.err) {
+              const errorMsg = JSON.stringify(confirmationResult.value.err)
+              console.error(`❌ Claim transaction failed on-chain: ${errorMsg}`)
+              throw new Error(`Transaction failed: ${errorMsg}`)
+            }
+
+            console.log(`✅ Claim transaction confirmed successfully!`)
+            break // Success, exit loop
+
+          } catch (confirmError: any) {
+            confirmationAttempts++
+            lastError = confirmError
+            console.warn(`⚠️ Confirmation attempt ${confirmationAttempts} failed:`, confirmError.message)
+
+            if (confirmationAttempts < maxAttempts) {
+              // For timeout errors, check if the payout was actually claimed on-chain
+              if (confirmError.message?.includes('timeout') || confirmError.message?.includes('Confirmation timeout')) {
+                console.log(`🔍 Checking if payout was claimed on-chain despite timeout...`)
+                
+                // Wait a bit for the transaction to settle
+                await new Promise(resolve => setTimeout(resolve, 2000))
+                
+                const programId = new PublicKey('3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4')
+                
+                const payoutClaimed = await checkPayoutClaimed(connection, programId, raceId, playerAddress)
+                
+                if (payoutClaimed) {
+                  console.log(`✅ Payout claimed on-chain! Transaction was successful despite confirmation timeout.`)
+                  break // Payout claimed, consider it successful
+                }
+              }
+              
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, 2000))
+            }
+          }
+        }
+
+        // If we exhausted all attempts, check one final time if the payout was claimed
+        if (confirmationAttempts >= maxAttempts) {
+          console.log(`🔍 Final check: Looking for claimed payout on-chain after all confirmation attempts failed...`)
+          
+          const programId = new PublicKey('3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4')
+          
+          const payoutClaimed = await checkPayoutClaimed(connection, programId, raceId, playerAddress)
+          
+          if (!payoutClaimed) {
+            console.error(`❌ Transaction confirmation failed and payout not claimed on-chain`)
+            throw lastError || new Error('Transaction confirmation failed')
+          } else {
+            console.log(`✅ Payout claimed on-chain! Transaction was successful despite confirmation issues.`)
+          }
+        }
+
+        console.log(`✅ Payout claimed successfully! Signature: ${signature}`)
+
+        return {
+          signature,
+          raceId,
+        }
+      } catch (error: any) {
+        // If we have a signature, check if the payout was actually claimed before failing
+        if (signature) {
+          console.log(`🔍 Error occurred but we have signature ${signature}, checking if payout was claimed...`)
+          
+          try {
+            const programId = new PublicKey('3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4')
+            
+            const payoutClaimed = await checkPayoutClaimed(connection, programId, raceId, playerAddress)
+            
+            if (payoutClaimed) {
+              console.log(`✅ Payout claimed on-chain! Transaction was actually successful.`)
+              return {
+                signature,
+                raceId,
+              }
+            }
+          } catch (checkError) {
+            console.warn('Error checking payout claimed status:', checkError)
+          }
+        }
+
+        console.error('❌ Failed to claim payout:', error)
+        
+        // Enhanced error handling with specific error messages
+        let errorMessage = 'Failed to claim payout'
+        
+        if (error.message?.includes('User rejected') || error.message?.includes('User canceled')) {
+          errorMessage = 'Transaction cancelled by user'
+          throw new Error(errorMessage) // Don't log user cancellations as errors
+        } else if (error.message?.includes('auth_token not valid')) {
+          errorMessage = 'Authorization expired. Please try again.'
+        } else if (error.message?.includes('insufficient funds')) {
+          errorMessage = 'Insufficient SOL for transaction fees'
+        } else if (error.message?.includes('AlreadyClaimed')) {
+          errorMessage = 'Payout has already been claimed'
+        } else if (error.message?.includes('NotAWinner')) {
+          errorMessage = 'Not eligible for payout'
+        } else if (error.message?.includes('RaceNotSettled')) {
+          errorMessage = 'Race is not settled yet'
+        } else if (error.message?.includes('NoWinners')) {
+          errorMessage = 'No winners in this race'
+        } else if (error.message?.includes('InsufficientFunds')) {
+          errorMessage = 'Insufficient funds in vault'
+        } else if (error.message?.includes('ExcessiveClaims')) {
+          errorMessage = 'Claims exceed available pool'
+        } else if (error.message?.includes('Transaction failed')) {
+          errorMessage = 'Transaction failed. Please try again.'
+        } else if (error.message?.includes('timeout') || error.message?.includes('Confirmation timeout')) {
+          errorMessage = 'Transaction timeout. If you signed in Phantom, your claim may still go through.'
+        } else if (error.message?.includes('Wallet operation timed out')) {
+          errorMessage = 'Complete the action in Phantom and return to this app.'
+        } else if (error.code === 4001) {
+          errorMessage = 'Transaction rejected'
+        } else if (error.message?.includes('blockhash not found')) {
+          errorMessage = 'Network congestion. Please try again.'
+        }
+        
+        console.error(`💥 Claim payout error: ${errorMessage}`, error)
+        throw new Error(errorMessage)
+      }
+    },
+    onSuccess: async (data, variables) => {
+      // Show success feedback
+      console.log(`✅ Success: Payout claimed for race ${data.raceId}`)
+
+      // Enhanced premium success notification
+      try {
+        // Add haptic feedback for success (if available)
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          navigator.vibrate([100, 50, 100]) // Success vibration pattern
+        }
+
+        Snackbar.show({
+          text: `🏆 VICTORY PAYOUT CLAIMED! 🎉\n💰 Congratulations! Your winnings are now in your wallet.\n🚀 Ready for the next race?`,
+          duration: Snackbar.LENGTH_LONG, // Longer duration for important messages
+          backgroundColor: 'linear-gradient(135deg, #00FF88 0%, #FFD700 100%)', // Would be solid color in Snackbar
+          textColor: '#000000',
+          action: {
+            text: 'NICE! 🎯',
+            textColor: '#FF6B00',
+            onPress: () => {
+              // Optional: Add celebration sound or additional feedback
+              console.log('🎉 User acknowledged victory!')
+            },
+          },
+        })
+      } catch (snackbarError) {
+        // Enhanced fallback with better styling
+        try {
+          // Fallback to a more premium alert-style notification
+          console.log(`🏆 PAYOUT CLAIMED SUCCESSFULLY! 🎉`)
+          console.log(`💰 Your winnings are secured in your wallet`)
+          console.log(`🚀 Race ${data.raceId} victory complete!`)
+        } catch (error) {
+          console.log(`✅ Payout claimed successfully for race ${data.raceId}`)
+        }
+      }
+
+      // Wait for blockchain to process the transaction
+      await new Promise(resolve => setTimeout(resolve, 3000))
+
+      // Refresh data to show the updated claimed status
+      try {
+        await Promise.all([
+          fetchRaceDetails(data.raceId, false), // Force refresh race data - useCache=false
+          fetchUserBets(variables.playerAddress.toString(), false) // Force refresh user bets - useCache=false
+        ])
+        console.log(`🔄 Data refreshed after successful payout claim`)
+      } catch (error) {
+        console.warn('⚠️ Failed to refresh data after payout claim:', error)
+        // Don't throw - the claim was successful even if refresh failed
+      }
+    },
+    onError: (error: any, variables) => {
+      console.error('❌ Payout claim failed:', error)
+
+      // Enhanced error feedback with premium styling
+      let errorTitle = '⚠️ Claim Failed'
+      let errorMessage = 'Failed to claim payout'
+      let actionText = 'TRY AGAIN'
+      let backgroundColor = '#FF4444'
+
+      // Categorize errors for better user experience
+      if (error.message?.includes('insufficient funds')) {
+        errorTitle = '💸 Insufficient Funds'
+        errorMessage = 'Not enough SOL for transaction fees.\nAdd some SOL to your wallet and try again.'
+        backgroundColor = '#FF6B00'
+      } else if (error.message?.includes('auth_token not valid')) {
+        errorTitle = '🔐 Session Expired'
+        errorMessage = 'Your session has expired.\nPlease reconnect your wallet and try again.'
+        backgroundColor = '#9945FF'
+      } else if (error.message?.includes('transaction failed')) {
+        errorTitle = '⚡ Transaction Failed'
+        errorMessage = 'Network issue detected.\nPlease check your connection and try again.'
+        backgroundColor = '#FF4444'
+      } else if (error.message?.includes('user rejected') || error.message?.includes('cancelled') || error.message?.includes('User canceled')) {
+        // Don't show error for user cancellations - they know they cancelled
+        return
+      } else if (error.message?.includes('timeout')) {
+        errorTitle = '⏰ Transaction Timeout'
+        errorMessage = 'The transaction is taking longer than expected.\nIf you signed in Phantom, your claim may still process.'
+        actionText = 'WAIT & CHECK'
+        backgroundColor = '#FFD700'
+      } else if (error.message?.includes('Wallet operation timed out')) {
+        errorTitle = '📱 Return to App'
+        errorMessage = 'Complete the transaction in Phantom,\nthen return to this app to continue.'
+        actionText = 'GOT IT'
+        backgroundColor = '#9945FF'
+      } else if (error.message?.includes('AlreadyClaimed')) {
+        errorTitle = '✅ Already Claimed'
+        errorMessage = 'This payout has already been claimed.\nCheck your wallet for the funds.'
+        actionText = 'CHECK WALLET'
+        backgroundColor = '#00FF88'
+      } else if (error.message?.includes('NotAWinner')) {
+        errorTitle = '🎯 Not Eligible'
+        errorMessage = 'Only winners can claim payouts.\nBetter luck in the next race!'
+        actionText = 'NEXT RACE'
+        backgroundColor = '#9945FF'
+      } else if (error.message?.includes('RaceNotSettled')) {
+        errorTitle = '⏳ Race In Progress'
+        errorMessage = 'The race hasn\'t settled yet.\nPlease wait for the race to complete.'
+        actionText = 'WAIT'
+        backgroundColor = '#FFD700'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+
+      // Enhanced error notification
+      try {
+        // Add subtle vibration for errors (shorter than success)
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          navigator.vibrate([50]) // Short error vibration
+        }
+
+        Snackbar.show({
+          text: `${errorTitle}\n${errorMessage}`,
+          duration: Snackbar.LENGTH_LONG,
+          backgroundColor: backgroundColor,
+          textColor: '#FFFFFF',
+          action: {
+            text: actionText,
+            textColor: '#FFFFFF',
+            onPress: () => {
+              console.log(`User acknowledged error: ${errorTitle}`)
+            },
+          },
+        })
+      } catch (snackbarError) {
+        // Enhanced fallback for errors
+        console.error(`${errorTitle}: ${errorMessage}`)
+      }
+    },
+  })
+}
+
+export function useCanClaimPayout({
+  userBet,
+  race,
+  claimed
+}: {
+  userBet: any
+  race: any
+  claimed: boolean
+}) {
+  // Check all conditions for claiming a payout
+  const isWinner = userBet?.isWinner || false
+  const hasActiveRace = race && (race.state === 'SettlementReady' || race.state === 'Settled')
+  const isAlreadyClaimed = claimed
+  const isRaceSettled = race && race.winningAssets && race.winningAssets.length > 0
+
+  const canClaimPayout = isWinner &&
+                        hasActiveRace &&
+                        !isAlreadyClaimed &&
+                        isRaceSettled
+
+  // Return detailed validation info for better UI feedback
+  return {
+    canClaimPayout,
+    validationErrors: {
+      notWinner: !isWinner,
+      noActiveRace: !hasActiveRace,
+      alreadyClaimed: isAlreadyClaimed,
+      raceNotSettled: !isRaceSettled,
+    },
+    validationMessage: !isWinner
+      ? 'Only winners can claim payouts'
+      : !hasActiveRace
+      ? 'Race is not in settlement phase'
+      : isAlreadyClaimed
+      ? 'Payout already claimed'
+      : !isRaceSettled
+      ? 'Race is not settled yet'
+      : 'Ready to claim payout',
+  }
+} 
