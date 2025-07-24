@@ -18,7 +18,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native'
 
@@ -190,7 +189,7 @@ function _EnhancedPerformancePhase({
 
   // --- PERFORMANCE FIX: Stable haptic function ---
   // useCallback with an empty dependency array ensures this function is created only once.
-  const triggerHaptic = useCallback(async (type: 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'selection', context?: string) => {
+  const triggerHaptic = useCallback(async (type: 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'selection' | 'topping' | 'dropping_from_top', context?: string) => {
     const now = Date.now()
     if (now - lastHapticTime.current < 50) return // Shorter debounce for live racing
     
@@ -215,6 +214,22 @@ function _EnhancedPerformancePhase({
           break
         case 'selection':
           await Haptics.selectionAsync()
+          break
+        case 'topping':
+          // Special pattern for reaching #1: Triple heavy impact with success notification
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+          await new Promise(resolve => setTimeout(resolve, 80))
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+          await new Promise(resolve => setTimeout(resolve, 80))
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+          break
+        case 'dropping_from_top':
+          // Special pattern for dropping from #1: Sharp double impact with warning
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+          await new Promise(resolve => setTimeout(resolve, 50))
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+          await new Promise(resolve => setTimeout(resolve, 50))
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
           break
       }
       
@@ -771,9 +786,16 @@ function _EnhancedPerformancePhase({
       // Track rank changes
       if (previousUserRank.current !== null && previousUserRank.current !== userPosition.rank) {
         const rankImproved = userPosition.rank < previousUserRank.current
+        const previousRank = previousUserRank.current
+        const currentRank = userPosition.rank
         
         if (rankImproved) {
-          triggerHaptic('success', `rank improved to #${userPosition.rank}`)
+          // Check if user just reached the top position
+          if (currentRank === 1) {
+            triggerHaptic('topping', `🏆 REACHED #1! Your asset is now leading the race!`)
+          } else {
+            triggerHaptic('success', `rank improved to #${currentRank}`)
+          }
           
           // Animate rank change
           Animated.sequence([
@@ -790,7 +812,12 @@ function _EnhancedPerformancePhase({
             }),
           ]).start()
         } else {
-          triggerHaptic('error', `rank dropped to #${userPosition.rank}`)
+          // Check if user just dropped from the top position
+          if (previousRank === 1) {
+            triggerHaptic('dropping_from_top', `💔 Dropped from #1 to #${currentRank}! Your asset lost the lead!`)
+          } else {
+            triggerHaptic('error', `rank dropped to #${currentRank}`)
+          }
         }
       }
       previousUserRank.current = userPosition.rank
@@ -1226,28 +1253,39 @@ function _EnhancedPerformancePhase({
             }
             style={styles.userPositionGradient}
           >
+            {/* Redesigned User Position Header */}
             <View style={styles.userPositionHeader}>
-              <View style={styles.userPositionLeft}>
-                <Animated.View
-                  style={{
-                    transform: [{ scale: pulseAnim }],
-                  }}
-                >
-                  <MaterialCommunityIcons 
-                    name={userPosition.isCurrentlyWinning ? "trophy" : userPosition.rank <= 2 ? "medal" : "account-star"} 
-                    size={24} 
-                    color={userPosition.profitLoss > 0 ? '#00FF88' : '#FF4444'} 
-                  />
-                </Animated.View>
-                <View>
+              <View style={styles.userPositionMainInfo}>
+                <View style={styles.positionBadge}>
+                  <Animated.View
+                    style={{
+                      transform: [{ scale: pulseAnim }],
+                    }}
+                  >
+                    <MaterialCommunityIcons 
+                      name={userPosition.isCurrentlyWinning ? "trophy" : userPosition.rank <= 2 ? "medal" : "account-star"} 
+                      size={20} 
+                      color={userPosition.profitLoss > 0 ? '#00FF88' : '#FF4444'} 
+                    />
+                  </Animated.View>
+                  <Text style={styles.positionRank}>#{userPosition.rank}</Text>
+                </View>
+                
+                <View style={styles.userPositionTitleSection}>
                   <Text style={styles.userPositionTitle}>Your Race Position</Text>
-                  <Text style={styles.userPositionSubtitle}>
-                    #{userPosition.rank} • {userPosition.asset.symbol} • {(typeof userPosition.winProbability === 'number' && !isNaN(userPosition.winProbability)) ? userPosition.winProbability.toFixed(0) : '0'}% chance
-                  </Text>
+                  <View style={styles.userPositionDetails}>
+                    <Text style={styles.assetSymbol}>{userPosition.asset.symbol}</Text>
+                    <View style={styles.winChanceContainer}>
+                      <MaterialCommunityIcons name="target" size={12} color="#FFD700" />
+                      <Text style={styles.winChanceText}>
+                        {(typeof userPosition.winProbability === 'number' && !isNaN(userPosition.winProbability)) ? userPosition.winProbability.toFixed(0) : '0'}% chance
+                      </Text>
+                    </View>
+                  </View>
                 </View>
               </View>
               
-              <View style={styles.userPositionStats}>
+              <View style={styles.performanceDisplaySection}>
                 <Animated.Text
                   style={[
                     styles.userPerformanceValue,
@@ -1268,62 +1306,65 @@ function _EnhancedPerformancePhase({
               </View>
             </View>
             
-            {/* Enhanced Bet Tracking with Real-time Values */}
-            <View style={styles.userBetDetails}>
-              <View style={styles.betDetailColumn}>
-                <Text style={styles.betDetailLabel}>Original Bet</Text>
-                <Text style={styles.betDetailValue}>
-                  ${(typeof userPosition.originalAmount === 'number' && !isNaN(userPosition.originalAmount)) ? userPosition.originalAmount.toFixed(2) : '0.00'}
-                </Text>
+            {/* Redesigned Bet Summary Cards */}
+            <View style={styles.betSummarySection}>
+              <View style={styles.betSummaryGrid}>
+                <View style={styles.betSummaryCard}>
+                  <Text style={styles.betSummaryLabel}>Original Bet</Text>
+                  <View style={styles.betSummaryValueContainer}>
+                    <MaterialCommunityIcons name="currency-usd" size={16} color="rgba(255,255,255,0.6)" />
+                    <Text style={styles.betSummaryValue}>
+                      ${(typeof userPosition.originalAmount === 'number' && !isNaN(userPosition.originalAmount)) ? userPosition.originalAmount.toFixed(2) : '0.00'}
+                    </Text>
+                  </View>
+                </View>
+                
+                <View style={[styles.betSummaryCard, styles.currentValueCard]}>
+                  <Text style={styles.betSummaryLabel}>Current Value</Text>
+                  <View style={styles.betSummaryValueContainer}>
+                    <MaterialCommunityIcons 
+                      name={userPosition.profitLoss >= 0 ? "trending-up" : "trending-down"} 
+                      size={16} 
+                      color={userPosition.profitLoss >= 0 ? '#00FF88' : '#FF4444'} 
+                    />
+                    <Animated.Text
+                      style={[
+                        styles.betSummaryValue,
+                        { 
+                          color: userPosition.profitLoss >= 0 ? '#00FF88' : '#FF4444',
+                          transform: [{
+                            scale: priceUpdateFlashAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 1.05],
+                            }),
+                          }],
+                        }
+                      ]}
+                    >
+                      ${(typeof userPosition.currentBetValue === 'number' && !isNaN(userPosition.currentBetValue)) ? userPosition.currentBetValue.toFixed(2) : '0.00'}
+                    </Animated.Text>
+                  </View>
+                </View>
               </View>
               
-              <MaterialCommunityIcons 
-                name="arrow-right" 
-                size={16} 
-                color="rgba(255,255,255,0.5)" 
-              />
-              
-              <View style={styles.betDetailColumn}>
-                <Text style={styles.betDetailLabel}>Current Value</Text>
-                <Animated.Text
-                  style={[
-                    styles.betDetailValue,
-                    { 
-                      color: userPosition.profitLoss >= 0 ? '#00FF88' : '#FF4444',
-                      transform: [{
-                        scale: priceUpdateFlashAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [1, 1.05],
-                        }),
-                      }],
-                    }
-                  ]}
-                >
-                  ${(typeof userPosition.currentBetValue === 'number' && !isNaN(userPosition.currentBetValue)) ? userPosition.currentBetValue.toFixed(2) : '0.00'}
-                </Animated.Text>
-              </View>
-              
-              <MaterialCommunityIcons 
-                name="trending-up" 
-                size={16} 
-                color={userPosition.profitLoss >= 0 ? '#00FF88' : '#FF4444'} 
-              />
-              
-              <View style={styles.betDetailColumn}>
-                <Text style={styles.betDetailLabel}>If Win</Text>
-                <Text style={[styles.betDetailValue, { color: '#FFD700' }]}>
+              <View style={styles.potentialWinCard}>
+                <View style={styles.potentialWinHeader}>
+                  <MaterialCommunityIcons name="trophy-award" size={18} color="#FFD700" />
+                  <Text style={styles.potentialWinLabel}>Potential Win</Text>
+                </View>
+                <Text style={styles.potentialWinValue}>
                   ${(typeof userPosition.potentialPayout === 'number' && !isNaN(userPosition.potentialPayout)) ? userPosition.potentialPayout.toFixed(2) : '0.00'}
                 </Text>
               </View>
             </View>
             
-            {/* Enhanced Real-time Profit/Loss Display */}
-            <View style={styles.profitLossSection}>
-              <View style={styles.profitLossMain}>
-                <View style={styles.profitLossLabelContainer}>
+            {/* Enhanced Profit/Loss Hero Section */}
+            <View style={styles.profitLossHeroSection}>
+              <View style={styles.profitLossMainCard}>
+                <View style={styles.profitLossHeader}>
                   <MaterialCommunityIcons 
                     name={userPosition.profitLoss >= 0 ? "rocket-launch" : "trending-down"} 
-                    size={16} 
+                    size={20} 
                     color={userPosition.profitLoss >= 0 ? '#00FF88' : '#FF4444'} 
                   />
                   <Text style={styles.profitLossLabel}>
@@ -1347,43 +1388,50 @@ function _EnhancedPerformancePhase({
                   {userPosition.profitLoss >= 0 ? '+' : ''}${(typeof userPosition.profitLoss === 'number' && !isNaN(userPosition.profitLoss)) ? Math.abs(userPosition.profitLoss).toFixed(2) : '0.00'}
                 </Animated.Text>
               </View>
+            </View>
+            
+            {/* Race Statistics Grid */}
+            <View style={styles.raceStatsGrid}>
+              <View style={styles.raceStatCard}>
+                <Text style={styles.raceStatLabel}>Pool Share</Text>
+                <Text style={styles.raceStatValue}>{(typeof userPosition.userPoolShare === 'number' && !isNaN(userPosition.userPoolShare)) ? userPosition.userPoolShare.toFixed(2) : '0.00'}%</Text>
+              </View>
               
-              {/* Pool Share & Odds Info */}
-              <View style={styles.advancedStats}>
-                <View style={styles.advancedStatItem}>
-                  <Text style={styles.advancedStatLabel}>Pool Share</Text>
-                  <Text style={styles.advancedStatValue}>{(typeof userPosition.userPoolShare === 'number' && !isNaN(userPosition.userPoolShare)) ? userPosition.userPoolShare.toFixed(2) : '0.00'}%</Text>
-                </View>
-                <View style={styles.advancedStatItem}>
-                  <Text style={styles.advancedStatLabel}>Status</Text>
-                  <Animated.Text
-                    style={[
-                      styles.advancedStatValue,
-                      {
-                        transform: [{
-                          scale: pulseAnim,
-                        }],
-                      },
-                    ]}
-                  >
-                    {userPosition.isCurrentlyWinning ? 'WINNING' : 'LOSING'}
-                  </Animated.Text>
-                </View>
-                <View style={styles.advancedStatItem}>
-                  <Text style={styles.advancedStatLabel}>Trend</Text>
-                  <View style={styles.trendIconContainer}>
-                    <MaterialCommunityIcons 
-                      name={
-                        getOddsTrend(userPosition.asset.index) === 'increasing' ? "trending-up" : 
-                        getOddsTrend(userPosition.asset.index) === 'decreasing' ? "trending-down" : "trending-neutral"
-                      } 
-                      size={14} 
-                      color={
-                        getOddsTrend(userPosition.asset.index) === 'increasing' ? '#FF4444' : 
-                        getOddsTrend(userPosition.asset.index) === 'decreasing' ? '#00FF88' : '#FFD700'
-                      } 
-                    />
-                  </View>
+              <View style={[styles.raceStatCard, userPosition.isCurrentlyWinning ? styles.winningCard : styles.losingCard]}>
+                <Text style={styles.raceStatLabel}>Status</Text>
+                <Animated.Text
+                  style={[
+                    styles.raceStatValue,
+                    {
+                      color: userPosition.isCurrentlyWinning ? '#00FF88' : '#FF4444',
+                      transform: [{
+                        scale: pulseAnim,
+                      }],
+                    },
+                  ]}
+                >
+                  {userPosition.isCurrentlyWinning ? 'WINNING' : 'LOSING'}
+                </Animated.Text>
+              </View>
+              
+              <View style={styles.raceStatCard}>
+                <Text style={styles.raceStatLabel}>Trend</Text>
+                <View style={styles.trendValueContainer}>
+                  <MaterialCommunityIcons 
+                    name={
+                      getOddsTrend(userPosition.asset.index) === 'increasing' ? "trending-up" : 
+                      getOddsTrend(userPosition.asset.index) === 'decreasing' ? "trending-down" : "trending-neutral"
+                    } 
+                    size={16} 
+                    color={
+                      getOddsTrend(userPosition.asset.index) === 'increasing' ? '#FF4444' : 
+                      getOddsTrend(userPosition.asset.index) === 'decreasing' ? '#00FF88' : '#FFD700'
+                    } 
+                  />
+                  <Text style={[styles.raceStatValue, styles.trendText]}>
+                    {getOddsTrend(userPosition.asset.index) === 'increasing' ? 'Rising' : 
+                     getOddsTrend(userPosition.asset.index) === 'decreasing' ? 'Falling' : 'Stable'}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -1836,14 +1884,14 @@ function _EnhancedPerformancePhase({
                         {isWinning ? (
                           <View style={[styles.trendIndicator, { backgroundColor: 'rgba(0, 255, 136, 0.3)' }]}>
                             <MaterialCommunityIcons name="trophy" size={12} color="#00FF88" />
-                            <Text style={[styles.trendText, { color: '#00FF88' }]}>
+                            <Text style={[styles.assetTrendText, { color: '#00FF88' }]}>
                               WINNER
                             </Text>
                           </View>
                         ) : (
                           <View style={[styles.trendIndicator, { backgroundColor: 'rgba(255, 68, 68, 0.2)' }]}>
                             <MaterialCommunityIcons name="close" size={12} color="#FF4444" />
-                            <Text style={[styles.trendText, { color: '#FF4444' }]}>
+                            <Text style={[styles.assetTrendText, { color: '#FF4444' }]}>
                               LOSES
                             </Text>
                           </View>
@@ -2041,27 +2089,62 @@ const styles = StyleSheet.create({
   userPositionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    marginBottom: 20,
   },
-  userPositionLeft: {
+  userPositionMainInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  positionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(153, 69, 255, 0.15)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 6,
   },
-  userPositionTitle: {
-    ...TYPOGRAPHY.subtitle,
+  positionRank: {
+    fontSize: 14,
     fontWeight: '700',
-    color: COLORS.text.primary,
-    marginLeft: SPACING.md,
+    color: '#fff',
     fontFamily: 'Orbitron-Bold',
   },
-  userPositionSubtitle: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text.secondary,
-    marginLeft: SPACING.md,
+  userPositionTitleSection: {
+    flex: 1,
+  },
+  userPositionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text.primary,
+    fontFamily: 'Orbitron-Bold',
+    marginBottom: 4,
+  },
+  userPositionDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  assetSymbol: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9945FF',
+    fontFamily: 'Orbitron-SemiBold',
+  },
+  winChanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  winChanceText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
     fontFamily: 'Orbitron-Regular',
   },
-  userPositionStats: {
+  performanceDisplaySection: {
     alignItems: 'flex-end',
   },
   userPerformanceValue: {
@@ -2074,49 +2157,87 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     fontFamily: 'Orbitron-Regular',
   },
-  userBetDetails: {
+  // Redesigned Bet Summary Section
+  betSummarySection: {
+    marginTop: 20,
+    gap: 16,
+  },
+  betSummaryGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+    gap: 12,
   },
-  betDetailItem: {
-    alignItems: 'center',
-  },
-  betDetailColumn: {
-    alignItems: 'center',
+  betSummaryCard: {
     flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  betDetailLabel: {
-    fontSize: 10,
+  currentValueCard: {
+    borderColor: 'rgba(153, 69, 255, 0.3)',
+    backgroundColor: 'rgba(153, 69, 255, 0.08)',
+  },
+  betSummaryLabel: {
+    fontSize: 11,
     color: 'rgba(255,255,255,0.7)',
-    marginBottom: 4,
     fontFamily: 'Orbitron-Regular',
+    marginBottom: 8,
   },
-  betDetailValue: {
-    fontSize: 14,
+  betSummaryValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  betSummaryValue: {
+    fontSize: 16,
     fontWeight: '700',
     color: '#fff',
     fontFamily: 'Orbitron-Bold',
   },
+  potentialWinCard: {
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+    alignItems: 'center',
+  },
+  potentialWinHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  potentialWinLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    fontFamily: 'Orbitron-SemiBold',
+  },
+  potentialWinValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFD700',
+    fontFamily: 'Orbitron-ExtraBold',
+  },
   
-  // Profit/Loss Section
-  profitLossSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+  // Enhanced Profit/Loss Hero Section
+  profitLossHeroSection: {
+    marginTop: 20,
   },
-  profitLossMain: {
+  profitLossMainCard: {
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: 16,
+    padding: 20,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  profitLossLabelContainer: {
+  profitLossHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
+    marginBottom: 12,
   },
   profitLossLabel: {
     fontSize: 14,
@@ -2125,31 +2246,54 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-Bold',
   },
   profitLossValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
-    color: '#00FF88',
     fontFamily: 'Orbitron-ExtraBold',
   },
   
-  // Advanced Stats
-  advancedStats: {
+  // Race Statistics Grid
+  raceStatsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 8,
+    gap: 10,
+    marginTop: 16,
   },
-  advancedStatItem: {
+  raceStatCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  advancedStatLabel: {
+  winningCard: {
+    borderColor: 'rgba(0, 255, 136, 0.3)',
+    backgroundColor: 'rgba(0, 255, 136, 0.08)',
+  },
+  losingCard: {
+    borderColor: 'rgba(255, 68, 68, 0.3)',
+    backgroundColor: 'rgba(255, 68, 68, 0.08)',
+  },
+  raceStatLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
     fontFamily: 'Orbitron-Regular',
+    marginBottom: 6,
   },
-  advancedStatValue: {
-    fontSize: 14,
+  raceStatValue: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#14F195',
     fontFamily: 'Orbitron-Bold',
+    textAlign: 'center',
+  },
+  trendValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  trendText: {
+    fontSize: 11,
   },
   
   // Leaderboard
@@ -2569,7 +2713,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  trendText: {
+  assetTrendText: {
     fontSize: 8,
     fontWeight: '600',
     marginLeft: 2,
@@ -2673,7 +2817,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Orbitron-Bold',
   },
-  raceStatsGrid: {
+  originalRaceStatsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
   },
