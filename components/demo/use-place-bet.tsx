@@ -11,11 +11,11 @@ import { useRaceStore } from '../../store/useRaceStore'
 interface PlaceBetInput {
   raceId: number
   assetIdx: number
-  amount: number // Amount in USDC (will be converted to micro-USDC)
+  amount: number 
   playerAddress: PublicKey
 }
 
-// Helper function to check if a bet exists on-chain
+
 async function checkBetExists(
   connection: any,
   programId: PublicKey,
@@ -58,10 +58,10 @@ export function usePlaceBet() {
       let signature: string | null = null
 
       try {
-        // Convert USDC to micro-USDC for the smart contract
+        
         const microAmount = Math.floor(amount * 1_000_000)
 
-        // Create the transaction using OnChainService
+        
         const onChainService = new OnChainService(connection)
         const { transaction, latestBlockhash, minContextSlot } = await onChainService.createPlaceBetTransaction({
           playerPublicKey: playerAddress,
@@ -72,12 +72,12 @@ export function usePlaceBet() {
 
         console.log(`📝 Transaction created, requesting signature...`)
 
-        // Sign and send transaction using mobile wallet adapter
+        
         signature = await signAndSendTransaction(transaction, minContextSlot)
 
         console.log(`🔐 Transaction signed and sent: ${signature}`)
 
-        // Enhanced confirmation with better timeout and error handling
+        
         let confirmationAttempts = 0
         const maxAttempts = 3
         let lastError: any = null
@@ -86,7 +86,7 @@ export function usePlaceBet() {
           try {
             console.log(`🔄 Confirmation attempt ${confirmationAttempts + 1}/${maxAttempts}`)
 
-            // Use a shorter timeout for each attempt
+            
             const confirmationPromise = connection.confirmTransaction(
               {
                 signature,
@@ -96,9 +96,9 @@ export function usePlaceBet() {
               'confirmed'
             )
 
-            // Add a timeout wrapper
+            
             const timeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error('Confirmation timeout')), 30000) // 30 second timeout
+              setTimeout(() => reject(new Error('Confirmation timeout')), 30000) 
             })
 
             const confirmationResult = await Promise.race([confirmationPromise, timeoutPromise]) as any
@@ -110,7 +110,7 @@ export function usePlaceBet() {
             }
 
             console.log(`✅ Transaction confirmed successfully!`)
-            break // Success, exit loop
+            break 
 
           } catch (confirmError: any) {
             confirmationAttempts++
@@ -118,11 +118,11 @@ export function usePlaceBet() {
             console.warn(`⚠️ Confirmation attempt ${confirmationAttempts} failed:`, confirmError.message)
 
             if (confirmationAttempts < maxAttempts) {
-              // For timeout errors, check if the bet actually exists on-chain
+              
               if (confirmError.message?.includes('timeout') || confirmError.message?.includes('Confirmation timeout')) {
                 console.log(`🔍 Checking if bet exists on-chain despite timeout...`)
                 
-                // Wait a bit for the transaction to settle
+                
                 await new Promise(resolve => setTimeout(resolve, 2000))
                 
                 const programId = new PublicKey('3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4')
@@ -131,17 +131,17 @@ export function usePlaceBet() {
                 
                 if (betExists) {
                   console.log(`✅ Bet found on-chain! Transaction was successful despite confirmation timeout.`)
-                  break // Bet exists, consider it successful
+                  break 
                 }
               }
               
-              // Wait before retrying
+              
               await new Promise(resolve => setTimeout(resolve, 2000))
             }
           }
         }
 
-        // If we exhausted all attempts, check one final time if the bet exists
+        
         if (confirmationAttempts >= maxAttempts) {
           console.log(`🔍 Final check: Looking for bet on-chain after all confirmation attempts failed...`)
           
@@ -167,7 +167,7 @@ export function usePlaceBet() {
           microAmount,
         }
       } catch (error: any) {
-        // If we have a signature, check if the bet actually exists before failing
+        
         if (signature) {
           console.log(`🔍 Error occurred but we have signature ${signature}, checking if bet exists...`)
           
@@ -193,12 +193,12 @@ export function usePlaceBet() {
 
         console.error('❌ Failed to place bet:', error)
         
-        // Enhanced error handling with specific error messages
+        
         let errorMessage = 'Failed to place bet'
         
         if (error.message?.includes('User rejected') || error.message?.includes('User canceled')) {
           errorMessage = 'Transaction cancelled by user'
-          throw new Error(errorMessage) // Don't log user cancellations as errors
+          throw new Error(errorMessage) 
         } else if (error.message?.includes('auth_token not valid')) {
           errorMessage = 'Authorization expired. Please try again.'
         } else if (error.message?.includes('insufficient funds')) {
@@ -230,24 +230,24 @@ export function usePlaceBet() {
       }
     },
     onSuccess: async (data, variables) => {
-      // Show success feedback with premium gaming design
+      
       console.log(`✅ Success: Bet placed! $${data.amount} USDC on asset ${data.assetIdx}`)
 
-      // Enhanced premium betting success notification
+      
       try {
-        // Add haptic feedback for successful bet placement
+        
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-          navigator.vibrate([50, 30, 50, 30, 50]) // Betting confirmation pattern
+          navigator.vibrate([50, 30, 50, 30, 50]) 
         }
 
-        // Get asset info for better messaging
-        const assetNames = ['BTC', 'ETH', 'SOL'] // Could be dynamic from race data
+        
+        const assetNames = ['BTC', 'ETH', 'SOL'] 
         const assetName = assetNames[data.assetIdx] || `Asset ${data.assetIdx + 1}`
 
         Snackbar.show({
           text: `🎯 BET LOCKED IN! 🏁\n💰 $${data.amount} USDC on ${assetName}\n🚀 May the best prediction win!`,
-          duration: Snackbar.LENGTH_LONG, // Longer for important betting confirmations
-          backgroundColor: '#9945FF', // Purple theme for betting
+          duration: Snackbar.LENGTH_LONG, 
+          backgroundColor: '#9945FF', 
           textColor: '#FFFFFF',
           action: {
             text: 'LET\'S GO! 🏎️',
@@ -258,7 +258,7 @@ export function usePlaceBet() {
           },
         })
       } catch (snackbarError) {
-        // Enhanced fallback with better styling
+        
         try {
           console.log(`🎯 BET PLACED SUCCESSFULLY! 🏁`)
           console.log(`💰 $${data.amount} USDC locked in!`)
@@ -268,10 +268,10 @@ export function usePlaceBet() {
         }
       }
 
-      // Wait for blockchain to process the transaction
+      
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // Refresh data to show the updated bet
+      
       try {
         await Promise.all([
           fetchCommitPhaseData(data.raceId, variables.playerAddress.toString(), false),
@@ -280,19 +280,19 @@ export function usePlaceBet() {
         console.log(`🔄 Data refreshed after successful bet placement`)
       } catch (error) {
         console.warn('⚠️ Failed to refresh data after bet placement:', error)
-        // Don't throw - the bet was successful even if refresh failed
+        
       }
     },
     onError: (error: any, variables) => {
       console.error('❌ Bet placement failed:', error)
 
-      // Enhanced error feedback with premium styling and categorization
+      
       let errorTitle = '⚠️ Bet Failed'
       let errorMessage = 'Failed to place bet'
       let actionText = 'TRY AGAIN'
       let backgroundColor = '#FF4444'
 
-      // Categorize betting-specific errors for better UX
+      
       if (error.message?.includes('insufficient funds')) {
         errorTitle = '💸 Insufficient Balance'
         errorMessage = 'Not enough USDC in your wallet.\nAdd funds and come back to race!'
@@ -309,7 +309,7 @@ export function usePlaceBet() {
         actionText = 'RETRY'
         backgroundColor = '#FF4444'
       } else if (error.message?.includes('user rejected') || error.message?.includes('cancelled') || error.message?.includes('User canceled')) {
-        // Don't show error for user cancellations - they know they cancelled
+        
         return
       } else if (error.message?.includes('timeout')) {
         errorTitle = '⏰ Taking Too Long'
@@ -350,11 +350,11 @@ export function usePlaceBet() {
         errorMessage = error.message
       }
 
-      // Enhanced betting error notification
+      
       try {
-        // Add subtle vibration for errors
+        
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-          navigator.vibrate([80]) // Single firm vibration for bet errors
+          navigator.vibrate([80]) 
         }
 
         Snackbar.show({
@@ -371,7 +371,7 @@ export function usePlaceBet() {
           },
         })
       } catch (snackbarError) {
-        // Enhanced fallback for betting errors
+        
         console.error(`${errorTitle}: ${errorMessage}`)
       }
     },
@@ -391,7 +391,7 @@ export function useCanPlaceBet({
   race: any
   userBet: any
 }) {
-  // Check all conditions for placing a bet
+  
   const amount = parseFloat(betAmount)
   const hasValidAmount = !isNaN(amount) && amount >= 0.1 && amount <= 1000
   const hasSufficientBalance = userBalance !== null && userBalance >= amount
@@ -407,7 +407,7 @@ export function useCanPlaceBet({
                      !hasExistingBet &&
                      isInCommitPhase
 
-  // Return detailed validation info for better UI feedback
+  
   return {
     canPlaceBet,
     validationErrors: {
