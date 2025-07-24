@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { LinearGradient } from 'expo-linear-gradient'
 import {
@@ -26,27 +20,19 @@ import { useConnection } from '@/components/solana/solana-provider'
 import { useWalletUi } from '@/components/solana/use-wallet-ui'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 
-import {
-  getCurrentPhase,
-  getTimeRemaining,
-  type Phase as RacePhase,
-  useRaceStore,
-} from '../../store/useRaceStore'
+import { getCurrentPhase, getTimeRemaining, type Phase as RacePhase, useRaceStore } from '../../store/useRaceStore'
 import { EnhancedCommitPhase } from './CommitPhase'
 import { EnhancedPerformancePhase } from './PerformancePhase'
 import { EnhancedSettledPhase } from './SettledPhase'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
-// Responsive design tokens
 const isTablet = screenWidth >= 768
 const isLandscape = screenWidth > screenHeight
 
-// Accessibility constants
 const MIN_TOUCH_TARGET = 44
-const ANIMATION_REDUCE_MOTION = false // Should be from system preference
+const ANIMATION_REDUCE_MOTION = false
 
-// Design tokens for consistency
 const SPACING = {
   xs: 4,
   sm: 8,
@@ -72,7 +58,7 @@ const COLORS = {
     green: '#14F195',
     gold: '#FFD700',
     orange: '#FFA500',
-  }
+  },
 } as const
 
 const TYPOGRAPHY = {
@@ -84,7 +70,6 @@ const TYPOGRAPHY = {
   small: { fontSize: isTablet ? 12 : 10, lineHeight: isTablet ? 18 : 16 },
 } as const
 
-// Enhanced TypeScript interfaces
 interface AssetData {
   feedId: string
   symbol: string
@@ -134,7 +119,6 @@ interface PhaseConfig {
   glowIntensity: number
 }
 
-// Enhanced phase configurations with particle effects
 const PHASE_CONFIG: Record<RacePhase, PhaseConfig> = {
   commit: {
     color: '#9945FF',
@@ -168,8 +152,7 @@ const PHASE_CONFIG: Record<RacePhase, PhaseConfig> = {
 export function DemoFeature() {
   const { account, signAndSendTransaction } = useWalletUi()
   const connection = useConnection()
-  
-  // Race store
+
   const {
     race,
     userBets,
@@ -181,43 +164,36 @@ export function DemoFeature() {
     fetchSettledPhaseData,
     connectWebSocket,
     subscribeToRace,
-    isConnected
+    isConnected,
   } = useRaceStore()
-  
-  // Local state
+
   const [currentTime, setCurrentTime] = useState(Date.now() / 1000)
   const [selectedAssetIdx, setSelectedAssetIdx] = useState(0)
   const [betAmount, setBetAmount] = useState('')
   const [showHelp, setShowHelp] = useState(false)
-  
-  // Animation refs for cleanup
+
   const animationRefs = useRef<Animated.CompositeAnimation[]>([])
   const intervalRefs = useRef<number[]>([])
   const [reduceMotion, setReduceMotion] = useState(ANIMATION_REDUCE_MOTION)
 
-  // Safe number formatting helper
   const safeToFixed = useCallback((value: number | undefined | null, decimals: number = 2): string => {
     if (typeof value !== 'number' || isNaN(value)) return '0.00'
     return value.toFixed(decimals)
   }, [])
 
-  // Determine current phase from race data
   const currentPhase = useMemo((): RacePhase => {
     if (!race) return 'commit'
     return getCurrentPhase(race)
   }, [race])
-  
-  // Get current user bet for this race
+
   const userBet = useMemo(() => {
     if (!userBets || !race?.raceId) return undefined
-    return userBets.find(bet => bet.raceId === race.raceId)
+    return userBets.find((bet) => bet.raceId === race.raceId)
   }, [userBets, race?.raceId])
 
-  // Add race transition detection like v1
   const [lastRaceId, setLastRaceId] = useState<number | undefined>()
   const [isCheckingForNewRace, setIsCheckingForNewRace] = useState(false)
 
-  // Debug current race state
   useEffect(() => {
     if (race) {
       console.log('🏁 Current Race Debug Info:', {
@@ -230,50 +206,43 @@ export function DemoFeature() {
         settleTs: race.settleTs,
         timeUntilLock: race.lockTs - Math.floor(Date.now() / 1000),
         timeUntilSettle: race.settleTs - Math.floor(Date.now() / 1000),
-        isSettled: currentPhase === 'settled'
+        isSettled: currentPhase === 'settled',
       })
-      
+
       console.log(`🎯 Rendering ${currentPhase} phase for race ${race.raceId}`)
     }
   }, [race, currentPhase])
 
-  // Race transition detection - check for new races when current race is settled
   useEffect(() => {
     if (!race) return
 
-    // Track race changes
     if (lastRaceId !== race.raceId) {
       console.log(`🔄 Race transition detected: ${lastRaceId} → ${race.raceId}`)
       setLastRaceId(race.raceId)
       return
     }
 
-    // If current race is settled, periodically check for new races
     if (currentPhase === 'settled' && !isCheckingForNewRace) {
       setIsCheckingForNewRace(true)
-      
-      // Check for new race every 5 seconds when settled
+
       const checkInterval = setInterval(async () => {
         try {
           console.log(`🔍 Checking for new race while current race ${race.raceId} is settled...`)
-          
-          // Check for new race by fetching current race data
+
           const { apiService } = useRaceStore.getState()
           const response = await apiService.getCurrentRace()
-          
+
           if (response.success && response.data) {
             const newRaceId = response.data.raceId
-            
-            // If we get a different race ID, stop checking and fetch appropriate phase data
+
             if (newRaceId && newRaceId !== race.raceId) {
               console.log(`🎉 New race detected: ${race.raceId} → ${newRaceId}`)
               clearInterval(checkInterval)
               setIsCheckingForNewRace(false)
-              
-              // Determine the new race's phase and fetch appropriate data
+
               const newPhase = getCurrentPhase(response.data)
               console.log(`🔄 New race ${newRaceId} is in ${newPhase} phase`)
-              
+
               if (newPhase === 'commit') {
                 await fetchCommitPhaseData(undefined, account?.publicKey?.toString(), false)
               } else if (newPhase === 'performance') {
@@ -286,23 +255,20 @@ export function DemoFeature() {
         } catch (error) {
           console.error('❌ Error checking for new race:', error)
         }
-      }, 10000) // Check every 10 seconds (reduced frequency)
+      }, 10000)
 
-      // Cleanup interval
       intervalRefs.current.push(checkInterval)
-      
-      // Stop checking after 5 minutes to avoid infinite polling
+
       setTimeout(() => {
         clearInterval(checkInterval)
         setIsCheckingForNewRace(false)
         console.log(`⏰ Stopped checking for new races after 5 minutes`)
-      }, 300000) // 5 minutes
+      }, 300000)
     }
   }, [race?.raceId, currentPhase, lastRaceId, isCheckingForNewRace, account?.publicKey])
 
   const phaseConfig = PHASE_CONFIG[currentPhase]
 
-  // Performance: Check accessibility settings
   useEffect(() => {
     const checkReduceMotion = async () => {
       if (Platform.OS === 'ios') {
@@ -313,13 +279,12 @@ export function DemoFeature() {
     checkReduceMotion()
   }, [])
 
-  // Performance: Cleanup animations and intervals on unmount
   useEffect(() => {
     return () => {
-      animationRefs.current.forEach(animation => {
+      animationRefs.current.forEach((animation) => {
         animation.stop()
       })
-      intervalRefs.current.forEach(interval => {
+      intervalRefs.current.forEach((interval) => {
         clearInterval(interval)
       })
       animationRefs.current = []
@@ -327,15 +292,13 @@ export function DemoFeature() {
     }
   }, [])
 
-  // Fetch data based on current phase and user
   useEffect(() => {
     const playerAddress = account?.publicKey?.toString()
-    
+
     if (currentPhase === 'commit') {
       fetchCommitPhaseData(undefined, playerAddress)
     } else if (currentPhase === 'performance') {
       fetchPerformancePhaseData(undefined, playerAddress)
-      // Connect WebSocket for real-time updates
       if (!isConnected) {
         connectWebSocket().then(() => {
           if (race?.raceId) {
@@ -348,36 +311,31 @@ export function DemoFeature() {
     }
   }, [currentPhase, account?.publicKey])
 
-  // Initial data fetch when component mounts - ensure we always try to get race data
   useEffect(() => {
     const playerAddress = account?.publicKey?.toString()
-    // Only fetch if we don't have race data and aren't already loading
     if (!race && !isLoading) {
       fetchCommitPhaseData(undefined, playerAddress)
     }
   }, [race, isLoading, account?.publicKey])
 
-  // Subscribe to race updates when race changes
   useEffect(() => {
     if (race?.raceId && isConnected && currentPhase === 'performance') {
       subscribeToRace(race.raceId)
     }
   }, [race?.raceId, isConnected, currentPhase])
 
-  // Time calculations with urgency indicators
   const timeCalculations = useMemo(() => {
     if (!race) return { progress: 0, secondsLeft: 0, urgency: 'normal' }
-    
+
     const secondsLeft = getTimeRemaining(race, currentPhase)
     let urgency = 'normal'
     if (secondsLeft <= 30) urgency = 'critical'
     else if (secondsLeft <= 60) urgency = 'warning'
-    
-    // Calculate progress based on phase
+
     let totalTime = 0
     let elapsed = 0
     const now = Math.floor(currentTime)
-    
+
     switch (currentPhase) {
       case 'commit':
         totalTime = race.lockTs - race.startTs
@@ -390,64 +348,49 @@ export function DemoFeature() {
       default:
         return { progress: 1, secondsLeft: 0, urgency: 'normal' }
     }
-    
+
     const progress = Math.max(0, Math.min(1, 1 - elapsed / totalTime))
-    
+
     return {
       progress,
       secondsLeft,
-      urgency
+      urgency,
     }
   }, [race, currentPhase, currentTime])
-  
-  // Format time with enhanced styling
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
-  
-  // Enhanced value formatter
+
   const formatValue = useCallback((value: number) => {
-    // Convert from lamports/micro-USDC to display format
     const displayValue = value / 1_000_000
-    
+
     if (displayValue >= 1000000) return `$${(displayValue / 1000000).toFixed(2)}M`
     if (displayValue >= 1000) return `$${(displayValue / 1000).toFixed(1)}K`
     return `$${displayValue.toFixed(0)}`
   }, [])
-  
-  // Timer updates with performance optimization
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(Date.now() / 1000)
     }, 1000)
-    
+
     return () => clearInterval(timer)
   }, [])
-  
-  // Enhanced animations (keeping existing animation logic)
+
   const fadeAnim = useRef(new Animated.Value(0)).current
   const phaseTransitionAnim = useRef(new Animated.Value(0)).current
   const particleAnim = useRef(new Animated.Value(0)).current
   const pulseAnim = useRef(new Animated.Value(1)).current
   const speedLinesAnim = useRef(new Animated.Value(0)).current
-  
-  // Loading screen animations
-  const loadingDotsAnim = useRef([
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-  ]).current
-  const loadingProgressAnim = useRef([
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-  ]).current
+
+  const loadingDotsAnim = useRef([new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)]).current
+  const loadingProgressAnim = useRef([new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)]).current
   const loadingSpinnerAnim = useRef(new Animated.Value(0)).current
   const loadingTrackAnim = useRef(new Animated.Value(0)).current
-  
-  // Enhanced particle animation system
+
   useEffect(() => {
     const createParticleEffect = () => {
       Animated.loop(
@@ -462,14 +405,13 @@ export function DemoFeature() {
             duration: 3000,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       ).start()
     }
-    
+
     createParticleEffect()
   }, [])
-  
-  // Pulse animation for urgency
+
   useEffect(() => {
     if (timeCalculations.urgency === 'critical') {
       Animated.loop(
@@ -484,25 +426,23 @@ export function DemoFeature() {
             duration: 600,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       ).start()
     } else {
       pulseAnim.setValue(1)
     }
   }, [timeCalculations.urgency])
-  
-  // Speed lines animation
+
   useEffect(() => {
     Animated.loop(
       Animated.timing(speedLinesAnim, {
         toValue: 1,
         duration: 2000,
         useNativeDriver: true,
-      })
+      }),
     ).start()
   }, [])
-  
-  // Phase transition animation
+
   useEffect(() => {
     Animated.sequence([
       Animated.timing(phaseTransitionAnim, {
@@ -517,8 +457,7 @@ export function DemoFeature() {
       }),
     ]).start()
   }, [currentPhase])
-  
-  // Entrance animation
+
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -526,11 +465,9 @@ export function DemoFeature() {
       useNativeDriver: true,
     }).start()
   }, [])
-  
-  // Loading screen animations
+
   useEffect(() => {
     if (!race && !isLoading && !error) {
-      // Animate loading dots
       const animateLoadingDots = () => {
         const staggeredAnimations = loadingDotsAnim.map((anim, index) =>
           Animated.loop(
@@ -546,13 +483,12 @@ export function DemoFeature() {
                 duration: 500,
                 useNativeDriver: true,
               }),
-            ])
-          )
+            ]),
+          ),
         )
         Animated.stagger(200, staggeredAnimations).start()
       }
 
-      // Animate progress bars
       const animateProgressBars = () => {
         const progressAnimations = loadingProgressAnim.map((anim, index) =>
           Animated.loop(
@@ -568,31 +504,29 @@ export function DemoFeature() {
                 duration: 800,
                 useNativeDriver: false,
               }),
-            ])
-          )
+            ]),
+          ),
         )
         Animated.stagger(300, progressAnimations).start()
       }
 
-      // Animate spinner
       const animateSpinner = () => {
         Animated.loop(
           Animated.timing(loadingSpinnerAnim, {
             toValue: 1,
             duration: 2000,
             useNativeDriver: true,
-          })
+          }),
         ).start()
       }
 
-      // Animate racing track lines
       const animateTrackLines = () => {
         Animated.loop(
           Animated.timing(loadingTrackAnim, {
             toValue: 1,
             duration: 3000,
             useNativeDriver: true,
-          })
+          }),
         ).start()
       }
 
@@ -603,16 +537,11 @@ export function DemoFeature() {
     }
   }, [race, isLoading, error])
 
-  // Initial loading state - show when no race data and not explicitly loading
   if (!race && !isLoading && !error) {
     return (
       <AppView style={styles.container}>
-        <LinearGradient
-          colors={['#000814', '#001D3D', '#003566', '#0077B6']}
-          style={StyleSheet.absoluteFill}
-        />
-        
-        {/* Enhanced Racing Particles */}
+        <LinearGradient colors={['#000814', '#001D3D', '#003566', '#0077B6']} style={StyleSheet.absoluteFill} />
+
         <View style={styles.loadingParticleLayer}>
           {[...Array(15)].map((_, i) => (
             <Animated.View
@@ -628,79 +557,69 @@ export function DemoFeature() {
             />
           ))}
         </View>
-        
-        {/* Enhanced Loading Container */}
+
         <View style={styles.enhancedLoadingContainer}>
-          {/* Racing Logo/Icon */}
           <View style={styles.loadingLogoContainer}>
-            <LinearGradient
-              colors={['#9945FF', '#14F195', '#FFD700']}
-              style={styles.loadingLogoGradient}
-            >
+            <LinearGradient colors={['#9945FF', '#14F195', '#FFD700']} style={styles.loadingLogoGradient}>
               <MaterialCommunityIcons name="rocket-launch" size={40} color="#000" />
             </LinearGradient>
             <View style={styles.loadingLogoGlow} />
           </View>
-          
-          {/* Enhanced Loading Animation */}
+
           <View style={styles.loadingAnimationContainer}>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.loadingSpinnerContainer,
                 {
-                  transform: [{
-                    rotate: loadingSpinnerAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '360deg'],
-                    }),
-                  }],
+                  transform: [
+                    {
+                      rotate: loadingSpinnerAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', '360deg'],
+                      }),
+                    },
+                  ],
                 },
               ]}
             >
-              <LinearGradient
-                colors={['#9945FF', '#14F195']}
-                style={styles.loadingSpinnerRing}
-              >
+              <LinearGradient colors={['#9945FF', '#14F195']} style={styles.loadingSpinnerRing}>
                 <ActivityIndicator size="large" color="transparent" />
               </LinearGradient>
               <View style={styles.loadingSpinnerCenter}>
                 <MaterialCommunityIcons name="flash" size={24} color="#FFD700" />
               </View>
             </Animated.View>
-            
-            {/* Loading Progress Bars */}
+
             <View style={styles.loadingProgressContainer}>
               {loadingProgressAnim.map((anim, index) => (
                 <View key={index} style={styles.loadingProgressBar}>
-                  <Animated.View 
+                  <Animated.View
                     style={[
-                      styles.loadingProgressFill, 
-                      index === 0 ? styles.loadingProgress1 : 
-                      index === 1 ? styles.loadingProgress2 : styles.loadingProgress3,
+                      styles.loadingProgressFill,
+                      index === 0
+                        ? styles.loadingProgress1
+                        : index === 1
+                          ? styles.loadingProgress2
+                          : styles.loadingProgress3,
                       {
                         height: anim.interpolate({
                           inputRange: [0, 1],
                           outputRange: ['20%', '100%'],
                         }),
                       },
-                    ]} 
+                    ]}
                   />
                 </View>
               ))}
             </View>
           </View>
-          
-          {/* Enhanced Loading Text */}
+
           <View style={styles.loadingTextContainer}>
-            <LinearGradient
-              colors={['#9945FF', '#14F195']}
-              style={styles.loadingTextGradient}
-            >
+            <LinearGradient colors={['#9945FF', '#14F195']} style={styles.loadingTextGradient}>
               <Text style={styles.enhancedLoadingTitle}>MOMENTUM RACING</Text>
             </LinearGradient>
             <Text style={styles.enhancedLoadingSubtitle}>Connecting to Race Server...</Text>
-            
-            {/* Loading Status Dots */}
+
             <View style={styles.loadingDotsContainer}>
               {loadingDotsAnim.map((anim, index) => (
                 <Animated.View
@@ -712,21 +631,22 @@ export function DemoFeature() {
                         inputRange: [0, 1],
                         outputRange: [0.3, 1],
                       }),
-                      transform: [{
-                        scale: anim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.8, 1.2],
-                        }),
-                      }],
+                      transform: [
+                        {
+                          scale: anim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.8, 1.2],
+                          }),
+                        },
+                      ],
                     },
                   ]}
                 />
               ))}
             </View>
           </View>
-          
-          {/* Enhanced Retry Button */}
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.enhancedRetryButton}
             onPress={() => {
               const playerAddress = account?.publicKey?.toString()
@@ -735,19 +655,15 @@ export function DemoFeature() {
             accessibilityLabel="Retry connection to race server"
             accessibilityRole="button"
           >
-            <LinearGradient
-              colors={['#9945FF', '#14F195']}
-              style={styles.enhancedRetryGradient}
-            >
+            <LinearGradient colors={['#9945FF', '#14F195']} style={styles.enhancedRetryGradient}>
               <MaterialCommunityIcons name="refresh" size={20} color="#000" />
               <Text style={styles.enhancedRetryText}>Retry Connection</Text>
               <MaterialCommunityIcons name="rocket-launch" size={16} color="#000" />
             </LinearGradient>
           </TouchableOpacity>
-          
-          {/* Connection Status */}
+
           <View style={styles.connectionStatusContainer}>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.connectionStatusDot,
                 {
@@ -755,20 +671,21 @@ export function DemoFeature() {
                     inputRange: [0, 1],
                     outputRange: [0.5, 1],
                   }),
-                  transform: [{
-                    scale: loadingDotsAnim[0].interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.8, 1.1],
-                    }),
-                  }],
+                  transform: [
+                    {
+                      scale: loadingDotsAnim[0].interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.8, 1.1],
+                      }),
+                    },
+                  ],
                 },
-              ]} 
+              ]}
             />
             <Text style={styles.connectionStatusText}>Establishing secure connection...</Text>
           </View>
         </View>
-        
-        {/* Racing Track Lines */}
+
         <View style={styles.racingTrackContainer}>
           {[...Array(5)].map((_, i) => (
             <Animated.View
@@ -776,13 +693,15 @@ export function DemoFeature() {
               style={[
                 styles.racingTrackLine,
                 {
-                  top: `${20 + (i * 15)}%`,
-                  transform: [{
-                    translateX: loadingTrackAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [-120, screenWidth + 120],
-                    }),
-                  }],
+                  top: `${20 + i * 15}%`,
+                  transform: [
+                    {
+                      translateX: loadingTrackAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-120, screenWidth + 120],
+                      }),
+                    },
+                  ],
                   opacity: loadingTrackAnim.interpolate({
                     inputRange: [0, 0.2, 0.8, 1],
                     outputRange: [0, 1, 1, 0],
@@ -796,28 +715,21 @@ export function DemoFeature() {
     )
   }
 
-  // Loading state
   if (isLoading && !race) {
     return (
       <AppView style={styles.container}>
-        <LinearGradient
-          colors={['#000814', '#001D3D', '#003566', '#0077B6']}
-          style={StyleSheet.absoluteFill}
-        />
+        <LinearGradient colors={['#000814', '#001D3D', '#003566', '#0077B6']} style={StyleSheet.absoluteFill} />
         <View style={styles.enhancedLoadingContainer}>
           <View style={styles.loadingLogoContainer}>
-            <LinearGradient
-              colors={['#9945FF', '#14F195', '#FFD700']}
-              style={styles.loadingLogoGradient}
-            >
+            <LinearGradient colors={['#9945FF', '#14F195', '#FFD700']} style={styles.loadingLogoGradient}>
               <MaterialCommunityIcons name="rocket-launch" size={40} color="#000" />
             </LinearGradient>
             <View style={styles.loadingLogoGlow} />
           </View>
-          
+
           <ActivityIndicator size="large" color="#14F195" />
           <Text style={styles.enhancedLoadingSubtitle}>Loading Race Data...</Text>
-          
+
           <View style={styles.connectionStatusContainer}>
             <View style={styles.connectionStatusDot} />
             <Text style={styles.connectionStatusText}>Fetching latest race information...</Text>
@@ -827,30 +739,23 @@ export function DemoFeature() {
     )
   }
 
-  // Error state
   if (error && !race) {
     return (
       <AppView style={styles.container}>
-        <LinearGradient
-          colors={['#000814', '#001D3D', '#003566', '#0077B6']}
-          style={StyleSheet.absoluteFill}
-        />
+        <LinearGradient colors={['#000814', '#001D3D', '#003566', '#0077B6']} style={StyleSheet.absoluteFill} />
         <View style={styles.enhancedLoadingContainer}>
           <View style={styles.loadingLogoContainer}>
-            <LinearGradient
-              colors={['#FF4444', '#FF6B6B', '#FFD700']}
-              style={styles.loadingLogoGradient}
-            >
+            <LinearGradient colors={['#FF4444', '#FF6B6B', '#FFD700']} style={styles.loadingLogoGradient}>
               <MaterialCommunityIcons name="alert-circle" size={40} color="#000" />
             </LinearGradient>
             <View style={styles.loadingLogoGlow} />
           </View>
-          
+
           <Text style={[styles.enhancedLoadingTitle, { color: '#FF4444' }]}>CONNECTION ERROR</Text>
           <Text style={styles.enhancedLoadingSubtitle}>Unable to connect to race server</Text>
           <Text style={[styles.connectionStatusText, { textAlign: 'center', marginTop: 8 }]}>{error}</Text>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.enhancedRetryButton}
             onPress={() => {
               const playerAddress = account?.publicKey?.toString()
@@ -859,10 +764,7 @@ export function DemoFeature() {
             accessibilityLabel="Retry connection"
             accessibilityRole="button"
           >
-            <LinearGradient
-              colors={['#FF4444', '#FF6B6B']}
-              style={styles.enhancedRetryGradient}
-            >
+            <LinearGradient colors={['#FF4444', '#FF6B6B']} style={styles.enhancedRetryGradient}>
               <MaterialCommunityIcons name="refresh" size={20} color="#000" />
               <Text style={styles.enhancedRetryText}>Try Again</Text>
               <MaterialCommunityIcons name="rocket-launch" size={16} color="#000" />
@@ -876,14 +778,9 @@ export function DemoFeature() {
   return (
     <AppView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
-      {/* Enhanced Dynamic Background with Particles */}
-      <LinearGradient
-        colors={phaseConfig.bgGradient as any}
-        style={StyleSheet.absoluteFill}
-      />
-      
-      {/* Particle Effect Layer */}
+
+      <LinearGradient colors={phaseConfig.bgGradient as any} style={StyleSheet.absoluteFill} />
+
       <View style={styles.particleLayer}>
         {[...Array(20)].map((_, i) => (
           <Animated.View
@@ -898,19 +795,20 @@ export function DemoFeature() {
                   inputRange: [0, 1],
                   outputRange: [0.1, 0.6],
                 }),
-                transform: [{
-                  translateY: particleAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, -50],
-                  }),
-                }],
+                transform: [
+                  {
+                    translateY: particleAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, -50],
+                    }),
+                  },
+                ],
               },
             ]}
           />
         ))}
       </View>
-      
-      {/* Speed Lines Effect */}
+
       <View style={styles.speedLinesContainer}>
         {[...Array(8)].map((_, i) => (
           <Animated.View
@@ -918,23 +816,25 @@ export function DemoFeature() {
             style={[
               styles.speedLine,
               {
-                top: `${(i * 12.5) + 10}%`,
+                top: `${i * 12.5 + 10}%`,
                 opacity: speedLinesAnim.interpolate({
                   inputRange: [0, 1],
                   outputRange: [0.2, 0.8],
                 }),
-                transform: [{
-                  translateX: speedLinesAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-100, screenWidth + 100],
-                  }),
-                }],
+                transform: [
+                  {
+                    translateX: speedLinesAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-100, screenWidth + 100],
+                    }),
+                  },
+                ],
               },
             ]}
           />
         ))}
       </View>
-      
+
       <Animated.View
         style={[
           styles.content,
@@ -954,92 +854,55 @@ export function DemoFeature() {
           },
         ]}
       >
-        {/* Enhanced Header with Race Stats */}
         <View style={styles.headerSection}>
-          {/* Control Buttons Row */}
-          <View style={styles.controlButtonsRow}>
-            {/* Help Button removed */}
-          </View>
-          
-          {/* Race Stats Cards */}
+          <View style={styles.controlButtonsRow}></View>
+
           {race && (
             <View style={styles.statsContainer}>
-              <LinearGradient
-                colors={['rgba(153, 69, 255, 0.2)', 'rgba(153, 69, 255, 0.05)']}
-                style={styles.statCard}
-              >
+              <LinearGradient colors={['rgba(153, 69, 255, 0.2)', 'rgba(153, 69, 255, 0.05)']} style={styles.statCard}>
                 <MaterialCommunityIcons name="trophy" size={20} color="#9945FF" />
                 <Text style={styles.statLabel}>RACE STATUS</Text>
-                <Text style={[styles.statValue, { color: phaseConfig.color }]}>
-                  {phaseConfig.label}
-                </Text>
+                <Text style={[styles.statValue, { color: phaseConfig.color }]}>{phaseConfig.label}</Text>
               </LinearGradient>
-              
-              <LinearGradient
-                colors={['rgba(20, 241, 149, 0.2)', 'rgba(20, 241, 149, 0.05)']}
-                style={styles.statCard}
-              >
+
+              <LinearGradient colors={['rgba(20, 241, 149, 0.2)', 'rgba(20, 241, 149, 0.05)']} style={styles.statCard}>
                 <MaterialCommunityIcons name="wallet" size={20} color="#14F195" />
                 <Text style={styles.statLabel}>TOTAL POOL</Text>
-                <Text style={styles.statValue}>
-                  {formatValue(race.totalPool)}
-                </Text>
+                <Text style={styles.statValue}>{formatValue(race.totalPool)}</Text>
               </LinearGradient>
-              
-              <LinearGradient
-                colors={['rgba(255, 215, 0, 0.2)', 'rgba(255, 215, 0, 0.05)']}
-                style={styles.statCard}
-              >
+
+              <LinearGradient colors={['rgba(255, 215, 0, 0.2)', 'rgba(255, 215, 0, 0.05)']} style={styles.statCard}>
                 <MaterialCommunityIcons name="account-group" size={20} color="#FFD700" />
                 <Text style={styles.statLabel}>RACERS</Text>
-                <Text style={styles.statValue}>
-                  {race.participantCount || 0}
-                </Text>
+                <Text style={styles.statValue}>{race.participantCount || 0}</Text>
               </LinearGradient>
             </View>
           )}
-          
-          {/* Race Info Banner */}
+
           {race && (
-            <LinearGradient
-              colors={['rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.3)']}
-              style={styles.raceInfoBanner}
-            >
+            <LinearGradient colors={['rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.3)']} style={styles.raceInfoBanner}>
               <View style={styles.raceInfoLeft}>
                 <Text style={styles.raceNumber}>RACE #{race.raceId}</Text>
                 <Text style={styles.raceDescription}>Momentum Madness</Text>
               </View>
               <View style={styles.raceInfoRight}>
-                <MaterialCommunityIcons 
-                  name="lightning-bolt" 
-                  size={24} 
-                  color={phaseConfig.accentColor} 
-                />
+                <MaterialCommunityIcons name="lightning-bolt" size={24} color={phaseConfig.accentColor} />
               </View>
             </LinearGradient>
           )}
         </View>
 
-        {/* Enhanced Countdown System */}
         {currentPhase !== 'settled' && race && (
           <View style={styles.countdownSection}>
             <LinearGradient
-              colors={[
-                'rgba(0, 0, 0, 0.8)',
-                'rgba(0, 0, 0, 0.4)',
-                'rgba(0, 0, 0, 0.8)'
-              ]}
-              style={[
-                styles.countdownContainer,
-                timeCalculations.urgency === 'critical' && styles.criticalCountdown,
-              ]}
+              colors={['rgba(0, 0, 0, 0.8)', 'rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.8)']}
+              style={[styles.countdownContainer, timeCalculations.urgency === 'critical' && styles.criticalCountdown]}
             >
               <View style={styles.countdownHeader}>
                 <View style={styles.countdownInfo}>
-                  <Text style={[
-                    styles.countdownLabel,
-                    timeCalculations.urgency === 'critical' && { color: '#FF4444' }
-                  ]}>
+                  <Text
+                    style={[styles.countdownLabel, timeCalculations.urgency === 'critical' && { color: '#FF4444' }]}
+                  >
                     {timeCalculations.secondsLeft > 0 ? formatTime(timeCalculations.secondsLeft) : '00:00'}
                   </Text>
                   <Text style={styles.countdownSubLabel}>
@@ -1049,14 +912,12 @@ export function DemoFeature() {
                 <View style={styles.phaseIndicator}>
                   <View style={[styles.phaseIcon, { backgroundColor: phaseConfig.color }]} />
                   <View>
-                    <Text style={[styles.phaseLabel, { color: phaseConfig.accentColor }]}>
-                      {phaseConfig.label}
-                    </Text>
+                    <Text style={[styles.phaseLabel, { color: phaseConfig.accentColor }]}>{phaseConfig.label}</Text>
                     <Text style={styles.phaseDescription}>{phaseConfig.description}</Text>
                   </View>
                 </View>
               </View>
-              
+
               <View style={styles.progressBarContainer}>
                 <View style={[styles.progressBar, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
                   <Animated.View
@@ -1070,20 +931,13 @@ export function DemoFeature() {
                   />
                   <View style={styles.progressGlow} />
                 </View>
-                <Text style={styles.progressText}>
-                  {Math.round(timeCalculations.progress * 100)}%
-                </Text>
+                <Text style={styles.progressText}>{Math.round(timeCalculations.progress * 100)}%</Text>
               </View>
             </LinearGradient>
           </View>
         )}
 
-        <ScrollView 
-          style={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-        >
-          {/* Phase-specific Content */}
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
           {currentPhase === 'commit' && (
             <EnhancedCommitPhase
               selectedAssetIdx={selectedAssetIdx}
@@ -1093,7 +947,7 @@ export function DemoFeature() {
               account={account}
             />
           )}
-          
+
           {currentPhase === 'performance' && race && (
             <EnhancedPerformancePhase
               race={race}
@@ -1103,14 +957,9 @@ export function DemoFeature() {
               account={account}
             />
           )}
-          
+
           {currentPhase === 'settled' && race && (
-            <EnhancedSettledPhase
-              race={race}
-              userBet={userBet}
-              formatValue={formatValue}
-              account={account}
-            />
+            <EnhancedSettledPhase race={race} userBet={userBet} formatValue={formatValue} account={account} />
           )}
         </ScrollView>
       </Animated.View>
@@ -1123,7 +972,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  // Particle Effect Styles
   particleLayer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
@@ -1136,7 +984,6 @@ const styles = StyleSheet.create({
     borderRadius: 1.5,
     opacity: 0.6,
   },
-  // Speed Lines Styles
   speedLinesContainer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 2,
@@ -1153,7 +1000,6 @@ const styles = StyleSheet.create({
     flex: 1,
     zIndex: 3,
   },
-  // Enhanced Header Styles - Responsive
   headerSection: {
     paddingHorizontal: isTablet ? SPACING.xxl : SPACING.xl,
     marginBottom: SPACING.xl,
@@ -1364,7 +1210,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 68, 68, 0.5)',
     borderWidth: 2,
   },
-  // Enhanced Loading Styles
   loadingParticleLayer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 0,
