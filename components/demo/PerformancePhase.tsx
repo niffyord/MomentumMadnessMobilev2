@@ -27,15 +27,12 @@ import { useRaceStore } from '../../store/useRaceStore'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
-// Responsive design tokens
 const isTablet = screenWidth >= 768
 const isLandscape = screenWidth > screenHeight
 
-// Accessibility constants
 const MIN_TOUCH_TARGET = 44
-const ANIMATION_REDUCE_MOTION = false // Should be from system preference
+const ANIMATION_REDUCE_MOTION = false
 
-// Design tokens for consistency
 const SPACING = {
   xs: 4,
   sm: 8,
@@ -66,7 +63,6 @@ const TYPOGRAPHY = {
   small: { fontSize: isTablet ? 12 : 10, lineHeight: isTablet ? 18 : 16 },
 } as const
 
-// Proper TypeScript interfaces
 interface AssetPerformance {
   index: number
   symbol: string
@@ -126,7 +122,6 @@ function _EnhancedPerformancePhase({
   error = null,
   account
 }: PerformancePhaseProps) {
-  // Get race store data for real-time updates
   const { 
     odds, 
     previousOdds, 
@@ -139,7 +134,6 @@ function _EnhancedPerformancePhase({
     userBets
   } = useRaceStore()
 
-  // Enhanced animation refs with cleanup tracking
   const raceTrackAnim = useRef(new Animated.Value(0)).current
   const pulseAnim = useRef(new Animated.Value(1)).current
   const sparkleAnim = useRef(new Animated.Value(0)).current
@@ -147,7 +141,6 @@ function _EnhancedPerformancePhase({
   const oddsChangeAnim = useRef(new Animated.Value(0)).current
   const profitGlowAnim = useRef(new Animated.Value(0)).current
   
-  // New animation refs for enhanced interactions
   const priceUpdateFlashAnim = useRef(new Animated.Value(0)).current
   const positionShiftAnim = useRef(new Animated.Value(0)).current
   const votingPulseAnim = useRef(new Animated.Value(1)).current
@@ -156,42 +149,32 @@ function _EnhancedPerformancePhase({
   const momentumBarAnim = useRef(new Animated.Value(0)).current
   const rankChangeAnim = useRef(new Animated.Value(0)).current
   
-  // Animation refs for cleanup
   const animationRefs = useRef<Animated.CompositeAnimation[]>([])
   const intervalRefs = useRef<number[]>([])
   
-  // Enhanced performance tracking state
   const [raceIntensity, setRaceIntensity] = useState<'low' | 'medium' | 'high' | 'extreme'>('medium')
   const [reduceMotion, setReduceMotion] = useState(ANIMATION_REDUCE_MOTION)
   const [recentlyUpdatedAssets, setRecentlyUpdatedAssets] = useState<Set<string>>(new Set())
 
-  // --- PERFORMANCE FIX: useRef for internal state ---
-  // Using useRef for values that don't trigger re-renders prevents infinite loops.
   const lastHapticTime = useRef(0)
   const previousUserRank = useRef<number | null>(null)
   const previousProfitLoss = useRef<number | null>(null)
   const previousIntensity = useRef<'low' | 'medium' | 'high' | 'extreme'>('medium')
 
-  // Crowd sentiment voting system
   const [crowdVotes, setCrowdVotes] = useState<Map<string, { upvotes: number, downvotes: number }>>(new Map())
   const [userVotes, setUserVotes] = useState<Map<string, 'up' | 'down' | null>>(new Map())
 
-  // App state tracking for WebSocket reconnection
   const appState = useRef(AppState.currentState)
   const [isAppActive, setIsAppActive] = useState(true)
 
-  // Store previous prices for calculating recent price changes
   const previousPrices = useRef<Map<string, { price: number, timestamp: number }>>(new Map())
   const [lastPriceUpdate, setLastPriceUpdate] = useState(Date.now())
 
-  // Animation for price updates
   const priceUpdateAnim = useRef(new Animated.Value(0)).current
 
-  // --- PERFORMANCE FIX: Stable haptic function ---
-  // useCallback with an empty dependency array ensures this function is created only once.
   const triggerHaptic = useCallback(async (type: 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'selection' | 'topping' | 'dropping_from_top', context?: string) => {
     const now = Date.now()
-    if (now - lastHapticTime.current < 50) return // Shorter debounce for live racing
+    if (now - lastHapticTime.current < 50) return
     
     lastHapticTime.current = now
     
@@ -216,7 +199,6 @@ function _EnhancedPerformancePhase({
           await Haptics.selectionAsync()
           break
         case 'topping':
-          // Special pattern for reaching #1: Triple heavy impact with success notification
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
           await new Promise(resolve => setTimeout(resolve, 80))
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
@@ -224,7 +206,6 @@ function _EnhancedPerformancePhase({
           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
           break
         case 'dropping_from_top':
-          // Special pattern for dropping from #1: Sharp double impact with warning
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
           await new Promise(resolve => setTimeout(resolve, 50))
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
@@ -237,27 +218,21 @@ function _EnhancedPerformancePhase({
         console.log(`🎮 Haptic feedback: ${type} (${context})`)
       }
     } catch (error) {
-      // Silent fail - haptics not critical
     }
   }, [])
 
-  // Convert priceUpdates Map to expected format for backward compatibility
   const livePrices = useMemo(() => {
     const priceMap = new Map<string, LivePriceData>()
     
-    // Convert race store price updates to expected format
     priceUpdates.forEach((priceData, symbol) => {
       if (priceData && typeof priceData.price === 'number') {
-        // Store previous price for change calculation
         const currentPrevious = previousPrices.current.get(symbol)
         if (currentPrevious && currentPrevious.price !== priceData.price) {
-          // Price has changed, update the previous price store
           previousPrices.current.set(symbol, { 
             price: currentPrevious.price, 
             timestamp: currentPrevious.timestamp 
           })
         } else if (!currentPrevious) {
-          // First time seeing this price
           previousPrices.current.set(symbol, { 
             price: priceData.price, 
             timestamp: priceData.timestamp || Date.now() 
@@ -267,12 +242,11 @@ function _EnhancedPerformancePhase({
         priceMap.set(symbol, {
           price: priceData.price,
           confidence: priceData.confidence || 100,
-          changePercent: 0, // Will be calculated below
+          changePercent: 0,
         })
       }
     })
     
-    // Fallback to asset current prices if no live prices available
     if (priceMap.size === 0 && race?.assets) {
       race.assets.forEach((asset: any) => {
         if (asset.currentPrice && asset.symbol) {
@@ -288,11 +262,9 @@ function _EnhancedPerformancePhase({
     return priceMap
   }, [priceUpdates, race?.assets])
 
-  // Enhanced price update tracking with haptic feedback
   useEffect(() => {
     setLastPriceUpdate(Date.now())
     
-    // Track which assets were recently updated for visual feedback
     const updatedAssets = new Set<string>()
     let significantUpdate = false
     
@@ -302,7 +274,6 @@ function _EnhancedPerformancePhase({
         if (previous && previous.price !== priceData.price) {
           updatedAssets.add(symbol)
           
-          // Check for significant price movement (>1%)
           const priceChange = Math.abs((priceData.price - previous.price) / previous.price) * 100
           if (priceChange > 1) {
             significantUpdate = true
@@ -318,14 +289,7 @@ function _EnhancedPerformancePhase({
         return newSet
       })
       
-      // Haptic feedback for price updates (REMOVED)
-      // if (significantUpdate) {
-      //   triggerHaptic('light', 'significant price update')
-      // } else if (updatedAssets.size > 2) {
-      //   triggerHaptic('selection', 'multiple price updates')
-      // }
       
-      // Enhanced price update animation with flash effect
       Animated.parallel([
         Animated.timing(priceUpdateAnim, {
           toValue: 1,
@@ -352,14 +316,12 @@ function _EnhancedPerformancePhase({
         }).start()
       })
       
-      // Clear the recently updated set after animation
       setTimeout(() => {
         setRecentlyUpdatedAssets(() => new Set())
       }, 1000)
     }
   }, [priceUpdates])
 
-  // Calculate race progress for progress indicator
   const raceProgress = useMemo(() => {
     if (!race) return 0
     const now = Math.floor(Date.now() / 1000)
@@ -368,15 +330,13 @@ function _EnhancedPerformancePhase({
     const totalDuration = raceEnd - raceStart
     const elapsed = now - raceStart
     return Math.max(0, Math.min(1, elapsed / totalDuration))
-  }, [race, lastPriceUpdate]) // Update with price updates for smoother progress
+  }, [race, lastPriceUpdate])
 
-  // Initialize crowd sentiment when race loads
   useEffect(() => {
     if (race?.assets && crowdVotes.size === 0) {
       const initialVotes = new Map()
       const initialUserVotes = new Map()
       race.assets.forEach((asset: any) => {
-        // Start with some random crowd sentiment to make it look active
         const baseVotes = Math.floor(Math.random() * 20) + 10
         initialVotes.set(asset.symbol, {
           upvotes: baseVotes + Math.floor(Math.random() * 15),
@@ -389,7 +349,6 @@ function _EnhancedPerformancePhase({
     }
   }, [race?.assets])
 
-  // Calculate crowd sentiment percentage
   const getCrowdSentiment = useCallback((symbol: string) => {
     const votes = crowdVotes.get(symbol)
     if (!votes) return { upPercent: 50, downPercent: 50, total: 0 }
@@ -404,15 +363,12 @@ function _EnhancedPerformancePhase({
     }
   }, [crowdVotes])
 
-  // Handle app state changes for WebSocket reconnection
   useEffect(() => {
     const handleAppStateChange = (nextAppState: any) => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        // App has come to foreground, reconnect WebSocket
         setIsAppActive(true)
         
         if (race?.raceId) {
-          // Force reconnect WebSocket
           forceReconnectWebSocket().then(() => {
             subscribeToRace(race.raceId)
             const { wsService } = useRaceStore.getState()
@@ -422,7 +378,6 @@ function _EnhancedPerformancePhase({
           })
         }
       } else if (nextAppState.match(/inactive|background/)) {
-        // App going to background
         setIsAppActive(false)
       }
       
@@ -436,12 +391,10 @@ function _EnhancedPerformancePhase({
     }
   }, [race?.raceId, forceReconnectWebSocket, subscribeToRace])
 
-  // Ensure WebSocket connection for real-time updates
   useEffect(() => {
     if (!isConnected && race?.raceId && isAppActive) {
       connectWebSocket().then(() => {
         subscribeToRace(race.raceId)
-        // Also subscribe to price updates
         const { wsService } = useRaceStore.getState()
         wsService.subscribeToPrice()
       }).catch((error) => {
@@ -449,13 +402,11 @@ function _EnhancedPerformancePhase({
       })
     } else if (isConnected && race?.raceId && isAppActive) {
       subscribeToRace(race.raceId)
-      // Ensure price subscription
       const { wsService } = useRaceStore.getState()
       wsService.subscribeToPrice()
     }
   }, [race?.raceId, isConnected, connectWebSocket, subscribeToRace, isAppActive])
 
-  // Performance: Check accessibility settings
   useEffect(() => {
     const checkReduceMotion = async () => {
       if (Platform.OS === 'ios') {
@@ -466,7 +417,6 @@ function _EnhancedPerformancePhase({
     checkReduceMotion()
   }, [])
 
-  // Performance: Cleanup animations and intervals on unmount
   useEffect(() => {
     return () => {
       animationRefs.current.forEach(animation => {
@@ -480,7 +430,6 @@ function _EnhancedPerformancePhase({
     }
   }, [])
 
-  // Error handling: Early returns for error states
   if (error) {
     return (
       <View style={styles.errorContainer}>
@@ -496,7 +445,6 @@ function _EnhancedPerformancePhase({
     )
   }
 
-  // Loading state handling
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -511,7 +459,6 @@ function _EnhancedPerformancePhase({
     )
   }
 
-  // Empty state handling
   if (!race) {
     return (
       <View style={styles.emptyContainer}>
@@ -527,7 +474,6 @@ function _EnhancedPerformancePhase({
     )
   }
   
-  // Simple and reliable asset performance data
   const assetPerformances = useMemo(() => {
     if (!race?.assets) return []
     
@@ -535,7 +481,6 @@ function _EnhancedPerformancePhase({
       const livePrice = livePrices.get(asset.symbol)
       const currentPrice = livePrice?.price || asset.currentPrice || asset.startPrice || 100
       
-      // Simple performance calculation
       let performance = 0
       const backendLeaderboard = liveRaceData?.leaderboard
       if (backendLeaderboard) {
@@ -545,7 +490,6 @@ function _EnhancedPerformancePhase({
         }
       }
       
-      // Fallback calculation
       if (performance === 0 && asset.startPrice && currentPrice) {
         const startPrice = asset.startPrice
         if (typeof startPrice === 'number' && typeof currentPrice === 'number' && startPrice > 0) {
@@ -556,20 +500,16 @@ function _EnhancedPerformancePhase({
         }
       }
       
-      // Simple user asset detection - check both userBet and userBets
-      // Simplified user-asset detection: mark true if any of the user's bets for this race targets this asset.
       const isUserAsset =
         (userBet && userBet.assetIdx === index) ||
         (userBets && race?.raceId
           ? userBets.some((bet: any) => bet.raceId === race.raceId && bet.assetIdx === index)
           : false)
       
-      // Simple pool calculations
       const totalPool = race.totalPool || 0
       const assetPool = race.assetPools?.[index] || 0
       const poolShare = totalPool > 0 ? (assetPool / totalPool) * 100 : 0
       
-      // Simple price change calculation
       let priceChange = 0
       if (backendLeaderboard) {
         const backendAsset = backendLeaderboard.find((item: any) => item.index === index)
@@ -588,7 +528,6 @@ function _EnhancedPerformancePhase({
         }
       }
       
-      // Simple momentum and velocity
       const momentum = Math.abs(performance)
       const velocity = performance > 2 ? 'hot' : performance > 0.5 ? 'up' : 
                      performance < -2 ? 'crash' : performance < -0.5 ? 'down' : 'stable'
@@ -614,11 +553,9 @@ function _EnhancedPerformancePhase({
 
 
 
-  // Odds trend calculation using real odds data
   const getOddsTrend = useCallback((assetIndex: number) => {
     if (!odds || !previousOdds) return 'stable'
     
-    // ... (rest of the code remains the same)
     const current = odds[assetIndex]
     const previous = previousOdds[assetIndex]
     if (!current || !previous) return 'stable'
@@ -628,9 +565,7 @@ function _EnhancedPerformancePhase({
     return change > 0 ? 'increasing' : 'decreasing'
   }, [odds, previousOdds])
 
-  // Simple user position calculation
   const userPosition = useMemo(() => {
-    // Find user bet - check both userBet and userBets
     let currentUserBet = userBet
     if (!currentUserBet && userBets && race?.raceId) {
       currentUserBet = userBets.find((bet: any) => bet.raceId === race.raceId)
@@ -638,7 +573,6 @@ function _EnhancedPerformancePhase({
     
     if (!currentUserBet) return null
 
-    // Obtain the asset representing the user's pick – fall back to race.assets if not yet in assetPerformances
     let userAsset: any = assetPerformances.find((a: any) => a.index === currentUserBet.assetIdx)
 
     if (!userAsset && race?.assets?.length) {
@@ -663,26 +597,20 @@ function _EnhancedPerformancePhase({
       }
     }
     
-    // Safety checks for all numeric values
     const originalAmount = (typeof currentUserBet.amount === 'number' && !isNaN(currentUserBet.amount)) ? currentUserBet.amount / 1_000_000 : 0
     
-    // SMART CONTRACT WINNER LOGIC: Only asset with HIGHEST performance wins
-    // Contract uses: delta_bps = ((end_price - start_price) / start_price) * 10000
     const maxPerformance = Math.max(...assetPerformances.map((a: any) => a.performance))
-    const isActuallyWinning = Math.abs(userAsset.performance - maxPerformance) < 0.001 // Account for floating point precision
+    const isActuallyWinning = Math.abs(userAsset.performance - maxPerformance) < 0.001
     
-    // SMART CONTRACT PAYOUT LOGIC: Exact same calculation as contract
     let currentBetValue = 0
     let profitLoss = 0
     let potentialPayout = 0
     
     if (isActuallyWinning && race?.totalPool && race?.assetPools) {
-      // Calculate EXACT payout using smart contract logic
-      const totalPool = race.totalPool / 1_000_000 // Convert to USDC
-      const feeBps = race.feeBps || 500 // Default 5% fee
-      const netPool = totalPool * (1 - feeBps / 10000) // Deduct protocol fee
+      const totalPool = race.totalPool / 1_000_000
+      const feeBps = race.feeBps || 500
+      const netPool = totalPool * (1 - feeBps / 10000)
       
-      // Calculate winning pool (sum of pools for winning assets)
       let winningPool = 0
       assetPerformances.forEach((asset: any) => {
         if (Math.abs(asset.performance - maxPerformance) < 0.001) {
@@ -691,36 +619,28 @@ function _EnhancedPerformancePhase({
       })
       
       if (winningPool > 0) {
-        // EXACT SMART CONTRACT CALCULATION:
-        // payout_ratio = (net_pool * SCALING_FACTOR) / winning_pool
-        // individual_payout = (bet_amount * payout_ratio) / SCALING_FACTOR
-        // Simplified: individual_payout = (bet_amount * net_pool) / winning_pool
-        const SCALING_FACTOR = 1_000_000_000_000 // Same as contract: 1e12
+        const SCALING_FACTOR = 1_000_000_000_000
         const payoutRatio = (netPool * SCALING_FACTOR) / winningPool
         potentialPayout = (originalAmount * payoutRatio) / SCALING_FACTOR
         
-        // For live performance phase: Show current value based on winning position
         currentBetValue = potentialPayout
         profitLoss = currentBetValue - originalAmount
       } else {
-        // Fallback if pool data is incomplete
         const estimatedMultiplier = Math.max(1.2, Math.min(3.0, 1 + (Math.abs(userAsset.performance) / 100)))
         currentBetValue = originalAmount * estimatedMultiplier
         profitLoss = currentBetValue - originalAmount
         potentialPayout = currentBetValue
       }
     } else {
-      // Not currently winning: Show declining value based on performance gap
       const performanceGap = maxPerformance - userAsset.performance
       const lossMultiplier = Math.max(0.1, Math.min(1.0, 1 - (performanceGap / 100)))
       currentBetValue = originalAmount * lossMultiplier
-      profitLoss = currentBetValue - originalAmount // This will be negative
-      potentialPayout = 0 // Zero payout for losing bets (winner-takes-all)
+      profitLoss = currentBetValue - originalAmount
+      potentialPayout = 0
     }
     
     const profitLossPercent = (originalAmount > 0 && typeof profitLoss === 'number' && !isNaN(profitLoss)) ? (profitLoss / originalAmount) * 100 : 0
     
-    // Pool share calculation (accurate)
     const totalAssetPool = race?.assetPools?.[currentUserBet.assetIdx] || 0
     const userPoolShare = (totalAssetPool > 0 && typeof currentUserBet.amount === 'number' && !isNaN(currentUserBet.amount)) ? (currentUserBet.amount / totalAssetPool) * 100 : 0
     
@@ -742,7 +662,6 @@ function _EnhancedPerformancePhase({
 
 
 
-  // Enhanced race intensity calculation based on real data with haptic feedback
   useEffect(() => {
     if (assetPerformances.length > 0) {
       const performances = assetPerformances.map((a: AssetPerformance) => a.performance)
@@ -757,13 +676,11 @@ function _EnhancedPerformancePhase({
       else if (spread > 1.5 || avgMomentum > 1.5) newIntensity = 'medium'
       else newIntensity = 'low'
       
-      // Trigger haptic when intensity increases significantly
       if (newIntensity !== previousIntensity.current) {
         const intensityLevels = { low: 0, medium: 1, high: 2, extreme: 3 }
         const levelChange = intensityLevels[newIntensity] - intensityLevels[previousIntensity.current]
         
         if (levelChange > 0) {
-          // Intensity increased
           if (newIntensity === 'extreme') {
             triggerHaptic('heavy', 'race intensity EXTREME')
           } else if (newIntensity === 'high') {
@@ -780,24 +697,20 @@ function _EnhancedPerformancePhase({
     }
   }, [assetPerformances, triggerHaptic])
 
-  // Enhanced user position tracking with haptic feedback
   useEffect(() => {
     if (userPosition) {
-      // Track rank changes
       if (previousUserRank.current !== null && previousUserRank.current !== userPosition.rank) {
         const rankImproved = userPosition.rank < previousUserRank.current
         const previousRank = previousUserRank.current
         const currentRank = userPosition.rank
         
         if (rankImproved) {
-          // Check if user just reached the top position
           if (currentRank === 1) {
             triggerHaptic('topping', `🏆 REACHED #1! Your asset is now leading the race!`)
           } else {
             triggerHaptic('success', `rank improved to #${currentRank}`)
           }
           
-          // Animate rank change
           Animated.sequence([
             Animated.timing(rankChangeAnim, {
               toValue: 1.1,
@@ -812,7 +725,6 @@ function _EnhancedPerformancePhase({
             }),
           ]).start()
         } else {
-          // Check if user just dropped from the top position
           if (previousRank === 1) {
             triggerHaptic('dropping_from_top', `💔 Dropped from #1 to #${currentRank}! Your asset lost the lead!`)
           } else {
@@ -822,11 +734,10 @@ function _EnhancedPerformancePhase({
       }
       previousUserRank.current = userPosition.rank
       
-      // Track profit/loss changes
       if (previousProfitLoss.current !== null) {
         const profitChange = userPosition.profitLoss - previousProfitLoss.current
         
-        if (Math.abs(profitChange) > 10) { // Significant P&L change
+        if (Math.abs(profitChange) > 10) {
           if (profitChange > 0) {
             triggerHaptic('success', 'profit increased significantly')
           } else {
@@ -838,7 +749,6 @@ function _EnhancedPerformancePhase({
     }
   }, [userPosition, triggerHaptic])
 
-  // Enhanced racing track animation with intensity-based speed and haptics
   useEffect(() => {
     if (reduceMotion) return
     
@@ -868,7 +778,6 @@ function _EnhancedPerformancePhase({
     }
   }, [raceIntensity, reduceMotion])
 
-  // Enhanced pulse animation for extreme moments with haptics
   useEffect(() => {
     if (reduceMotion) {
       pulseAnim.setValue(1)
@@ -945,7 +854,6 @@ function _EnhancedPerformancePhase({
     }
   }, [raceIntensity, reduceMotion])
 
-  // Enhanced live indicator animation
   useEffect(() => {
     if (!reduceMotion) {
       const liveAnimation = Animated.loop(
@@ -969,7 +877,6 @@ function _EnhancedPerformancePhase({
     }
   }, [reduceMotion])
 
-  // Enhanced profit glow animation for winning positions
   useEffect(() => {
     if (userPosition && userPosition.profitLoss > 0) {
       const glowAnimation = Animated.loop(
@@ -995,31 +902,27 @@ function _EnhancedPerformancePhase({
     }
   }, [userPosition?.profitLoss])
 
-  // Enhanced momentum bar animations
   useEffect(() => {
     if (!reduceMotion) {
       const momentumAnimation = Animated.timing(momentumBarAnim, {
         toValue: 1,
         duration: 800,
-        useNativeDriver: false, // We're animating width
+        useNativeDriver: false,
       })
       animationRefs.current.push(momentumAnimation)
       momentumAnimation.start()
     }
   }, [assetPerformances, reduceMotion])
 
-  // Enhanced voting function with haptic feedback
   const handleVote = (symbol: string, voteType: 'up' | 'down') => {
     const currentUserVote = userVotes.get(symbol)
     
-    // Haptic feedback for voting
     if (currentUserVote === voteType) {
       triggerHaptic('selection', 'vote removed')
     } else {
       triggerHaptic('light', `voted ${voteType} on ${symbol}`)
     }
     
-    // Vote button animation
     Animated.sequence([
       Animated.timing(votingPulseAnim, {
         toValue: 0.95,
@@ -1038,14 +941,12 @@ function _EnhancedPerformancePhase({
       const newVotes = new Map(prev)
       const current = newVotes.get(symbol) || { upvotes: 0, downvotes: 0 }
       
-      // Remove previous vote if exists
       if (currentUserVote === 'up') {
         current.upvotes = Math.max(0, current.upvotes - 1)
       } else if (currentUserVote === 'down') {
         current.downvotes = Math.max(0, current.downvotes - 1)
       }
       
-      // Add new vote if different from current
       if (currentUserVote !== voteType) {
         if (voteType === 'up') {
           current.upvotes += 1
@@ -1060,7 +961,6 @@ function _EnhancedPerformancePhase({
     
     setUserVotes(prev => {
       const newUserVotes = new Map(prev)
-      // Toggle vote: same vote = remove, different vote = change
       newUserVotes.set(symbol, currentUserVote === voteType ? null : voteType)
       return newUserVotes
     })
@@ -1068,7 +968,6 @@ function _EnhancedPerformancePhase({
 
 
 
-  // Leaderboard reveal animation
   useEffect(() => {
     Animated.timing(leaderboardAnim, {
       toValue: 1,
@@ -1077,7 +976,6 @@ function _EnhancedPerformancePhase({
     }).start()
   }, [])
 
-  // Simple data polling
   useEffect(() => {
     let pollInterval: ReturnType<typeof setInterval> | null = null;
     const fetchAll = async () => {
@@ -1088,12 +986,11 @@ function _EnhancedPerformancePhase({
             useRaceStore.getState().fetchCurrentRace(false),
           ]);
         } catch (e) {
-          // Silent fail
         }
       }
     };
-    fetchAll(); // Fetch immediately
-    pollInterval = setInterval(fetchAll, 2000); // Poll every 2 seconds
+    fetchAll();
+    pollInterval = setInterval(fetchAll, 2000);
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
@@ -1104,7 +1001,6 @@ function _EnhancedPerformancePhase({
   return (
     <View style={styles.performanceContainer}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-      {/* Enhanced Racing Header with Live Intensity */}
       <View style={[styles.racingHeader, { marginHorizontal: 20 }]}>
         <LinearGradient
           colors={
@@ -1181,7 +1077,6 @@ function _EnhancedPerformancePhase({
             </Animated.View>
           </Animated.View>
           
-          {/* Enhanced Race Progress Bar */}
           <View style={styles.raceProgressContainer}>
             <View style={styles.raceProgressBar}>
               <Animated.View
@@ -1200,7 +1095,6 @@ function _EnhancedPerformancePhase({
             </Text>
           </View>
           
-          {/* Enhanced Racing Track Lines with Dynamic Speed */}
           <View style={styles.trackLinesContainer}>
             {[...Array(6)].map((_, i) => (
               <Animated.View
@@ -1224,7 +1118,6 @@ function _EnhancedPerformancePhase({
         </LinearGradient>
       </View>
 
-      {/* Enhanced User Position Card - Premium Design */}
       {userPosition && (
         <Animated.View 
           style={[
@@ -1253,7 +1146,6 @@ function _EnhancedPerformancePhase({
             }
             style={styles.userPositionGradient}
           >
-            {/* Redesigned User Position Header */}
             <View style={styles.userPositionHeader}>
               <View style={styles.userPositionMainInfo}>
                 <View style={styles.positionBadge}>
@@ -1306,7 +1198,6 @@ function _EnhancedPerformancePhase({
               </View>
             </View>
             
-            {/* Redesigned Bet Summary Cards */}
             <View style={styles.betSummarySection}>
               <View style={styles.betSummaryGrid}>
                 <View style={styles.betSummaryCard}>
@@ -1358,7 +1249,6 @@ function _EnhancedPerformancePhase({
               </View>
             </View>
             
-            {/* Enhanced Profit/Loss Hero Section */}
             <View style={styles.profitLossHeroSection}>
               <View style={styles.profitLossMainCard}>
                 <View style={styles.profitLossHeader}>
@@ -1390,7 +1280,6 @@ function _EnhancedPerformancePhase({
               </View>
             </View>
             
-            {/* Race Statistics Grid */}
             <View style={styles.raceStatsGrid}>
               <View style={styles.raceStatCard}>
                 <Text style={styles.raceStatLabel}>Pool Share</Text>
@@ -1439,7 +1328,6 @@ function _EnhancedPerformancePhase({
         </Animated.View>
       )}
 
-      {/* Enhanced Live Leaderboard with Sophisticated Data */}
       <Animated.View
         style={[
           styles.leaderboardSection,
@@ -1461,7 +1349,6 @@ function _EnhancedPerformancePhase({
           </View>
         </View>
 
-        {/* 🚀 ULTRA-THIN RACING CARDS - Redesigned for Maximum Excitement */}
         <View style={styles.assetLeaderboard}>
           {assetPerformances.map((asset: any, position: number) => {
             const isRecentlyUpdated = recentlyUpdatedAssets.has(asset.symbol)
@@ -1485,7 +1372,6 @@ function _EnhancedPerformancePhase({
                   }
                 ]}
               >
-              {/* 🌟 Ultra-Thin Glassmorphism Card */}
               <LinearGradient
                 colors={
                   asset.isUserAsset
@@ -1504,7 +1390,6 @@ function _EnhancedPerformancePhase({
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                {/* 🏆 Enhanced Premium Position Badge */}
                 <Animated.View style={[
                   styles.compactPositionBadge,
                   position === 0 ? styles.goldBadge :
@@ -1537,7 +1422,6 @@ function _EnhancedPerformancePhase({
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                   >
-                    {/* Subtle Inner Glow Effect */}
                     <View style={[
                       StyleSheet.absoluteFillObject,
                       {
@@ -1547,7 +1431,6 @@ function _EnhancedPerformancePhase({
                       }
                     ]} />
                     
-                    {/* Icons and Numbers */}
                     {position === 0 && (
                       <MaterialCommunityIcons 
                         name="crown" 
@@ -1589,7 +1472,6 @@ function _EnhancedPerformancePhase({
                     </Text>
                   </LinearGradient>
                 </Animated.View>
-                {/* 🔥 Dynamic Effects */}
                 {isHot && (
                   <Animated.View style={[styles.hotIndicator, { opacity: sparkleAnim }]}>
                     <MaterialCommunityIcons name="fire" size={12} color="#FF6B6B" />
@@ -1604,7 +1486,6 @@ function _EnhancedPerformancePhase({
 
 
 
-                  {/* ⚡ Main Info Row - Ultra Compact */}
                   <View style={styles.mainInfoRow}>
                     <View style={styles.assetInfo}>
                       <View style={[styles.assetDot, { backgroundColor: asset.color }]} />
@@ -1639,7 +1520,6 @@ function _EnhancedPerformancePhase({
                     </View>
                   </View>
 
-                  {/* 💨 Speed Lines for Movement */}
                   {(isHot || isCrashing || Math.abs(asset.momentum) > 2) && (
                     <Animated.View style={[
                       styles.speedLines,
@@ -1656,7 +1536,6 @@ function _EnhancedPerformancePhase({
                     </Animated.View>
                   )}
 
-                  {/* 📊 Ultra-Thin Momentum Bar */}
                   <View style={styles.momentumBarSection}>
                     <View style={styles.momentumTrack}>
                       <Animated.View style={[
@@ -1670,7 +1549,6 @@ function _EnhancedPerformancePhase({
                             '#555'
                         }
                       ]} />
-                      {/* Pulse effect for high momentum */}
                       {asset.momentum > 3 && (
                         <Animated.View style={[
                           styles.momentumPulse,
@@ -1684,7 +1562,6 @@ function _EnhancedPerformancePhase({
                          asset.momentum > 2 ? 'HIGH' : 
                          asset.momentum > 1 ? 'MED' : 'LOW'}
                       </Text>
-                      {/* 💎 Your Bet Indicator - Centered */}
                       {asset.isUserAsset && (
                         <Animated.View style={[styles.yourBetBadge, { transform: [{ scale: pulseAnim }] }]}>
                           <MaterialCommunityIcons name="diamond" size={10} color="#FFD700" />
@@ -1694,7 +1571,6 @@ function _EnhancedPerformancePhase({
                     </View>
                   </View>
 
-                  {/* 💰 Price & Pool Info */}
                   <View style={styles.pricePoolRow}>
                     <View style={styles.priceInfo}>
                       <Text style={styles.priceLabel}>Price</Text>
@@ -1720,7 +1596,6 @@ function _EnhancedPerformancePhase({
         </View>
       </Animated.View>
 
-      {/* ACCURATE Pool-Based Payout Display */}
       <View style={styles.oddsSection}>
         <LinearGradient
           colors={['rgba(255, 215, 0, 0.2)', 'rgba(255, 215, 0, 0.1)', 'rgba(0, 0, 0, 0.8)']}
@@ -1737,7 +1612,6 @@ function _EnhancedPerformancePhase({
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.oddsScrollView}>
             <View style={styles.oddsGrid}>
               {assetPerformances.map((asset: any, index: number) => {
-                // Simple user bet detection
                 let isUserBet = false
                 if (userBet && userBet.assetIdx === asset.index) {
                   isUserBet = true
@@ -1748,15 +1622,13 @@ function _EnhancedPerformancePhase({
                 const maxPerformance = Math.max(...assetPerformances.map((a: any) => a.performance))
                 const isWinning = Math.abs(asset.performance - maxPerformance) < 0.001
                 
-                // Calculate EXACT payout multiplier using smart contract logic
                 let payoutMultiplier = 0
                 
                 if (isWinning && race?.totalPool && race?.assetPools) {
-                  const totalPool = race.totalPool / 1_000_000 // Convert to USDC
-                  const feeBps = race.feeBps || 500 // Default 5% fee
-                  const netPool = totalPool * (1 - feeBps / 10000) // Deduct protocol fee
+                  const totalPool = race.totalPool / 1_000_000
+                  const feeBps = race.feeBps || 500
+                  const netPool = totalPool * (1 - feeBps / 10000)
                   
-                  // Calculate winning pool (sum of pools for winning assets)
                   let winningPool = 0
                   assetPerformances.forEach((winningAsset: any) => {
                     if (Math.abs(winningAsset.performance - maxPerformance) < 0.001) {
@@ -1765,9 +1637,6 @@ function _EnhancedPerformancePhase({
                   })
                   
                   if (winningPool > 0) {
-                    // EXACT SMART CONTRACT CALCULATION:
-                    // payout_ratio = (net_pool * SCALING_FACTOR) / winning_pool
-                    // payout_multiplier = payout_ratio / SCALING_FACTOR = net_pool / winning_pool
                     payoutMultiplier = netPool / winningPool
                   }
                 }
@@ -1793,7 +1662,6 @@ function _EnhancedPerformancePhase({
                           {asset.symbol}
                         </Text>
                         
-                        {/* Winner/Loser Indicator */}
                         {isWinning ? (
                           <View style={[styles.trendIndicator, { backgroundColor: 'rgba(0, 255, 136, 0.3)' }]}>
                             <MaterialCommunityIcons name="trophy" size={12} color="#00FF88" />
@@ -1835,7 +1703,6 @@ function _EnhancedPerformancePhase({
             </View>
           </ScrollView>
           
-          {/* Pool Distribution Summary */}
           <View style={styles.poolSummary}>
             <View style={styles.poolSummaryLeft}>
               <Text style={styles.poolSummaryLabel}>Total Pool</Text>
@@ -1857,7 +1724,6 @@ function _EnhancedPerformancePhase({
         </LinearGradient>
       </View>
 
-      {/* ULTRA-ENHANCED Race Statistics Dashboard */}
       <View style={styles.raceStatsSection}>
         <LinearGradient
           colors={['rgba(0, 0, 0, 0.9)', 'rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.9)']}
@@ -1927,7 +1793,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   
-  // Racing Header - Responsive
   racingHeader: {
     marginBottom: SPACING.xl,
     marginHorizontal: isTablet ? SPACING.xxl : SPACING.xl,
@@ -1987,7 +1852,6 @@ const styles = StyleSheet.create({
     width: 60,
   },
   
-  // User Position Card - Responsive
   userPositionCard: {
     marginBottom: SPACING.xl,
     marginHorizontal: isTablet ? SPACING.xxl : SPACING.xl,
@@ -2077,7 +1941,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     fontFamily: 'Orbitron-Regular',
   },
-  // Redesigned Bet Summary Section
   betSummarySection: {
     marginTop: 20,
     gap: 16,
@@ -2141,7 +2004,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-ExtraBold',
   },
   
-  // Enhanced Profit/Loss Hero Section
   profitLossHeroSection: {
     marginTop: 20,
   },
@@ -2171,7 +2033,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-ExtraBold',
   },
   
-  // Race Statistics Grid
   raceStatsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2219,7 +2080,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   
-  // Leaderboard
   leaderboardSection: {
     marginBottom: 20,
     marginHorizontal: 20,
@@ -2265,7 +2125,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-SemiBold',
   },
   
-  // Asset Leaderboard
   assetLeaderboard: {
     gap: 12,
   },
@@ -2275,7 +2134,7 @@ const styles = StyleSheet.create({
      borderWidth: 1,
      borderColor: 'rgba(255,255,255,0.1)',
      marginBottom: 12,
-     position: 'relative', // Ensure relative positioning for absolute children
+     position: 'relative',
    },
   assetRaceGradient: {
     padding: 16,
@@ -2318,7 +2177,7 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   assetRaceContent: {
-    marginRight: 40, // Space for rank badge
+    marginRight: 40,
   },
   assetRaceHeader: {
     flexDirection: 'row',
@@ -2358,7 +2217,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-Bold',
   },
   
-  // Price Movement
   priceMovement: {
     marginBottom: 12,
   },
@@ -2386,7 +2244,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-SemiBold',
   },
   
-     // Momentum Section
    momentumSection: {
      marginTop: 8,
      marginBottom: 8,
@@ -2421,7 +2278,6 @@ const styles = StyleSheet.create({
     minWidth: 40,
   },
   
-  // Pool Share
   poolShareSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2441,7 +2297,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-SemiBold',
   },
   
-  // Enhanced features styles
      intensityBadge: {
      paddingVertical: 4,
      paddingHorizontal: 8,
@@ -2538,7 +2393,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-Bold',
   },
 
-  // 🚀 ULTRA-THIN RACING CARDS - New Styles
   ultraThinRaceCard: {
     marginBottom: SPACING.sm,
     marginHorizontal: isTablet ? SPACING.lg : SPACING.md,
@@ -2551,7 +2405,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-    height: 96, // Increased height to properly show price and pool content
+    height: 96,
   },
   
   ultraThinGradient: {
@@ -2561,7 +2415,6 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
 
-  // 🏆 Enhanced Compact Position Badge
   compactPositionBadge: {
     position: 'absolute',
     top: 3,
@@ -2585,7 +2438,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  // Enhanced Badge Styles for Different Positions
   goldBadge: {
     borderColor: 'rgba(255, 215, 0, 0.8)',
     shadowColor: '#FFD700',
@@ -2636,7 +2488,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  // 🔥 Dynamic Effect Indicators
   hotIndicator: {
     position: 'absolute',
     top: 4,
@@ -2651,14 +2502,12 @@ const styles = StyleSheet.create({
     zIndex: 8,
   },
 
-  // Container for momentum label and badge
   momentumLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
 
-  // 💎 Your Bet Badge
   yourBetBadge: {
     backgroundColor: 'rgba(255, 215, 0, 0.9)',
     borderRadius: 8,
@@ -2679,7 +2528,6 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
 
-  // ⚡ Main Content Layout
   mainInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2725,7 +2573,6 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
 
-  // 💨 Speed Lines
   speedLines: {
     position: 'absolute',
     left: 40,
@@ -2739,7 +2586,6 @@ const styles = StyleSheet.create({
     borderRadius: 0.5,
   },
 
-  // 📊 Ultra-Thin Momentum Bar
   momentumBarSection: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2764,7 +2610,6 @@ const styles = StyleSheet.create({
     minWidth: '10%',
   },
 
-  // 💰 Price & Pool Row
   pricePoolRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2791,7 +2636,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 
-  // 🔥 Live Indicator & Effects
   liveIndicator: {
     backgroundColor: 'rgba(255, 0, 0, 0.8)',
     borderRadius: 4,
@@ -2861,7 +2705,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-SemiBold',
   },
   
-  // Odds Section
   oddsSection: {
     marginBottom: 20,
     marginHorizontal: 20,
@@ -2970,7 +2813,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-Bold',
   },
   
-  // Pool Summary
   poolSummary: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -3000,7 +2842,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-Bold',
   },
   
-  // Race Statistics
   raceStatsSection: {
     borderRadius: 16,
     overflow: 'hidden',
@@ -3045,7 +2886,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingHorizontal: 4,
-    minWidth: 0, // Prevents flex item from overflowing
+    minWidth: 0,
   },
   statValue: {
     fontSize: 16,
@@ -3062,7 +2903,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-Regular',
   },
   
-  // Advanced Analytics
   advancedAnalytics: {
     marginTop: 20,
     paddingTop: 16,
@@ -3096,7 +2936,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-Bold',
   },
   
-  // No Bet Card
   noBetCard: {
     marginBottom: 20,
     marginHorizontal: 20,
@@ -3143,7 +2982,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
 
-  // Error, Loading, and Empty States
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
