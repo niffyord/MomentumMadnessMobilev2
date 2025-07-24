@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 
+import * as Haptics from 'expo-haptics'
 import { Stack } from 'expo-router'
 import {
-  Alert,
   Linking,
   Modal,
   Platform,
@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useWalletUi } from '@/components/solana/use-wallet-ui'
+import { useNotification } from '@/components/ui/NotificationProvider'
 import { ellipsify } from '@/utils/ellipsify'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import Clipboard from '@react-native-clipboard/clipboard'
@@ -23,49 +24,43 @@ function DemoHeader() {
   const { account, disconnect } = useWalletUi()
   const insets = useSafeAreaInsets()
   const [showWalletMenu, setShowWalletMenu] = useState(false)
+  const { showSuccess, showError } = useNotification()
   
   const handleCopyAddress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     if (account) {
       try {
         Clipboard.setString(account.publicKey.toString())
-        Alert.alert(
-          '✅ Address Copied',
-          'Wallet address has been copied to your clipboard',
-          [{ text: 'OK', style: 'default' }]
-        )
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        showSuccess('Wallet address copied to clipboard', '✨ Address Copied')
       } catch (error) {
-        Alert.alert('Error', 'Failed to copy address to clipboard')
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+        showError('Failed to copy address to clipboard', '❌ Copy Failed')
       }
     }
     setShowWalletMenu(false)
   }
 
   const handleViewOnExplorer = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     if (account) {
       const explorerUrl = `https://explorer.solana.com/address/${account.publicKey.toString()}`
       Linking.openURL(explorerUrl).catch(() => {
-        Alert.alert('Error', 'Failed to open Solana Explorer')
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+        showError('Failed to open Solana Explorer', '🌐 Browser Error')
       })
     }
     setShowWalletMenu(false)
   }
 
   const handleDisconnect = () => {
-    Alert.alert(
-      'Disconnect Wallet',
-      'Are you sure you want to disconnect your wallet?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Disconnect', 
-          style: 'destructive',
-          onPress: () => {
-            disconnect()
-            setShowWalletMenu(false)
-          }
-        }
-      ]
-    )
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+    // For disconnect, we can show a warning notification and then disconnect
+    // Or keep the Alert for confirmation since it's a destructive action
+    disconnect()
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    showSuccess('Wallet disconnected successfully', '👋 Disconnected')
+    setShowWalletMenu(false)
   }
   
   return (
@@ -113,7 +108,10 @@ function DemoHeader() {
               borderWidth: 1,
               borderColor: 'rgba(153, 69, 255, 0.3)',
             }}
-            onPress={() => setShowWalletMenu(true)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+              setShowWalletMenu(true)
+            }}
           >
             <MaterialCommunityIcons 
               name="wallet" 
@@ -156,6 +154,9 @@ function DemoHeader() {
               paddingHorizontal: 12,
               borderWidth: 1,
               borderColor: 'rgba(20, 241, 149, 0.3)',
+            }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
             }}
           >
             <MaterialCommunityIcons 
@@ -332,7 +333,10 @@ function DemoHeader() {
                 backgroundColor: 'rgba(255,255,255,0.1)',
                 borderRadius: 8,
               }}
-              onPress={() => setShowWalletMenu(false)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                setShowWalletMenu(false)
+              }}
             >
               <Text style={{
                 fontSize: 14,
