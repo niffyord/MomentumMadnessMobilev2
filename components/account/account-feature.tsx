@@ -5,7 +5,6 @@ import React, {
   useRef,
   useState,
 } from 'react'
-
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
@@ -23,23 +22,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-
 import { MaterialCommunityIcons } from '@expo/vector-icons'
-
 import { useRaceStore } from '../../store/useRaceStore'
 import { useConnection } from '../solana/solana-provider'
 import { useWalletUi } from '../solana/use-wallet-ui'
-
-// Responsive design tokens
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 const isTablet = screenWidth >= 768
 const isLandscape = screenWidth > screenHeight
-
-// Accessibility constants
 const MIN_TOUCH_TARGET = 44
 const ANIMATION_REDUCE_MOTION = false
-
-// Design tokens for consistency (matching race screen)
 const SPACING = {
   xs: 4,
   sm: 8,
@@ -48,7 +39,6 @@ const SPACING = {
   xl: 20,
   xxl: 24,
 } as const
-
 const COLORS = {
   success: '#00FF88',
   error: '#FF4444',
@@ -67,7 +57,6 @@ const COLORS = {
     orange: '#FFA500',
   }
 } as const
-
 const TYPOGRAPHY = {
   display: { fontSize: isTablet ? 32 : 28, lineHeight: isTablet ? 40 : 36 },
   title: { fontSize: isTablet ? 24 : 20, lineHeight: isTablet ? 32 : 28 },
@@ -76,8 +65,6 @@ const TYPOGRAPHY = {
   caption: { fontSize: isTablet ? 14 : 12, lineHeight: isTablet ? 20 : 18 },
   small: { fontSize: isTablet ? 12 : 10, lineHeight: isTablet ? 18 : 16 },
 } as const
-
-// Enhanced TypeScript interfaces
 interface UserPosition {
   raceId: number
   assetIdx: number
@@ -90,7 +77,6 @@ interface UserPosition {
   performance?: number
   timestamp?: number
 }
-
 interface PortfolioStats {
   totalBets: number
   totalWagered: number
@@ -102,7 +88,6 @@ interface PortfolioStats {
   unclaimedRewards: number
   unclaimedValue: number
 }
-
 interface HistoryGroup {
   date: string
   positions: UserPosition[]
@@ -110,8 +95,6 @@ interface HistoryGroup {
   totalLost: number
   netResult: number
 }
-
-// Enhanced Position Card Component
 const PositionCard: React.FC<{
   position: UserPosition
   onClaim: (raceId: number) => void
@@ -122,8 +105,6 @@ const PositionCard: React.FC<{
 }> = React.memo(({ position, onClaim, onViewRace, formatValue, isHistory = false, isUnclaimed = false }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current
   const glowAnim = useRef(new Animated.Value(0)).current
-
-  // Status determination with enhanced logic
   const statusInfo = useMemo(() => {
     if (position.claimed) {
       return {
@@ -156,8 +137,6 @@ const PositionCard: React.FC<{
       gradient: ['rgba(255, 68, 68, 0.2)', 'rgba(255, 68, 68, 0.1)', 'rgba(0, 0, 0, 0.8)'] as const
     }
   }, [position.claimed, position.isWinner, position.raceState])
-
-  // Winner glow animation
   useEffect(() => {
     if (position.isWinner && !position.claimed) {
       Animated.loop(
@@ -176,7 +155,6 @@ const PositionCard: React.FC<{
       ).start()
     }
   }, [position.isWinner, position.claimed])
-
   const handleClaim = useCallback(() => {
     Animated.sequence([
       Animated.timing(scaleAnim, {
@@ -190,23 +168,17 @@ const PositionCard: React.FC<{
         useNativeDriver: true,
       }),
     ]).start()
-    
-    // Medium impact for button press
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    
     onClaim(position.raceId)
   }, [onClaim, position.raceId, scaleAnim])
-
   const handleViewRace = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     onViewRace(position.raceId)
   }, [onViewRace, position.raceId])
-
   return (
     <TouchableOpacity 
       activeOpacity={0.98}
       onPress={() => {
-        // Light haptic feedback for card interaction
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
       }}
     >
@@ -225,7 +197,6 @@ const PositionCard: React.FC<{
           colors={statusInfo.gradient}
           style={styles.cardGradient}
         >
-          {/* Enhanced Header */}
           <View style={styles.cardHeader}>
             <View style={styles.cardTitle}>
               <View style={styles.raceIdContainer}>
@@ -245,7 +216,6 @@ const PositionCard: React.FC<{
                 )}
               </View>
             </View>
-            
             <Animated.View style={[
               styles.statusBadge,
               { 
@@ -260,15 +230,12 @@ const PositionCard: React.FC<{
               <Text style={styles.statusText}>{statusInfo.text}</Text>
             </Animated.View>
           </View>
-
-          {/* Enhanced Content */}
           <View style={styles.cardContent}>
             <View style={styles.betDetails}>
               <View style={styles.betDetail}>
                 <Text style={styles.betDetailLabel}>Amount Bet</Text>
                 <Text style={styles.betDetailValue}>{formatValue(position.amount)}</Text>
               </View>
-              
               {position.potentialPayout && (
                 <View style={styles.betDetail}>
                   <Text style={styles.betDetailLabel}>
@@ -283,8 +250,6 @@ const PositionCard: React.FC<{
                 </View>
               )}
             </View>
-
-            {/* Profit/Loss Display - Only show for truly settled races */}
             {position.raceState === 'Settled' && (
               <View style={[
                 styles.profitLossContainer,
@@ -306,8 +271,6 @@ const PositionCard: React.FC<{
               </View>
             )}
           </View>
-
-          {/* Enhanced Actions */}
           <View style={[styles.cardActions, isHistory && styles.historyCardActions]}>
             {position.isWinner && !position.claimed && position.raceState === 'Settled' && (
               <TouchableOpacity
@@ -326,7 +289,6 @@ const PositionCard: React.FC<{
                 </LinearGradient>
               </TouchableOpacity>
             )}
-            
             {!isHistory && !isUnclaimed && (
               <TouchableOpacity
                 style={[
@@ -343,7 +305,6 @@ const PositionCard: React.FC<{
                 <Text style={styles.viewButtonText}>View Race</Text>
               </TouchableOpacity>
             )}
-            
             {isHistory && !position.isWinner && !position.claimed && (
               <View style={styles.historyBadge}>
                 <MaterialCommunityIcons name="information" size={16} color={COLORS.text.tertiary} />
@@ -356,15 +317,11 @@ const PositionCard: React.FC<{
     </TouchableOpacity>
   )
 })
-
-// Enhanced Portfolio Stats Component
 const PortfolioStatsSection: React.FC<{
   stats: PortfolioStats
   formatValue: (value: number) => string
 }> = React.memo(({ stats, formatValue }) => {
   const pulseAnim = useRef(new Animated.Value(0.8)).current
-
-  // Pulse animation for active bets indicator
   useEffect(() => {
     if (stats.activeBets > 0) {
       Animated.loop(
@@ -383,27 +340,23 @@ const PortfolioStatsSection: React.FC<{
       ).start()
     }
   }, [stats.activeBets, pulseAnim])
-
   const getPerformanceColor = (value: number) => {
     if (value > 0) return COLORS.success
     if (value < 0) return COLORS.error
     return COLORS.text.secondary
   }
-
   const getWinRateIcon = (winRate: number) => {
     if (winRate >= 75) return 'trophy-award'
     if (winRate >= 50) return 'trophy'
     if (winRate >= 25) return 'medal'
     return 'account'
   }
-
   return (
     <View style={styles.statsSection}>
       <LinearGradient
         colors={['rgba(153, 69, 255, 0.25)', 'rgba(20, 241, 149, 0.15)', 'rgba(0, 0, 0, 0.85)']}
         style={styles.statsCard}
       >
-        {/* Enhanced Header with Performance Indicator */}
         <View style={styles.statsHeader}>
           <View style={styles.statsHeaderLeft}>
             <View style={styles.portfolioIconContainer}>
@@ -416,7 +369,6 @@ const PortfolioStatsSection: React.FC<{
               </Text>
             </View>
           </View>
-          
           {stats.totalBets > 0 && (
             <View style={[
               styles.performanceIndicator,
@@ -430,9 +382,7 @@ const PortfolioStatsSection: React.FC<{
             </View>
           )}
         </View>
-        
         {stats.totalBets === 0 ? (
-          // Empty state for new users
           <View style={styles.emptyStatsContainer}>
             <MaterialCommunityIcons name="rocket-launch" size={48} color={COLORS.primary} />
             <Text style={styles.emptyStatsTitle}>Start Your Journey</Text>
@@ -442,7 +392,6 @@ const PortfolioStatsSection: React.FC<{
           </View>
         ) : (
           <>
-            {/* Enhanced Stats Grid */}
             <View style={styles.statsGrid}>
               <View style={[styles.statItem, styles.primaryStat]}>
                 <View style={styles.statIcon}>
@@ -451,7 +400,6 @@ const PortfolioStatsSection: React.FC<{
                 <Text style={styles.statValue}>{stats.totalBets}</Text>
                 <Text style={styles.statLabel}>Total Races</Text>
               </View>
-              
               <View style={[styles.statItem, styles.primaryStat]}>
                 <View style={styles.statIcon}>
                   <MaterialCommunityIcons name="wallet" size={16} color={COLORS.accent.orange} />
@@ -459,7 +407,6 @@ const PortfolioStatsSection: React.FC<{
                 <Text style={styles.statValue}>{formatValue(stats.totalWagered)}</Text>
                 <Text style={styles.statLabel}>Total Wagered</Text>
               </View>
-              
               <View style={[styles.statItem, styles.primaryStat]}>
                 <View style={styles.statIcon}>
                   <MaterialCommunityIcons 
@@ -476,7 +423,6 @@ const PortfolioStatsSection: React.FC<{
                 </Text>
                 <Text style={styles.statLabel}>Win Rate</Text>
               </View>
-              
               <View style={[styles.statItem, styles.primaryStat]}>
                 <View style={styles.statIcon}>
                   <MaterialCommunityIcons 
@@ -494,8 +440,6 @@ const PortfolioStatsSection: React.FC<{
                 <Text style={styles.statLabel}>Net Profit</Text>
               </View>
             </View>
-
-            {/* Additional Stats Row */}
             <View style={styles.additionalStats}>
               <View style={styles.additionalStatItem}>
                 <MaterialCommunityIcons name="trophy" size={14} color={COLORS.success} />
@@ -503,14 +447,12 @@ const PortfolioStatsSection: React.FC<{
                   {Math.round((stats.winRate / 100) * stats.totalBets)} Wins
                 </Text>
               </View>
-              
               <View style={styles.additionalStatItem}>
                 <MaterialCommunityIcons name="cash" size={14} color={COLORS.warning} />
                 <Text style={styles.additionalStatText}>
                   {formatValue(stats.totalWon)} Won
                 </Text>
               </View>
-              
               <View style={styles.additionalStatItem}>
                 <MaterialCommunityIcons name="wallet-plus" size={14} color={COLORS.secondary} />
                 <Text style={styles.additionalStatText}>
@@ -520,8 +462,6 @@ const PortfolioStatsSection: React.FC<{
             </View>
           </>
         )}
-        
-        {/* Enhanced Active Indicator */}
         {stats.activeBets > 0 && (
           <Animated.View style={[
             styles.activeIndicator,
@@ -540,8 +480,6 @@ const PortfolioStatsSection: React.FC<{
     </View>
   )
 })
-
-// Enhanced Tab Navigation
 const TabNavigation: React.FC<{
   activeTab: 'active' | 'history' | 'unclaimed'
   onTabChange: (tab: 'active' | 'history' | 'unclaimed') => void
@@ -550,7 +488,6 @@ const TabNavigation: React.FC<{
   unclaimedCount: number
 }> = React.memo(({ activeTab, onTabChange, activeBetsCount, historyCount, unclaimedCount }) => {
   const translateX = useRef(new Animated.Value(activeTab === 'active' ? 0 : activeTab === 'history' ? 1 : 2)).current
-
   useEffect(() => {
     Animated.spring(translateX, {
       toValue: activeTab === 'active' ? 0 : activeTab === 'history' ? 1 : 2,
@@ -559,7 +496,6 @@ const TabNavigation: React.FC<{
       friction: 8,
     }).start()
   }, [activeTab, translateX])
-
   const TabButton: React.FC<{
     tab: 'active' | 'history' | 'unclaimed'
     label: string
@@ -595,7 +531,6 @@ const TabNavigation: React.FC<{
       </View>
     </TouchableOpacity>
   )
-
   return (
     <View style={styles.tabContainer}>
       <Animated.View 
@@ -606,16 +541,15 @@ const TabNavigation: React.FC<{
               translateX: translateX.interpolate({
                 inputRange: [0, 1, 2],
                 outputRange: [
-                  4, // Active tab position
-                  (screenWidth - 48) / 3 + 4, // History tab position  
-                  ((screenWidth - 48) / 3) * 2 + 4 // Unclaimed tab position
+                  4, 
+                  (screenWidth - 48) / 3 + 4, 
+                  ((screenWidth - 48) / 3) * 2 + 4 
                 ]
               })
             }]
           }
         ]} 
       />
-      
       <TabButton
         tab="active"
         label="Active"
@@ -623,7 +557,6 @@ const TabNavigation: React.FC<{
         icon="play-circle"
         isActive={activeTab === 'active'}
       />
-      
       <TabButton
         tab="history"
         label="History"
@@ -631,7 +564,6 @@ const TabNavigation: React.FC<{
         icon="history"
         isActive={activeTab === 'history'}
       />
-
       <TabButton
         tab="unclaimed"
         label="Unclaimed"
@@ -642,8 +574,6 @@ const TabNavigation: React.FC<{
     </View>
   )
 })
-
-// History Search Component
 const HistorySearch: React.FC<{
   searchQuery: string
   onSearchChange: (query: string) => void
@@ -651,7 +581,6 @@ const HistorySearch: React.FC<{
   onSortChange: (sort: 'date' | 'amount' | 'result') => void
 }> = React.memo(({ searchQuery, onSearchChange, sortBy, onSortChange }) => {
   const [showSort, setShowSort] = useState(false)
-
   return (
     <View style={styles.searchContainer}>
       <View style={styles.searchInputContainer}>
@@ -663,7 +592,6 @@ const HistorySearch: React.FC<{
           value={searchQuery}
           onChangeText={(text) => {
             onSearchChange(text)
-            // Light haptic feedback when typing (only on first character)
             if (text.length === 1 && searchQuery.length === 0) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
             }
@@ -684,7 +612,6 @@ const HistorySearch: React.FC<{
           </TouchableOpacity>
         )}
       </View>
-      
       <TouchableOpacity 
         style={styles.sortButton}
         onPress={() => {
@@ -694,7 +621,6 @@ const HistorySearch: React.FC<{
       >
         <MaterialCommunityIcons name="sort" size={20} color={COLORS.primary} />
       </TouchableOpacity>
-      
       {showSort && (
         <View style={styles.sortDropdown}>
           {(['date', 'amount', 'result'] as const).map(option => (
@@ -717,8 +643,6 @@ const HistorySearch: React.FC<{
     </View>
   )
 })
-
-// History Group Component
 const HistoryGroupComponent: React.FC<{
   group: HistoryGroup
   onClaim: (raceId: number) => void
@@ -726,7 +650,6 @@ const HistoryGroupComponent: React.FC<{
   formatValue: (value: number) => string
 }> = React.memo(({ group, onClaim, onViewRace, formatValue }) => {
   const [expanded, setExpanded] = useState(false)
-  
   return (
     <View style={styles.historyGroup}>
       <TouchableOpacity 
@@ -740,7 +663,6 @@ const HistoryGroupComponent: React.FC<{
           <Text style={styles.historyGroupDate}>{group.date}</Text>
           <Text style={styles.historyGroupCount}>{group.positions.length} races</Text>
         </View>
-        
         <View style={styles.historyGroupStats}>
           <Text style={[
             styles.historyGroupResult,
@@ -755,7 +677,6 @@ const HistoryGroupComponent: React.FC<{
           />
         </View>
       </TouchableOpacity>
-      
       {expanded && (
         <View style={styles.historyGroupContent}>
           {group.positions.map((position, index) => (
@@ -774,8 +695,6 @@ const HistoryGroupComponent: React.FC<{
     </View>
   )
 })
-
-// Enhanced Empty State
 const EmptyState: React.FC<{
   activeTab: 'active' | 'history' | 'unclaimed'
   isConnected: boolean
@@ -808,13 +727,9 @@ const EmptyState: React.FC<{
     </Text>
   </View>
 ))
-
-// Main Account Feature Component
 export function AccountFeature() {
   const { account, signAndSendTransaction } = useWalletUi()
   const connection = useConnection()
-  
-  // Race store for data and claim functionality
   const { 
     userBets, 
     fetchUserBets, 
@@ -822,51 +737,36 @@ export function AccountFeature() {
     isLoading, 
     error 
   } = useRaceStore()
-  
-  // Local state
   const [activeTab, setActiveTab] = useState<'active' | 'history' | 'unclaimed'>('active')
   const [refreshing, setRefreshing] = useState(false)
   const [localClaimedRaces, setLocalClaimedRaces] = useState<Set<number>>(new Set())
-  
-  // Search and filter state for history
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'result'>('date')
-  
-  // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current
   const slideAnim = useRef(new Animated.Value(20)).current
   const isInitialLoad = useRef(true)
-
-  // Enhanced value formatter
   const formatValue = useCallback((value: number) => {
-    const displayValue = value / 1_000_000 // Convert from micro-USDC
-    
+    const displayValue = value / 1_000_000 
     if (displayValue >= 1000000) return `$${(displayValue / 1000000).toFixed(2)}M`
     if (displayValue >= 1000) return `$${(displayValue / 1000).toFixed(1)}K`
     return `$${displayValue.toFixed(2)}`
   }, [])
-
-  // Group history by date
   const groupHistoryByDate = useCallback((positions: UserPosition[]): HistoryGroup[] => {
     const groups: { [key: string]: UserPosition[] } = {}
-    
     positions.forEach(position => {
       const date = new Date(position.timestamp || Date.now()).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
       })
-      
       if (!groups[date]) {
         groups[date] = []
       }
       groups[date].push(position)
     })
-    
     return Object.entries(groups).map(([date, positions]) => {
       const totalWon = positions.filter(p => p.isWinner).reduce((sum, p) => sum + (p.potentialPayout || 0), 0)
       const totalLost = positions.filter(p => !p.isWinner).reduce((sum, p) => sum + p.amount, 0)
-      
       return {
         date,
         positions,
@@ -876,17 +776,12 @@ export function AccountFeature() {
       }
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }, [])
-
-  // Process user positions from backend data
   const userPositions = useMemo(() => {
     if (!userBets || userBets.length === 0) {
       return []
     }
-    
     return userBets.map(bet => {
-      // Handle legacy SettlementReady state by converting to Settled
       const normalizedRaceState = bet.raceState === 'SettlementReady' ? 'Settled' : bet.raceState
-      
       return {
         raceId: bet.raceId,
         assetIdx: bet.assetIdx,
@@ -896,29 +791,23 @@ export function AccountFeature() {
         isWinner: bet.isWinner,
         potentialPayout: bet.potentialPayout,
         raceState: normalizedRaceState as any,
-        timestamp: (bet as any).timestamp || Date.now(), // Safely handle timestamp
+        timestamp: (bet as any).timestamp || Date.now(), 
       }
     })
   }, [userBets, localClaimedRaces])
-
-  // Filter positions based on active tab - CLEAR LOGIC
   const filteredPositions = useMemo(() => {
     if (activeTab === 'active') {
       return userPositions.filter(pos => 
         pos.raceState === 'Betting' || pos.raceState === 'Running'
       )
     }
-    
     if (activeTab === 'history') {
-      // Show ALL settled races in history - no restrictions
       const historyPositions = userPositions.filter(pos => 
         pos.raceState === 'Settled'
       )
       return historyPositions
     }
-    
     if (activeTab === 'unclaimed') {
-      // Only show settled winners that haven't been claimed
       const unclaimedPositions = userPositions.filter(pos => 
         !pos.claimed && 
         pos.isWinner === true && 
@@ -926,23 +815,16 @@ export function AccountFeature() {
       )
       return unclaimedPositions
     }
-    
     return userPositions
   }, [userPositions, activeTab])
-
-  // Filter and sort positions
   const processedPositions = useMemo(() => {
     let filtered = filteredPositions
-    
-    // Apply search filter for history
     if (activeTab === 'history' && searchQuery) {
       filtered = filtered.filter(pos => 
         pos.assetSymbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
         pos.raceId.toString().includes(searchQuery)
       )
     }
-    
-    // Apply sorting for history
     if (activeTab === 'history') {
       filtered = [...filtered].sort((a, b) => {
         switch (sortBy) {
@@ -958,19 +840,14 @@ export function AccountFeature() {
         }
       })
     }
-    
     return filtered
   }, [filteredPositions, activeTab, searchQuery, sortBy])
-
-  // Group history positions for better display
   const historyGroups = useMemo(() => {
     if (activeTab === 'history') {
       return groupHistoryByDate(processedPositions)
     }
     return []
   }, [activeTab, processedPositions, groupHistoryByDate])
-
-  // Portfolio statistics
   const portfolioStats = useMemo((): PortfolioStats => {
     if (!userPositions.length) {
       return {
@@ -985,7 +862,6 @@ export function AccountFeature() {
         unclaimedValue: 0,
       }
     }
-
     const totalBets = userPositions.length
     const totalWagered = userPositions.reduce((sum, pos) => sum + pos.amount, 0)
     const wins = userPositions.filter(pos => pos.isWinner)
@@ -996,15 +872,12 @@ export function AccountFeature() {
     const activeBets = userPositions.filter(pos => 
       pos.raceState === 'Betting' || pos.raceState === 'Running'
     ).length
-
-    // Calculate unclaimed rewards - only from settled races
     const unclaimedPositions = userPositions.filter(pos => 
       !pos.claimed && 
       pos.isWinner === true && 
       pos.raceState === 'Settled'
     )
     const unclaimedValue = unclaimedPositions.reduce((sum, pos) => sum + (pos.potentialPayout || 0), 0)
-
     return {
       totalBets,
       totalWagered,
@@ -1017,15 +890,11 @@ export function AccountFeature() {
       unclaimedValue,
     }
   }, [userPositions])
-
-  // Data fetching
   useEffect(() => {
     if (account?.publicKey) {
       fetchUserBets(account.publicKey.toString())
     }
   }, [account?.publicKey, fetchUserBets])
-
-  // Entrance animation
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -1041,24 +910,16 @@ export function AccountFeature() {
       }),
     ]).start()
   }, [])
-
-  // Haptic feedback for tab changes
   useEffect(() => {
-    // Skip haptic feedback on initial load
     if (isInitialLoad.current) {
       isInitialLoad.current = false
       return
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
   }, [activeTab])
-
-  // Handle claim payout
   const handleClaim = useCallback(async (raceId: number) => {
     if (!account?.publicKey || !connection || !signAndSendTransaction) return
-    
-    // Medium impact for initiating claim
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    
     try {
       const success = await claimPayout(
         account.publicKey.toString(),
@@ -1066,57 +927,35 @@ export function AccountFeature() {
         connection,
         signAndSendTransaction
       )
-      
       if (success) {
-        // Success notification for successful claim
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        
-        // Add to local claimed set for immediate UI feedback
         setLocalClaimedRaces(prev => new Set(prev).add(raceId))
-        
-        // Refresh user bets after a delay with force refresh
         setTimeout(() => {
-          fetchUserBets(account.publicKey.toString(), false) // useCache=false to force refresh
-        }, 3000) // Increased delay to 3 seconds for blockchain processing
+          fetchUserBets(account.publicKey.toString(), false) 
+        }, 3000) 
       } else {
-        // Error notification for failed claim
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
       }
     } catch (error) {
-      // Error notification for failed claim
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
     }
   }, [account, connection, signAndSendTransaction, claimPayout, fetchUserBets])
-
-  // Handle view race (navigate to demo)
   const handleViewRace = useCallback((raceId: number) => {
-    // Light impact for navigation
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    // Navigate to racing tab
-    // This would typically use navigation
   }, [])
-
-  // Handle refresh
   const handleRefresh = useCallback(async () => {
     if (!account?.publicKey) return
-    
-    // Medium impact for refresh action
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    
     setRefreshing(true)
     try {
       await fetchUserBets(account.publicKey.toString(), false)
-      // Light success feedback for successful refresh
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     } catch (error) {
-      // Error notification for failed refresh
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
     } finally {
     setRefreshing(false)
     }
   }, [account, fetchUserBets])
-
-  // Render position item
   const renderPosition = useCallback(({ item }: { item: UserPosition }) => (
     <PositionCard
       position={item}
@@ -1127,8 +966,6 @@ export function AccountFeature() {
       isUnclaimed={activeTab === 'unclaimed'}
     />
   ), [handleClaim, handleViewRace, formatValue, activeTab])
-
-  // Render history group
   const renderHistoryGroup = useCallback(({ item }: { item: HistoryGroup }) => (
     <HistoryGroupComponent
       group={item}
@@ -1137,17 +974,13 @@ export function AccountFeature() {
       formatValue={formatValue}
     />
   ), [handleClaim, handleViewRace, formatValue])
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
-      {/* Enhanced Dynamic Background */}
       <LinearGradient
         colors={['#000814', '#001D3D', '#003566']}
         style={StyleSheet.absoluteFill}
       />
-      
       <Animated.View
         style={[
           styles.content,
@@ -1157,7 +990,6 @@ export function AccountFeature() {
           },
         ]}
       >
-        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Account</Text>
           <TouchableOpacity 
@@ -1174,7 +1006,6 @@ export function AccountFeature() {
             />
           </TouchableOpacity>
         </View>
-
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
@@ -1191,13 +1022,10 @@ export function AccountFeature() {
             <EmptyState activeTab={activeTab} isConnected={false} />
           ) : (
             <>
-              {/* Portfolio Stats */}
               <PortfolioStatsSection 
                 stats={portfolioStats} 
                 formatValue={formatValue} 
               />
-
-              {/* Tab Navigation */}
               <TabNavigation 
                 activeTab={activeTab} 
                 onTabChange={setActiveTab}
@@ -1205,8 +1033,6 @@ export function AccountFeature() {
                 historyCount={userPositions.filter(pos => pos.raceState === 'Settled').length}
                 unclaimedCount={portfolioStats.unclaimedRewards}
               />
-
-              {/* Search and Sort for History Tab */}
               {activeTab === 'history' && (
                 <HistorySearch
                   searchQuery={searchQuery}
@@ -1215,8 +1041,6 @@ export function AccountFeature() {
                   onSortChange={setSortBy}
                 />
               )}
-
-              {/* Unclaimed Rewards Summary */}
               {activeTab === 'unclaimed' && portfolioStats.unclaimedValue > 0 && (
                 <View style={styles.unclaimedSummary}>
                   <LinearGradient
@@ -1236,8 +1060,6 @@ export function AccountFeature() {
                   </LinearGradient>
                 </View>
               )}
-
-              {/* Positions List */}
               <View style={styles.positionsContainer}>
                 {isLoading ? (
                   <View style={styles.loadingContainer}>
@@ -1292,7 +1114,6 @@ export function AccountFeature() {
     </View>
   )
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1331,8 +1152,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  
-  // Portfolio Stats
   statsSection: {
     marginHorizontal: SPACING.xl,
     marginVertical: SPACING.lg,
@@ -1513,8 +1332,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  
-  // Tab Navigation
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: SPACING.xl,
@@ -1528,7 +1345,7 @@ const styles = StyleSheet.create({
   },
   tabIndicator: {
     position: 'absolute',
-    width: '32%', // Adjusted for 3 tabs: 100% / 3 = 33.33%, slightly less for padding
+    width: '32%', 
     height: '90%',
     backgroundColor: 'rgba(153, 69, 255, 0.3)',
     borderRadius: 20,
@@ -1555,14 +1372,14 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
     fontWeight: '600',
     fontFamily: 'Orbitron-SemiBold',
-    fontSize: isTablet ? 14 : 12, // Slightly smaller for 3 tabs
+    fontSize: isTablet ? 14 : 12, 
   },
   activeTabText: {
     color: COLORS.text.primary,
     fontWeight: '700',
   },
   tabBadge: {
-    minWidth: 18, // Slightly smaller for 3 tabs
+    minWidth: 18, 
     height: 18,
     borderRadius: 9,
     justifyContent: 'center',
@@ -1573,10 +1390,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontFamily: 'Orbitron-Bold',
-    fontSize: isTablet ? 10 : 8, // Smaller for 3 tabs
+    fontSize: isTablet ? 10 : 8, 
   },
-
-  // Search functionality
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1638,8 +1453,6 @@ const styles = StyleSheet.create({
     color: COLORS.text.primary,
     fontWeight: '700',
   },
-
-  // History groups
   historyGroup: {
     marginBottom: SPACING.lg,
     borderRadius: 16,
@@ -1691,8 +1504,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.1)',
   },
-
-  // Unclaimed summary
   unclaimedSummary: {
     marginHorizontal: SPACING.xl,
     marginVertical: SPACING.lg,
@@ -1734,8 +1545,6 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
     fontFamily: 'Orbitron-Regular',
   },
-  
-  // Positions
   positionsContainer: {
     paddingHorizontal: SPACING.xl,
     paddingBottom: 100,
@@ -1914,8 +1723,6 @@ const styles = StyleSheet.create({
   secondaryAction: {
     opacity: 0.8,
   },
-  
-  // History card specific styles
   historyCardActions: {
     justifyContent: 'center',
   },
@@ -1940,8 +1747,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontFamily: 'Orbitron-Regular',
   },
-  
-  // States
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 60,
