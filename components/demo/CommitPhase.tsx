@@ -1,11 +1,4 @@
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -26,23 +19,16 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { PublicKey } from '@solana/web3.js'
 
-// Backend imports
 import { useRaceStore } from '../../store/useRaceStore'
-import {
-  useCanPlaceBet,
-  usePlaceBet,
-} from './use-place-bet'
+import { useCanPlaceBet, usePlaceBet } from './use-place-bet'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
-// Responsive design tokens
 const isTablet = screenWidth >= 768
 const isLandscape = screenWidth > screenHeight
 
-// Accessibility constants
 const MIN_TOUCH_TARGET = 44
 
-// Design tokens for consistency
 const SPACING = {
   xs: 4,
   sm: 8,
@@ -68,7 +54,7 @@ const COLORS = {
     green: '#14F195',
     gold: '#FFD700',
     orange: '#FFA500',
-  }
+  },
 } as const
 
 const TYPOGRAPHY = {
@@ -80,53 +66,45 @@ const TYPOGRAPHY = {
   small: { fontSize: isTablet ? 12 : 10, lineHeight: isTablet ? 18 : 16 },
 } as const
 
-// Helper function to calculate potential payout using smart contract logic
 const calculatePotentialPayout = (
-  betAmount: string, 
-  race: any, 
-  selectedAssetIdx: number
+  betAmount: string,
+  race: any,
+  selectedAssetIdx: number,
 ): { totalPayout: number; profit: number } => {
   if (!betAmount || isNaN(parseFloat(betAmount))) {
-    return { totalPayout: 0, profit: 0 };
+    return { totalPayout: 0, profit: 0 }
   }
-  
-  const betAmountNum = parseFloat(betAmount);
-  
-  // Method 1: Use exact smart contract payout ratio if available (most accurate)
+
+  const betAmountNum = parseFloat(betAmount)
+
   if (race?.payoutRatio && race.payoutRatio > 0) {
-    // Backend provides payoutRatio with SCALING_FACTOR (1e12)
-    // Formula: payout = (bet * payoutRatio) / SCALING_FACTOR
-    const totalPayout = (betAmountNum * race.payoutRatio) / 1_000_000_000_000;
-    const profit = Math.max(0, totalPayout - betAmountNum);
-    return { totalPayout, profit };
+    const totalPayout = (betAmountNum * race.payoutRatio) / 1_000_000_000_000
+    const profit = Math.max(0, totalPayout - betAmountNum)
+    return { totalPayout, profit }
   }
-  
-  // Method 2: Estimate based on current pool distribution (during betting phase)
+
   if (race?.totalPool && race?.assetPools && selectedAssetIdx >= 0 && selectedAssetIdx < race.assetPools.length) {
-    const totalPoolUSD = race.totalPool / 1_000_000; // Convert from micro-USDC
-    const selectedPoolUSD = (race.assetPools[selectedAssetIdx] || 0) / 1_000_000;
-    const feeRate = (race.feeBps || 250) / 10000; // Default 2.5% fee
-    const netPool = totalPoolUSD * (1 - feeRate);
-    
+    const totalPoolUSD = race.totalPool / 1_000_000
+    const selectedPoolUSD = (race.assetPools[selectedAssetIdx] || 0) / 1_000_000
+    const feeRate = (race.feeBps || 250) / 10000
+    const netPool = totalPoolUSD * (1 - feeRate)
+
     if (selectedPoolUSD > 0) {
-      // Add the new bet to the selected pool for calculation
-      const projectedSelectedPool = selectedPoolUSD + betAmountNum;
-      const projectedTotalPool = totalPoolUSD + betAmountNum;
-      const projectedNetPool = projectedTotalPool * (1 - feeRate);
-      
-      // Calculate share of net pool: (user_bet / winning_pool) * net_pool
-      const estimatedPayout = (betAmountNum / projectedSelectedPool) * projectedNetPool;
-      const profit = Math.max(0, estimatedPayout - betAmountNum);
-      return { totalPayout: estimatedPayout, profit };
+      const projectedSelectedPool = selectedPoolUSD + betAmountNum
+      const projectedTotalPool = totalPoolUSD + betAmountNum
+      const projectedNetPool = projectedTotalPool * (1 - feeRate)
+
+      const estimatedPayout = (betAmountNum / projectedSelectedPool) * projectedNetPool
+      const profit = Math.max(0, estimatedPayout - betAmountNum)
+      return { totalPayout: estimatedPayout, profit }
     }
   }
-  
-  // Method 3: Conservative fallback estimate
-  const estimatedMultiplier = 1.5; // Assume 50% profit
-  const totalPayout = betAmountNum * estimatedMultiplier;
-  const profit = totalPayout - betAmountNum;
-  return { totalPayout, profit };
-};
+
+  const estimatedMultiplier = 1.5
+  const totalPayout = betAmountNum * estimatedMultiplier
+  const profit = totalPayout - betAmountNum
+  return { totalPayout, profit }
+}
 
 interface CommitPhaseProps {
   selectedAssetIdx: number
@@ -138,22 +116,18 @@ interface CommitPhaseProps {
 
 export const EnhancedCommitPhase = memo(_EnhancedCommitPhase)
 
-function _EnhancedCommitPhase({ 
-  selectedAssetIdx, 
-  setSelectedAssetIdx, 
-  betAmount, 
-  setBetAmount, 
-  account
+function _EnhancedCommitPhase({
+  selectedAssetIdx,
+  setSelectedAssetIdx,
+  betAmount,
+  setBetAmount,
+  account,
 }: CommitPhaseProps) {
-  // --- ALL HOOKS MUST BE DECLARED FIRST (BEFORE ANY CONDITIONAL LOGIC) ---
-  
-  // --- Inline Confirmation Modal Animation, Focus, and Refs ---
-  const [showBetConfirmation, setShowBetConfirmation] = React.useState(false);
-  const confirmationAnim = React.useRef(new Animated.Value(0)).current;
-  const cancelRef = React.useRef<any>(null);
-  const confirmRef = React.useRef<any>(null);
-  
-  // Backend state from race store
+  const [showBetConfirmation, setShowBetConfirmation] = React.useState(false)
+  const confirmationAnim = React.useRef(new Animated.Value(0)).current
+  const cancelRef = React.useRef<any>(null)
+  const confirmRef = React.useRef<any>(null)
+
   const {
     race,
     userBets,
@@ -169,33 +143,27 @@ function _EnhancedCommitPhase({
     forceReconnectWebSocket,
     fetchCurrentRace,
   } = useRaceStore()
-  
-  // Bet placement hooks
+
   const placeBetMutation = usePlaceBet()
   const isPlacingBet = placeBetMutation.isPending
-  
-  // Enhanced state management
+
   const [step, setStep] = useState<'welcome' | 'select' | 'bet' | 'confirm'>('welcome')
   const [showTips, setShowTips] = useState(false)
   const [reduceMotion, setReduceMotion] = useState(false)
   const [userBalance, setUserBalance] = useState<number | null>(null)
   const [isLoadingBalance, setIsLoadingBalance] = useState(false)
-  
-  // Increase bet functionality
+
   const [showIncreaseBet, setShowIncreaseBet] = useState(false)
   const [additionalBetAmount, setAdditionalBetAmount] = useState('')
 
-  // Enhanced haptic feedback state
   const lastHapticTime = useRef(0)
   const selectedAssetIdx_prev = useRef(-1)
 
-  // Enhanced animation refs with proper cleanup
   const glowAnim = useRef(new Animated.Value(0)).current
   const shakeAnim = useRef(new Animated.Value(0)).current
   const fadeInAnim = useRef(new Animated.Value(0)).current
   const slideInAnim = useRef(new Animated.Value(50)).current
-  
-  // New animation refs for enhanced interactions
+
   const assetSelectionPulseAnim = useRef(new Animated.Value(1)).current
   const betInputFocusAnim = useRef(new Animated.Value(0)).current
   const quickAmountScaleAnim = useRef(new Animated.Value(1)).current
@@ -204,66 +172,59 @@ function _EnhancedCommitPhase({
   const increaseBetExpandAnim = useRef(new Animated.Value(0)).current
   const placeBetPulseAnim = useRef(new Animated.Value(1)).current
   const previewSlideAnim = useRef(new Animated.Value(0)).current
-  
-  // Animation refs for cleanup tracking
+
   const commitAnimationRefs = useRef<Animated.CompositeAnimation[]>([])
-  
-  // App state tracking for WebSocket reconnection
+
   const appState = useRef(AppState.currentState)
   const [isAppActive, setIsAppActive] = useState(true)
-  
-  // Derive current userBet for this race
+
   const userBet = useMemo(() => {
     if (!userBets || !race?.raceId) return undefined
-    return userBets.find(bet => bet.raceId === race.raceId)
+    return userBets.find((bet) => bet.raceId === race.raceId)
   }, [userBets, race?.raceId])
 
-  // Bet validation hook
   const { canPlaceBet, validationMessage, validationErrors } = useCanPlaceBet({
     userBalance,
     betAmount,
     selectedAssetIdx,
     race,
-    userBet
+    userBet,
   })
 
-  // Enhanced haptic feedback helper (MOVED BEFORE HOOKS THAT USE IT)
-  const triggerHaptic = useCallback(async (type: 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'selection', context?: string) => {
-    const now = Date.now()
-    if (now - lastHapticTime.current < 100) return // Standard debounce for commit phase
-    lastHapticTime.current = now
-    try {
-      switch (type) {
-        case 'light':
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-          break
-        case 'medium':
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-          break
-        case 'heavy':
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
-          break
-        case 'success':
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-          break
-        case 'error':
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-          break
-        case 'selection':
-          await Haptics.selectionAsync()
-          break
-      }
-      if (context) {
-        console.log(`🎮 Commit Haptic: ${type} (${context})`)
-      }
-    } catch (error) {
-      // Silent fail - haptics not critical
-    }
-  }, [])
+  const triggerHaptic = useCallback(
+    async (type: 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'selection', context?: string) => {
+      const now = Date.now()
+      if (now - lastHapticTime.current < 100) return
+      lastHapticTime.current = now
+      try {
+        switch (type) {
+          case 'light':
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+            break
+          case 'medium':
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+            break
+          case 'heavy':
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+            break
+          case 'success':
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+            break
+          case 'error':
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+            break
+          case 'selection':
+            await Haptics.selectionAsync()
+            break
+        }
+        if (context) {
+          console.log(`🎮 Commit Haptic: ${type} (${context})`)
+        }
+      } catch (error) {}
+    },
+    [],
+  )
 
-  // ALL REMAINING USEEFFECT HOOKS MOVED TO TOP (BEFORE ANY CONDITIONAL LOGIC)
-  
-  // Confirmation modal animation effect
   React.useEffect(() => {
     if (showBetConfirmation) {
       Animated.timing(confirmationAnim, {
@@ -271,22 +232,23 @@ function _EnhancedCommitPhase({
         duration: 220,
         useNativeDriver: true,
       }).start(() => {
-        // Focus confirm button for accessibility
         if (confirmRef.current && typeof (confirmRef.current as any).focus === 'function') {
-          setTimeout(() => (confirmRef.current && (confirmRef.current as any).focus && (confirmRef.current as any).focus()), 100);
+          setTimeout(
+            () => confirmRef.current && (confirmRef.current as any).focus && (confirmRef.current as any).focus(),
+            100,
+          )
         }
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      });
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+      })
     } else {
       Animated.timing(confirmationAnim, {
         toValue: 0,
         duration: 180,
         useNativeDriver: true,
-      }).start();
+      }).start()
     }
-  }, [showBetConfirmation]);
+  }, [showBetConfirmation])
 
-  // Performance: Check accessibility settings
   useEffect(() => {
     const checkReduceMotion = async () => {
       if (Platform.OS === 'ios') {
@@ -297,12 +259,10 @@ function _EnhancedCommitPhase({
     checkReduceMotion()
   }, [])
 
-  // Enhanced success celebration when bet is placed
   useEffect(() => {
     if (userBet && !reduceMotion) {
       triggerHaptic('success', 'bet placed successfully')
-      
-      // Success celebration animation
+
       const celebrationAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(successCelebrationAnim, {
@@ -316,15 +276,14 @@ function _EnhancedCommitPhase({
             useNativeDriver: true,
           }),
         ]),
-        { iterations: 3 }
+        { iterations: 3 },
       )
-      
+
       commitAnimationRefs.current.push(celebrationAnimation)
       celebrationAnimation.start()
     }
   }, [userBet, reduceMotion, triggerHaptic])
 
-  // Enhanced bet preview animation
   useEffect(() => {
     if (betAmount && !isNaN(parseFloat(betAmount)) && parseFloat(betAmount) >= 0.1) {
       Animated.timing(previewSlideAnim, {
@@ -341,105 +300,96 @@ function _EnhancedCommitPhase({
     }
   }, [betAmount])
 
-  // Handle app state changes for WebSocket reconnection
   useEffect(() => {
     const handleAppStateChange = (nextAppState: any) => {
       console.log('📱 App state change in commit phase:', appState.current, '->', nextAppState)
-      
+
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        // App has come to foreground, reconnect WebSocket
         console.log('🔄 App returned to foreground, checking WebSocket connection...')
         setIsAppActive(true)
-        
+
         if (race?.raceId) {
-          // Force reconnect WebSocket
-          forceReconnectWebSocket().then(() => {
-            subscribeToRace(race.raceId)
-            const { wsService } = useRaceStore.getState()
-            wsService.subscribeToPrice()
-            console.log('✅ WebSocket reconnected after app returned to foreground in commit phase')
-          }).catch((error) => {
-            console.error('❌ Failed to reconnect WebSocket in commit phase:', error)
-          })
+          forceReconnectWebSocket()
+            .then(() => {
+              subscribeToRace(race.raceId)
+              const { wsService } = useRaceStore.getState()
+              wsService.subscribeToPrice()
+              console.log('✅ WebSocket reconnected after app returned to foreground in commit phase')
+            })
+            .catch((error) => {
+              console.error('❌ Failed to reconnect WebSocket in commit phase:', error)
+            })
         }
       } else if (nextAppState.match(/inactive|background/)) {
-        // App going to background
         console.log('📱 App going to background from commit phase')
         setIsAppActive(false)
       }
-      
+
       appState.current = nextAppState
     }
 
     const subscription = AppState.addEventListener('change', handleAppStateChange)
-    
+
     return () => {
       subscription?.remove()
     }
   }, [race?.raceId, forceReconnectWebSocket, subscribeToRace])
 
-  // Fetch commit phase data when component mounts or account changes
   useEffect(() => {
     if (account?.publicKey) {
-      fetchCommitPhaseData(
-        undefined, // Use current race instead of specific race ID
-        account.publicKey.toBase58(), 
-        false // Don't use cache for fresh data
-      )
+      fetchCommitPhaseData(undefined, account.publicKey.toBase58(), false)
     } else {
       fetchCommitPhaseData(undefined, undefined, false)
     }
   }, [account?.publicKey, fetchCommitPhaseData])
 
-  // Ensure WebSocket connection for real-time updates
   useEffect(() => {
     if (!isConnected && race?.raceId && isAppActive) {
-      connectWebSocket().then(() => {
-        subscribeToRace(race.raceId)
-        // Also subscribe to price updates
-        const { wsService } = useRaceStore.getState()
-        wsService.subscribeToPrice()
-        console.log('✅ WebSocket connected for commit phase')
-      }).catch((error) => {
-        console.error('❌ Failed to connect to WebSocket:', error)
-      })
+      connectWebSocket()
+        .then(() => {
+          subscribeToRace(race.raceId)
+
+          const { wsService } = useRaceStore.getState()
+          wsService.subscribeToPrice()
+          console.log('✅ WebSocket connected for commit phase')
+        })
+        .catch((error) => {
+          console.error('❌ Failed to connect to WebSocket:', error)
+        })
     } else if (isConnected && race?.raceId && isAppActive) {
       subscribeToRace(race.raceId)
-      // Ensure price subscription
+
       const { wsService } = useRaceStore.getState()
       wsService.subscribeToPrice()
     }
   }, [race?.raceId, isConnected, connectWebSocket, subscribeToRace, isAppActive])
 
-  // Fetch user balance from backend
   useEffect(() => {
     if (account?.publicKey && !userBalance && !isLoadingBalance) {
       setIsLoadingBalance(true)
-      
-      // Get actual USDC balance from backend
+
       const { apiService } = useRaceStore.getState()
-      apiService.getUserBalance(account.publicKey.toBase58())
+      apiService
+        .getUserBalance(account.publicKey.toBase58())
         .then((response) => {
           if (response.success && response.data) {
-            // Use the actual USDC balance from the backend
             setUserBalance(response.data.usdcBalance)
             console.log(`💰 User USDC balance: ${response.data.usdcBalance}`)
           } else {
             console.warn('Failed to fetch user balance:', response.error)
-            setUserBalance(100) // Fallback value
+            setUserBalance(100)
           }
         })
         .catch((error: any) => {
           console.error('Failed to fetch user balance:', error)
-          setUserBalance(100) // Fallback value
+          setUserBalance(100)
         })
         .finally(() => {
           setIsLoadingBalance(false)
         })
     }
   }, [account?.publicKey, userBalance, isLoadingBalance])
-  
-  // Determine user's current step automatically
+
   useEffect(() => {
     if (userBet) {
       setStep('confirm')
@@ -451,11 +401,10 @@ function _EnhancedCommitPhase({
       setStep('select')
     }
   }, [userBet, account, selectedAssetIdx, betAmount])
-  
-  // Glow animation effect
+
   useEffect(() => {
     if (reduceMotion) return
-    
+
     const glowAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(glowAnim, {
@@ -468,40 +417,37 @@ function _EnhancedCommitPhase({
           duration: 2000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     )
-    
+
     commitAnimationRefs.current.push(glowAnimation)
     glowAnimation.start()
-    
+
     return () => {
       glowAnimation.stop()
     }
   }, [reduceMotion])
 
-  // Animation cleanup on unmount (moved from duplicate section)
   useEffect(() => {
     return () => {
-      commitAnimationRefs.current.forEach(animation => {
+      commitAnimationRefs.current.forEach((animation) => {
         animation.stop()
         animation.reset()
       })
     }
   }, [reduceMotion])
 
-  // --- Derive userBet from userBets for instant UI update ---
   const derivedUserBet = useMemo(() => {
-    if (userBet) return userBet;
+    if (userBet) return userBet
     if (userBets && race?.raceId) {
-      return userBets.find((bet: any) => bet.raceId === race.raceId);
+      return userBets.find((bet: any) => bet.raceId === race.raceId)
     }
-    return undefined;
+    return undefined
   }, [userBet, userBets, race?.raceId])
 
-  // Enhanced shake animation for errors with haptic feedback
   const triggerShake = useCallback(() => {
     triggerHaptic('error', 'validation error')
-    
+
     Animated.sequence([
       Animated.timing(shakeAnim, { toValue: 10, duration: 100, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: -10, duration: 100, useNativeDriver: true }),
@@ -510,13 +456,11 @@ function _EnhancedCommitPhase({
     ]).start()
   }, [triggerHaptic])
 
-  // Function to refresh user balance with haptic feedback
   const refreshUserBalance = async () => {
     if (!account?.publicKey) return
-    
+
     triggerHaptic('light', 'balance refresh')
-    
-    // Balance refresh animation
+
     Animated.sequence([
       Animated.timing(balanceRefreshAnim, {
         toValue: 1,
@@ -529,12 +473,12 @@ function _EnhancedCommitPhase({
         useNativeDriver: true,
       }),
     ]).start()
-    
+
     setIsLoadingBalance(true)
     try {
       const { apiService } = useRaceStore.getState()
       const response = await apiService.getUserBalance(account.publicKey.toBase58())
-      
+
       if (response.success && response.data) {
         setUserBalance(response.data.usdcBalance)
         triggerHaptic('selection', 'balance loaded')
@@ -551,22 +495,19 @@ function _EnhancedCommitPhase({
     }
   }
 
-  // Convert priceUpdates Map to expected format for live pricing (same as performance phase)
   const livePrices = useMemo(() => {
     const priceMap = new Map<string, { price: number; confidence: number; changePercent: number }>()
-    
-    // Convert race store price updates to expected format - NO manual scaling (backend already scales prices correctly)
+
     priceUpdates.forEach((priceData, symbol) => {
       if (priceData && typeof priceData.price === 'number') {
         priceMap.set(symbol, {
-          price: priceData.price, // Use backend-scaled price directly (same as performance phase)
+          price: priceData.price,
           confidence: priceData.confidence || 100,
           changePercent: 0,
         })
       }
     })
-    
-    // Fallback to asset current prices if no live prices available
+
     if (priceMap.size === 0 && race?.assets) {
       race.assets.forEach((asset: any) => {
         if (asset.currentPrice && asset.symbol) {
@@ -578,51 +519,43 @@ function _EnhancedCommitPhase({
         }
       })
     }
-    
+
     return priceMap
   }, [priceUpdates, race?.assets])
 
-  // Enhanced asset performance calculation (same as performance phase)
   const enhancedAssets = useMemo(() => {
     if (!race?.assets) return []
-    
+
     return race.assets.map((asset: any, index: number) => {
       const livePrice = livePrices.get(asset.symbol)
       const currentPrice = livePrice?.price || asset.currentPrice || asset.startPrice || 100
-      
-      // Use backend-calculated performance to avoid scaling mismatches
+
       let performance = 0
       const backendLeaderboard = liveRaceData?.leaderboard
       if (backendLeaderboard) {
         const backendAsset = backendLeaderboard.find((item: any) => item.index === index)
         if (backendAsset && typeof backendAsset.performance === 'number') {
-          // Backend performance is already correctly calculated
           performance = backendAsset.performance
         }
       }
-      
-      // Fallback to frontend calculation only if backend data unavailable
+
       if (performance === 0 && asset.startPrice && currentPrice) {
         const startPrice = asset.startPrice
         if (typeof startPrice === 'number' && typeof currentPrice === 'number' && startPrice > 0) {
           performance = ((currentPrice - startPrice) / startPrice) * 100
-          
-          // Cap extreme frontend calculations as fallback
+
           if (Math.abs(performance) > 50) {
             performance = Math.sign(performance) * Math.min(Math.abs(performance), 50)
           }
         }
       }
-      
-      // Calculate pool share
+
       const totalPool = race.totalPool || 0
       const assetPool = race.assetPools?.[index] || 0
       const poolShare = totalPool > 0 ? (assetPool / totalPool) * 100 : 0
-      
-      // Determine market sentiment based on performance (same as performance phase)
+
       let priceChange = 0
-      
-      // Use backend startPrice from leaderboard for accurate price change calculation
+
       if (backendLeaderboard) {
         const backendAsset = backendLeaderboard.find((item: any) => item.index === index)
         if (backendAsset && typeof backendAsset.startPrice === 'number' && typeof currentPrice === 'number') {
@@ -632,20 +565,26 @@ function _EnhancedCommitPhase({
           }
         }
       }
-      
-      // Fallback to frontend calculation only if backend data unavailable
+
       if (priceChange === 0) {
         const startPrice = asset.startPrice || 100
         if (startPrice > 0 && typeof currentPrice === 'number') {
           priceChange = ((currentPrice - startPrice) / startPrice) * 100
         }
       }
-      
-      // Use performance as momentum indicator
+
       const momentum = Math.abs(performance)
-      const velocity = performance > 2 ? 'hot' : performance > 0.5 ? 'up' : 
-                     performance < -2 ? 'crash' : performance < -0.5 ? 'down' : 'stable'
-      
+      const velocity =
+        performance > 2
+          ? 'hot'
+          : performance > 0.5
+            ? 'up'
+            : performance < -2
+              ? 'crash'
+              : performance < -0.5
+                ? 'down'
+                : 'stable'
+
       return {
         ...asset,
         index,
@@ -662,63 +601,64 @@ function _EnhancedCommitPhase({
     })
   }, [race?.assets, livePrices, liveRaceData?.leaderboard])
 
-  // Enhanced asset selection with haptic feedback and animation
-  const handleAssetSelection = useCallback((index: number) => {
-    if (selectedAssetIdx !== index) {
-      triggerHaptic('medium', `selected ${enhancedAssets[index]?.symbol}`)
-      // Asset selection pulse animation
+  const handleAssetSelection = useCallback(
+    (index: number) => {
+      if (selectedAssetIdx !== index) {
+        triggerHaptic('medium', `selected ${enhancedAssets[index]?.symbol}`)
+
+        Animated.sequence([
+          Animated.timing(assetSelectionPulseAnim, {
+            toValue: 1.05,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.spring(assetSelectionPulseAnim, {
+            toValue: 1,
+            tension: 150,
+            friction: 3,
+            useNativeDriver: true,
+          }),
+        ]).start()
+        setSelectedAssetIdx(index)
+        selectedAssetIdx_prev.current = selectedAssetIdx
+      }
+    },
+    [selectedAssetIdx, triggerHaptic, enhancedAssets, setSelectedAssetIdx],
+  )
+
+  const handleQuickAmountSelection = useCallback(
+    (amount: number) => {
+      triggerHaptic('light', `quick amount ${amount}`)
+
       Animated.sequence([
-        Animated.timing(assetSelectionPulseAnim, {
-          toValue: 1.05,
-          duration: 150,
+        Animated.timing(quickAmountScaleAnim, {
+          toValue: 0.95,
+          duration: 100,
           useNativeDriver: true,
         }),
-        Animated.spring(assetSelectionPulseAnim, {
+        Animated.spring(quickAmountScaleAnim, {
           toValue: 1,
           tension: 150,
-          friction: 3,
+          friction: 4,
           useNativeDriver: true,
         }),
       ]).start()
-      setSelectedAssetIdx(index)
-      selectedAssetIdx_prev.current = selectedAssetIdx
-    }
-  }, [selectedAssetIdx, triggerHaptic, enhancedAssets, setSelectedAssetIdx])
 
-  // Enhanced quick amount selection with haptic feedback
-  const handleQuickAmountSelection = useCallback((amount: number) => {
-    triggerHaptic('light', `quick amount ${amount}`)
-    
-    // Quick amount scale animation
-    Animated.sequence([
-      Animated.timing(quickAmountScaleAnim, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.spring(quickAmountScaleAnim, {
-        toValue: 1,
-        tension: 150,
-        friction: 4,
-        useNativeDriver: true,
-      }),
-    ]).start()
-    
-    setBetAmount(amount.toString())
-  }, [triggerHaptic])
+      setBetAmount(amount.toString())
+    },
+    [triggerHaptic],
+  )
 
-  // Enhanced max button with haptic feedback
   const handleMaxBetAmount = useCallback(() => {
     const maxAmount = userBalance !== null ? Math.min(userBalance, 1000).toString() : '100'
     triggerHaptic('selection', 'max bet amount')
-    
+
     setBetAmount(maxAmount)
   }, [userBalance, triggerHaptic])
 
-  // Enhanced bet input focus/blur with animation
   const handleBetInputFocus = useCallback(() => {
     triggerHaptic('light', 'bet input focus')
-    
+
     Animated.timing(betInputFocusAnim, {
       toValue: 1,
       duration: 200,
@@ -734,44 +674,40 @@ function _EnhancedCommitPhase({
     }).start()
   }, [])
 
-  // Enhanced increase bet toggle with animation
   const handleToggleIncreaseBet = useCallback(() => {
     const newState = !showIncreaseBet
     triggerHaptic('selection', newState ? 'expand increase bet' : 'collapse increase bet')
-    
+
     Animated.timing(increaseBetExpandAnim, {
       toValue: newState ? 1 : 0,
       duration: 300,
-      useNativeDriver: false, // We're animating height
+      useNativeDriver: false,
     }).start()
-    
+
     setShowIncreaseBet(newState)
     if (!newState) {
       setAdditionalBetAmount('')
     }
   }, [showIncreaseBet, triggerHaptic])
 
-  // Format value function (moved from props to component)
   const formatValue = (value: number) => {
-    const solValue = value / 1_000_000_000;
-    const usdcValue = solValue * 1000;
-    
-    if (usdcValue >= 1000000) return `$${(usdcValue / 1000000).toFixed(2)}M`;
-    if (usdcValue >= 1000) return `$${(usdcValue / 1000).toFixed(1)}K`;
-    return `$${usdcValue.toFixed(0)}`;
-  };
+    const solValue = value / 1_000_000_000
+    const usdcValue = solValue * 1000
 
-  // Enhanced bet placement with the new hook and haptic feedback
+    if (usdcValue >= 1000000) return `$${(usdcValue / 1000000).toFixed(2)}M`
+    if (usdcValue >= 1000) return `$${(usdcValue / 1000).toFixed(1)}K`
+    return `$${usdcValue.toFixed(0)}`
+  }
+
   const handlePlaceBet = () => {
     if (!account?.publicKey || !race?.raceId || !canPlaceBet) {
       triggerHaptic('error', 'cannot place bet')
       triggerShake()
-      return;
+      return
     }
-    
+
     triggerHaptic('heavy', 'placing bet')
-    
-    // Place bet button pulse animation
+
     Animated.sequence([
       Animated.timing(placeBetPulseAnim, {
         toValue: 0.95,
@@ -785,64 +721,58 @@ function _EnhancedCommitPhase({
         useNativeDriver: true,
       }),
     ]).start()
-    
-    const amount = parseFloat(betAmount);
+
+    const amount = parseFloat(betAmount)
     placeBetMutation.mutate({
       raceId: race.raceId,
       assetIdx: selectedAssetIdx,
       amount,
       playerAddress: new PublicKey(account.publicKey.toString()),
-    });
+    })
   }
 
   const confirmBet = async () => {
     setShowBetConfirmation(false)
     handlePlaceBet()
-    
-    // Refresh balance after bet attempt (success/error handled by the hook)
+
     setTimeout(() => {
       refreshUserBalance()
-    }, 3000) // Wait 3 seconds for transaction settlement
+    }, 3000)
   }
 
-  // Add effect to refresh user bets after successful bet placement
   useEffect(() => {
     if (placeBetMutation.isSuccess && account?.publicKey) {
-      // Refresh user bets to show the "You're In The Race!" section
       fetchUserBets(account.publicKey.toBase58(), false)
       console.log('✅ Refreshing user bets after successful bet placement')
     }
   }, [placeBetMutation.isSuccess, account?.publicKey, fetchUserBets])
 
-  // Enhanced bet placement with the new hook and haptic feedback
   useEffect(() => {
     if (account?.publicKey && !userBalance && !isLoadingBalance) {
       setIsLoadingBalance(true)
-      
-      // Get actual USDC balance from backend
+
       const { apiService } = useRaceStore.getState()
-      apiService.getUserBalance(account.publicKey.toBase58())
+      apiService
+        .getUserBalance(account.publicKey.toBase58())
         .then((response) => {
           if (response.success && response.data) {
-            // Use the actual USDC balance from the backend
             setUserBalance(response.data.usdcBalance)
             console.log(`💰 User USDC balance: ${response.data.usdcBalance}`)
           } else {
             console.warn('Failed to fetch user balance:', response.error)
-            setUserBalance(100) // Fallback value
+            setUserBalance(100)
           }
         })
         .catch((error: any) => {
           console.error('Failed to fetch user balance:', error)
-          setUserBalance(100) // Fallback value
+          setUserBalance(100)
         })
         .finally(() => {
           setIsLoadingBalance(false)
         })
     }
   }, [account?.publicKey, userBalance, isLoadingBalance])
-  
-  // Determine user's current step automatically
+
   useEffect(() => {
     if (userBet) {
       setStep('confirm')
@@ -854,10 +784,10 @@ function _EnhancedCommitPhase({
       setStep('select')
     }
   }, [userBet, account, selectedAssetIdx, betAmount])
-  
+
   useEffect(() => {
     if (reduceMotion) return
-    
+
     const glowAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(glowAnim, {
@@ -870,12 +800,12 @@ function _EnhancedCommitPhase({
           duration: 2000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     )
-    
+
     commitAnimationRefs.current.push(glowAnimation)
     glowAnimation.start()
-    
+
     return () => {
       glowAnimation.stop()
     }
@@ -890,19 +820,13 @@ function _EnhancedCommitPhase({
     setShowBetConfirmation(true)
   }
 
-  // Error handling: Early returns for error states
   if (error) {
     return (
       <View style={styles.errorContainerCommit}>
-        <MaterialCommunityIcons 
-          name="alert-circle" 
-          size={48} 
-          color={COLORS.error}
-          accessibilityLabel="Error icon"
-        />
+        <MaterialCommunityIcons name="alert-circle" size={48} color={COLORS.error} accessibilityLabel="Error icon" />
         <Text style={styles.errorTitleCommit}>Unable to Load Race Data</Text>
         <Text style={styles.errorMessageCommit}>{error}</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.retryButton, { minHeight: MIN_TOUCH_TARGET }]}
           onPress={() => {
             if (account?.publicKey) {
@@ -921,13 +845,12 @@ function _EnhancedCommitPhase({
     )
   }
 
-  // Loading state handling
   if (isLoading) {
     return (
       <View style={styles.loadingContainerCommit}>
-        <MaterialCommunityIcons 
-          name="loading" 
-          size={48} 
+        <MaterialCommunityIcons
+          name="loading"
+          size={48}
           color={COLORS.primary}
           accessibilityLabel="Loading race data"
         />
@@ -939,13 +862,12 @@ function _EnhancedCommitPhase({
     )
   }
 
-  // Early return if no race data
   if (!race) {
     return (
       <View style={styles.loadingContainerCommit}>
-        <MaterialCommunityIcons 
-          name="loading" 
-          size={48} 
+        <MaterialCommunityIcons
+          name="loading"
+          size={48}
           color={COLORS.primary}
           accessibilityLabel="Loading race data"
         />
@@ -957,18 +879,11 @@ function _EnhancedCommitPhase({
     )
   }
 
-
   return (
     <View style={styles.phaseContent}>
-      {/* Progressive Disclosure Based on User Step */}
-      
-      {/* STEP 1: Welcome & Race Overview (First-time users) */}
       {step === 'welcome' && !account && (
         <View style={styles.welcomeSection}>
-          <LinearGradient
-            colors={['rgba(153, 69, 255, 0.2)', 'rgba(20, 241, 149, 0.1)']}
-            style={styles.welcomeCard}
-          >
+          <LinearGradient colors={['rgba(153, 69, 255, 0.2)', 'rgba(20, 241, 149, 0.1)']} style={styles.welcomeCard}>
             <View style={styles.welcomeHeader}>
               <MaterialCommunityIcons name="rocket-launch" size={32} color="#9945FF" />
               <View style={styles.welcomeTitleContainer}>
@@ -976,11 +891,11 @@ function _EnhancedCommitPhase({
                 <Text style={styles.welcomeTitle}>Ready to Race?</Text>
               </View>
             </View>
-            
+
             <Text style={styles.welcomeDescription}>
               Predict which crypto will have the highest momentum in the next 3 minutes and win USDC!
             </Text>
-            
+
             <View style={styles.howItWorksSteps}>
               <View style={styles.stepItem}>
                 <View style={styles.stepNumber}>
@@ -1001,23 +916,20 @@ function _EnhancedCommitPhase({
                 <Text style={styles.stepText}>Place your bet and watch the race!</Text>
               </View>
             </View>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.connectWalletMainButton, { minHeight: MIN_TOUCH_TARGET }]}
               accessibilityLabel="Connect your Solana wallet to start racing"
               accessibilityRole="button"
               accessibilityHint="Opens wallet connection dialog to link your Solana wallet for betting"
             >
-              <LinearGradient
-                colors={[COLORS.primary, COLORS.secondary]}
-                style={styles.connectWalletMainGradient}
-              >
+              <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.connectWalletMainGradient}>
                 <MaterialCommunityIcons name="wallet-plus" size={20} color="#000" />
                 <Text style={styles.connectWalletMainText}>Connect Wallet to Start</Text>
               </LinearGradient>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.learnMoreButton, { minHeight: MIN_TOUCH_TARGET, paddingVertical: SPACING.sm }]}
               onPress={() => setShowTips(true)}
               accessibilityLabel="Learn more about momentum racing"
@@ -1031,7 +943,6 @@ function _EnhancedCommitPhase({
         </View>
       )}
 
-      {/* Enhanced Success State - Bet Placed with Increase Option */}
       {userBet && race && (
         <View style={styles.successSection}>
           <LinearGradient
@@ -1042,12 +953,14 @@ function _EnhancedCommitPhase({
               style={[
                 styles.successIconContainer,
                 {
-                  transform: [{
-                    scale: successCelebrationAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [1, 1.1],
-                    }),
-                  }],
+                  transform: [
+                    {
+                      scale: successCelebrationAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.1],
+                      }),
+                    },
+                  ],
                   shadowOpacity: successCelebrationAnim.interpolate({
                     inputRange: [0, 1],
                     outputRange: [0.3, 0.8],
@@ -1055,14 +968,11 @@ function _EnhancedCommitPhase({
                 },
               ]}
             >
-              <LinearGradient
-                colors={['#00FF88', '#FFD700']}
-                style={styles.successIconGradient}
-              >
+              <LinearGradient colors={['#00FF88', '#FFD700']} style={styles.successIconGradient}>
                 <MaterialCommunityIcons name="check-bold" size={24} color="#000" />
               </LinearGradient>
             </Animated.View>
-            
+
             <View style={styles.successTitleContainer}>
               <MaterialCommunityIcons name="target" size={20} color="#00FF88" />
               <Text style={styles.successTitle}>You're In The Race!</Text>
@@ -1070,7 +980,7 @@ function _EnhancedCommitPhase({
             <Text style={styles.successSubtitle}>
               ${(userBet.amount / 1_000_000).toFixed(2)} bet placed on {race.assets[userBet.assetIdx]?.symbol}
             </Text>
-            
+
             <Animated.View
               style={[
                 styles.raceInfoMini,
@@ -1084,9 +994,7 @@ function _EnhancedCommitPhase({
             >
               <View style={styles.raceInfoItem}>
                 <Text style={styles.raceInfoLabel}>Current Bet</Text>
-                <Text style={styles.raceInfoValue}>
-                  ${(userBet.amount / 1_000_000).toFixed(2)} USDC
-                </Text>
+                <Text style={styles.raceInfoValue}>${(userBet.amount / 1_000_000).toFixed(2)} USDC</Text>
               </View>
               <View style={styles.raceInfoDivider} />
               <View style={styles.raceInfoItem}>
@@ -1098,13 +1006,10 @@ function _EnhancedCommitPhase({
               <View style={styles.raceInfoDivider} />
               <View style={styles.raceInfoItem}>
                 <Text style={styles.raceInfoLabel}>Race Pool</Text>
-                <Text style={styles.raceInfoValue}>
-                  {formatValue(race.totalPool)}
-                </Text>
+                <Text style={styles.raceInfoValue}>{formatValue(race.totalPool)}</Text>
               </View>
             </Animated.View>
 
-            {/* Increase Bet Section */}
             {!showIncreaseBet ? (
               <TouchableOpacity
                 style={styles.increaseBetButton}
@@ -1129,7 +1034,7 @@ function _EnhancedCommitPhase({
                   {
                     maxHeight: increaseBetExpandAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [0, 500], // Adjust based on content height
+                      outputRange: [0, 500],
                     }),
                     opacity: increaseBetExpandAnim,
                   },
@@ -1148,14 +1053,14 @@ function _EnhancedCommitPhase({
                 </View>
 
                 <Text style={styles.increaseBetSubtitle}>
-                  Betting on {race.assets[userBet.assetIdx]?.symbol} • Current: ${(userBet.amount / 1_000_000).toFixed(2)}
+                  Betting on {race.assets[userBet.assetIdx]?.symbol} • Current: $
+                  {(userBet.amount / 1_000_000).toFixed(2)}
                 </Text>
 
-                {/* Additional Bet Amount Input */}
                 <View style={styles.additionalBetInputSection}>
                   <View style={styles.additionalBetInputHeader}>
                     <Text style={styles.additionalBetLabel}>Additional Amount</Text>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.balanceIndicatorSmall}
                       onPress={refreshUserBalance}
                       disabled={isLoadingBalance}
@@ -1165,32 +1070,41 @@ function _EnhancedCommitPhase({
                     >
                       <Animated.View
                         style={{
-                          transform: [{
-                            rotate: balanceRefreshAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: ['0deg', '360deg'],
-                            }),
-                          }],
-                        }}
-                      >
-                        <MaterialCommunityIcons 
-                          name={isLoadingBalance ? "loading" : "wallet"} 
-                          size={12} 
-                          color={COLORS.secondary} 
-                        />
-                      </Animated.View>
-                      <Text style={styles.balanceTextSmall}>
-                        Balance: {isLoadingBalance ? 'Loading...' : userBalance !== null ? `$${userBalance.toFixed(2)}` : 'Tap to load'}
-                      </Text>
-                      {!isLoadingBalance && (
-                        <Animated.View
-                          style={{
-                            transform: [{
+                          transform: [
+                            {
                               rotate: balanceRefreshAnim.interpolate({
                                 inputRange: [0, 1],
                                 outputRange: ['0deg', '360deg'],
                               }),
-                            }],
+                            },
+                          ],
+                        }}
+                      >
+                        <MaterialCommunityIcons
+                          name={isLoadingBalance ? 'loading' : 'wallet'}
+                          size={12}
+                          color={COLORS.secondary}
+                        />
+                      </Animated.View>
+                      <Text style={styles.balanceTextSmall}>
+                        Balance:{' '}
+                        {isLoadingBalance
+                          ? 'Loading...'
+                          : userBalance !== null
+                            ? `$${userBalance.toFixed(2)}`
+                            : 'Tap to load'}
+                      </Text>
+                      {!isLoadingBalance && (
+                        <Animated.View
+                          style={{
+                            transform: [
+                              {
+                                rotate: balanceRefreshAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: ['0deg', '360deg'],
+                                }),
+                              },
+                            ],
                           }}
                         >
                           <MaterialCommunityIcons name="refresh" size={10} color={COLORS.secondary} />
@@ -1214,11 +1128,11 @@ function _EnhancedCommitPhase({
                       accessibilityLabel="Additional bet amount input"
                       accessibilityHint="Enter additional USDC amount to add to your existing bet"
                     />
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.maxButtonSmall}
                       onPress={() => {
-                        setAdditionalBetAmount(userBalance !== null ? Math.min(userBalance, 1000).toString() : '100');
-                        triggerHaptic('light', 'max additional amount');
+                        setAdditionalBetAmount(userBalance !== null ? Math.min(userBalance, 1000).toString() : '100')
+                        triggerHaptic('light', 'max additional amount')
                       }}
                       accessibilityLabel="Set maximum additional bet amount"
                       accessibilityRole="button"
@@ -1229,7 +1143,6 @@ function _EnhancedCommitPhase({
                   </View>
                 </View>
 
-                {/* Quick Additional Amounts */}
                 <View style={styles.quickAdditionalGrid}>
                   {[5, 10, 25, 50].map((amount) => {
                     const isSelected = additionalBetAmount === amount.toString()
@@ -1241,22 +1154,16 @@ function _EnhancedCommitPhase({
                         }}
                       >
                         <TouchableOpacity
-                          style={[
-                            styles.quickAdditionalButton,
-                            isSelected && styles.quickAdditionalButtonSelected
-                          ]}
+                          style={[styles.quickAdditionalButton, isSelected && styles.quickAdditionalButtonSelected]}
                           onPress={() => {
-                            setAdditionalBetAmount(amount.toString());
-                            triggerHaptic('light', `additional ${amount}`);
+                            setAdditionalBetAmount(amount.toString())
+                            triggerHaptic('light', `additional ${amount}`)
                           }}
                           accessibilityLabel={`Add ${amount} dollars to bet`}
                           accessibilityRole="button"
                           accessibilityState={{ selected: isSelected }}
                         >
-                          <Text style={[
-                            styles.quickAdditionalText,
-                            isSelected && styles.quickAdditionalTextSelected
-                          ]}>
+                          <Text style={[styles.quickAdditionalText, isSelected && styles.quickAdditionalTextSelected]}>
                             +${amount}
                           </Text>
                         </TouchableOpacity>
@@ -1265,64 +1172,81 @@ function _EnhancedCommitPhase({
                   })}
                 </View>
 
-                {/* New Total Preview */}
-                {additionalBetAmount && !isNaN(parseFloat(additionalBetAmount)) && parseFloat(additionalBetAmount) > 0 && (
-                  <View style={styles.newTotalPreview}>
-                    <View style={styles.previewRow}>
-                      <Text style={styles.previewLabel}>Current Bet</Text>
-                      <Text style={styles.previewValue}>${(userBet.amount / 1_000_000).toFixed(2)}</Text>
+                {additionalBetAmount &&
+                  !isNaN(parseFloat(additionalBetAmount)) &&
+                  parseFloat(additionalBetAmount) > 0 && (
+                    <View style={styles.newTotalPreview}>
+                      <View style={styles.previewRow}>
+                        <Text style={styles.previewLabel}>Current Bet</Text>
+                        <Text style={styles.previewValue}>${(userBet.amount / 1_000_000).toFixed(2)}</Text>
+                      </View>
+                      <View style={styles.previewRow}>
+                        <Text style={styles.previewLabel}>Additional</Text>
+                        <Text style={styles.previewValue}>+${parseFloat(additionalBetAmount).toFixed(2)}</Text>
+                      </View>
+                      <View style={styles.previewDivider} />
+                      <View style={styles.previewRow}>
+                        <Text style={styles.previewLabelTotal}>New Total</Text>
+                        <Text style={styles.previewValueTotal}>
+                          ${(userBet.amount / 1_000_000 + parseFloat(additionalBetAmount)).toFixed(2)}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.previewRow}>
-                      <Text style={styles.previewLabel}>Additional</Text>
-                      <Text style={styles.previewValue}>+${parseFloat(additionalBetAmount).toFixed(2)}</Text>
-                    </View>
-                    <View style={styles.previewDivider} />
-                    <View style={styles.previewRow}>
-                      <Text style={styles.previewLabelTotal}>New Total</Text>
-                      <Text style={styles.previewValueTotal}>
-                        ${((userBet.amount / 1_000_000) + parseFloat(additionalBetAmount)).toFixed(2)}
-                      </Text>
-                    </View>
-                  </View>
-                )}
+                  )}
 
-                {/* Confirm Additional Bet Button */}
                 <TouchableOpacity
                   style={[
                     styles.confirmAdditionalBetButton,
-                    (!additionalBetAmount || isNaN(parseFloat(additionalBetAmount)) || parseFloat(additionalBetAmount) <= 0 || isPlacingBet) && 
-                    styles.confirmAdditionalBetButtonDisabled
+                    (!additionalBetAmount ||
+                      isNaN(parseFloat(additionalBetAmount)) ||
+                      parseFloat(additionalBetAmount) <= 0 ||
+                      isPlacingBet) &&
+                      styles.confirmAdditionalBetButtonDisabled,
                   ]}
                   onPress={() => {
-                    if (additionalBetAmount && !isNaN(parseFloat(additionalBetAmount)) && parseFloat(additionalBetAmount) > 0) {
+                    if (
+                      additionalBetAmount &&
+                      !isNaN(parseFloat(additionalBetAmount)) &&
+                      parseFloat(additionalBetAmount) > 0
+                    ) {
                       triggerHaptic('heavy', 'confirm additional bet')
                       const additionalAmount = parseFloat(additionalBetAmount)
-                      // Place additional bet using the same mutation
-                      placeBetMutation.mutate({
-                        raceId: race.raceId,
-                        assetIdx: userBet.assetIdx,
-                        amount: additionalAmount,
-                        playerAddress: new PublicKey(account.publicKey.toString())
-                      }, {
-                        onSuccess: () => {
-                          // Reset the increase bet UI on success
-                          setShowIncreaseBet(false)
-                          setAdditionalBetAmount('')
-                          // Refresh user bets to show updated amount
-                          if (account?.publicKey) {
-                            fetchUserBets(account.publicKey.toBase58(), false)
-                          }
-                        }
-                      })
+
+                      placeBetMutation.mutate(
+                        {
+                          raceId: race.raceId,
+                          assetIdx: userBet.assetIdx,
+                          amount: additionalAmount,
+                          playerAddress: new PublicKey(account.publicKey.toString()),
+                        },
+                        {
+                          onSuccess: () => {
+                            setShowIncreaseBet(false)
+                            setAdditionalBetAmount('')
+
+                            if (account?.publicKey) {
+                              fetchUserBets(account.publicKey.toBase58(), false)
+                            }
+                          },
+                        },
+                      )
                     }
                   }}
-                  disabled={!additionalBetAmount || isNaN(parseFloat(additionalBetAmount)) || parseFloat(additionalBetAmount) <= 0 || isPlacingBet}
+                  disabled={
+                    !additionalBetAmount ||
+                    isNaN(parseFloat(additionalBetAmount)) ||
+                    parseFloat(additionalBetAmount) <= 0 ||
+                    isPlacingBet
+                  }
                   accessibilityLabel={`Add ${additionalBetAmount} dollars to your bet on ${race.assets[userBet.assetIdx]?.symbol}`}
                   accessibilityRole="button"
                 >
                   <LinearGradient
                     colors={
-                      additionalBetAmount && !isNaN(parseFloat(additionalBetAmount)) && parseFloat(additionalBetAmount) > 0 && !isPlacingBet
+                      additionalBetAmount &&
+                      !isNaN(parseFloat(additionalBetAmount)) &&
+                      parseFloat(additionalBetAmount) > 0 &&
+                      !isPlacingBet
                         ? ['#9945FF', '#14F195']
                         : ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']
                     }
@@ -1336,9 +1260,7 @@ function _EnhancedCommitPhase({
                     ) : (
                       <View style={styles.betButtonContentEnhanced}>
                         <MaterialCommunityIcons name="plus-circle" size={18} color="#000" />
-                        <Text style={styles.confirmAdditionalBetText}>
-                          ADD ${additionalBetAmount || '0.00'} TO BET
-                        </Text>
+                        <Text style={styles.confirmAdditionalBetText}>ADD ${additionalBetAmount || '0.00'} TO BET</Text>
                       </View>
                     )}
                   </LinearGradient>
@@ -1349,13 +1271,9 @@ function _EnhancedCommitPhase({
         </View>
       )}
 
-      {/* Live Race Stats - Only show when user is engaged */}
       {account && !userBet && (
         <View style={styles.raceStatsSection}>
-          <LinearGradient
-            colors={['rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.3)']}
-            style={styles.raceStatsCard}
-          >
+          <LinearGradient colors={['rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.3)']} style={styles.raceStatsCard}>
             <View style={styles.raceStatsHeader}>
               <View style={styles.raceStatsTitle}>
                 <MaterialCommunityIcons name="flash" size={20} color="#FFD700" />
@@ -1363,7 +1281,7 @@ function _EnhancedCommitPhase({
               </View>
               <Text style={styles.raceNumber}>#{race.raceId}</Text>
             </View>
-            
+
             <View style={styles.raceStatsGrid}>
               <View style={styles.raceStatItem}>
                 <Text style={styles.raceStatValue}>{formatValue(race.totalPool)}</Text>
@@ -1374,7 +1292,9 @@ function _EnhancedCommitPhase({
                 <Text style={styles.raceStatLabel}>Racers</Text>
               </View>
               <View style={styles.raceStatItem}>
-                <Text style={styles.raceStatValue}>{race.payoutRatio ? `${race.payoutRatio.toFixed(1)}x` : '2.5x'}</Text>
+                <Text style={styles.raceStatValue}>
+                  {race.payoutRatio ? `${race.payoutRatio.toFixed(1)}x` : '2.5x'}
+                </Text>
                 <Text style={styles.raceStatLabel}>Avg Payout</Text>
               </View>
             </View>
@@ -1382,7 +1302,6 @@ function _EnhancedCommitPhase({
         </View>
       )}
 
-      {/* STEP 2: Asset Selection with Guidance */}
       {account && !derivedUserBet && enhancedAssets.length > 0 && (
         <View style={styles.assetSelectionSection}>
           <View style={styles.sectionHeaderEnhanced}>
@@ -1395,42 +1314,31 @@ function _EnhancedCommitPhase({
                 Pick the crypto you think will have the highest momentum
               </Text>
             </View>
-            <TouchableOpacity 
-              style={styles.helpIconButton}
-              onPress={() => setShowTips(true)}
-            >
+            <TouchableOpacity style={styles.helpIconButton} onPress={() => setShowTips(true)}>
               <MaterialCommunityIcons name="help-circle" size={20} color="#9945FF" />
             </TouchableOpacity>
           </View>
-          
-          {/* Asset Cards with Better UX */}
+
           <View style={styles.assetCardsContainer}>
             {enhancedAssets.map((asset: any, index: number) => {
               const isSelected = selectedAssetIdx === index
-              
-              // Use enhanced asset data (same calculation as performance phase)
+
               const performance = asset.performance || 0
-              
-              // Calculate which asset is actually leading based on enhanced data (using performance like performance phase)
+
               const allPerformances = enhancedAssets.map((a: any) => a.performance || 0)
               const maxPerformance = Math.max(...allPerformances)
-              const isLeading = Math.abs(performance - maxPerformance) < 0.001 // Account for floating point precision
-              
-              // Use enhanced pool share
+              const isLeading = Math.abs(performance - maxPerformance) < 0.001
+
               const poolShare = asset.poolShare?.toFixed(1) || '0.0'
-              
+
               return (
                 <TouchableOpacity
                   key={index}
                   style={[
                     styles.assetCardEnhanced,
-                    // Selection takes priority over leading status
-                    isSelected 
-                      ? styles.assetCardSelected 
-                      : isLeading 
-                        ? styles.assetCardLeading 
-                        : null,
-                    { minHeight: MIN_TOUCH_TARGET + 60 } // Larger touch area for asset selection
+
+                    isSelected ? styles.assetCardSelected : isLeading ? styles.assetCardLeading : null,
+                    { minHeight: MIN_TOUCH_TARGET + 60 },
                   ]}
                   onPress={() => handleAssetSelection(index)}
                   activeOpacity={0.8}
@@ -1446,23 +1354,21 @@ function _EnhancedCommitPhase({
                   >
                     <LinearGradient
                       colors={
-                        isSelected 
+                        isSelected
                           ? [`${asset.color}40`, `${asset.color}20`, `${asset.color}10`]
                           : isLeading
-                          ? ['rgba(255, 215, 0, 0.2)', 'rgba(0, 0, 0, 0.6)']
-                          : ['rgba(0,0,0,0.7)', 'rgba(0,0,0,0.4)']
+                            ? ['rgba(255, 215, 0, 0.2)', 'rgba(0, 0, 0, 0.6)']
+                            : ['rgba(0,0,0,0.7)', 'rgba(0,0,0,0.4)']
                       }
                       style={styles.assetCardGradientEnhanced}
                     >
-                      {/* Leading Badge */}
                       {isLeading && (
                         <View style={styles.leadingBadge}>
                           <MaterialCommunityIcons name="crown" size={12} color="#000" />
                           <Text style={styles.leadingBadgeText}>LEADING</Text>
                         </View>
                       )}
-                      
-                      {/* Asset Header */}
+
                       <View style={styles.assetHeaderEnhanced}>
                         <View style={[styles.assetIconEnhanced, { backgroundColor: asset.color }]}>
                           <Text style={styles.assetSymbolIconEnhanced}>{asset.symbol[0]}</Text>
@@ -1484,27 +1390,31 @@ function _EnhancedCommitPhase({
                           </Animated.View>
                         )}
                       </View>
-                      
-                      {/* Current Performance */}
+
                       <View style={styles.performanceSection}>
                         <View style={styles.assetPerformanceHeader}>
                           <Text style={styles.performanceLabel}>Current Momentum</Text>
                           <View style={styles.performanceValueContainer}>
-                            <Text style={[
-                              styles.performanceValueEnhanced,
-                              { color: asset.performance >= 0 ? '#00FF88' : '#FF4444' }
-                            ]}>
-                              {asset.performance >= 0 ? '+' : ''}{(typeof asset.performance === 'number' && !isNaN(asset.performance)) ? asset.performance.toFixed(2) : '0.00'}%
+                            <Text
+                              style={[
+                                styles.performanceValueEnhanced,
+                                { color: asset.performance >= 0 ? '#00FF88' : '#FF4444' },
+                              ]}
+                            >
+                              {asset.performance >= 0 ? '+' : ''}
+                              {typeof asset.performance === 'number' && !isNaN(asset.performance)
+                                ? asset.performance.toFixed(2)
+                                : '0.00'}
+                              %
                             </Text>
-                            <MaterialCommunityIcons 
-                              name={asset.performance >= 0 ? "trending-up" : "trending-down"} 
-                              size={14} 
-                              color={asset.performance >= 0 ? '#00FF88' : '#FF4444'} 
+                            <MaterialCommunityIcons
+                              name={asset.performance >= 0 ? 'trending-up' : 'trending-down'}
+                              size={14}
+                              color={asset.performance >= 0 ? '#00FF88' : '#FF4444'}
                             />
                           </View>
                         </View>
-                        
-                        {/* Momentum Visualization */}
+
                         <View style={styles.momentumVisualization}>
                           <View style={styles.momentumTrack}>
                             <Animated.View
@@ -1518,12 +1428,16 @@ function _EnhancedCommitPhase({
                             />
                           </View>
                           <Text style={styles.momentumIndicatorText}>
-                            {Math.abs(asset.performance) > 2 ? 'High' : Math.abs(asset.performance) > 1 ? 'Medium' : 'Low'} momentum
+                            {Math.abs(asset.performance) > 2
+                              ? 'High'
+                              : Math.abs(asset.performance) > 1
+                                ? 'Medium'
+                                : 'Low'}{' '}
+                            momentum
                           </Text>
                         </View>
                       </View>
-                      
-                      {/* Pool Share & Odds */}
+
                       <View style={styles.assetMetrics}>
                         <View style={styles.metricItem}>
                           <Text style={styles.metricLabel}>Pool Share</Text>
@@ -1532,9 +1446,7 @@ function _EnhancedCommitPhase({
                         <View style={styles.metricDivider} />
                         <View style={styles.metricItem}>
                           <Text style={styles.metricLabel}>Current Price</Text>
-                          <Text style={styles.metricValue}>
-                            ${asset.currentPrice?.toFixed(2) || '0.00'}
-                          </Text>
+                          <Text style={styles.metricValue}>${asset.currentPrice?.toFixed(2) || '0.00'}</Text>
                         </View>
                       </View>
                     </LinearGradient>
@@ -1543,20 +1455,19 @@ function _EnhancedCommitPhase({
               )
             })}
           </View>
-          
-          {/* Selection Hint */}
+
           {selectedAssetIdx >= 0 && enhancedAssets[selectedAssetIdx] && (
             <View style={styles.selectionHint}>
               <MaterialCommunityIcons name="lightbulb-on" size={16} color="#FFD700" />
               <Text style={styles.selectionHintText}>
-                Good choice! {enhancedAssets[selectedAssetIdx].symbol} has {Math.abs(enhancedAssets[selectedAssetIdx].performance || 0).toFixed(1)}% momentum
+                Good choice! {enhancedAssets[selectedAssetIdx].symbol} has{' '}
+                {Math.abs(enhancedAssets[selectedAssetIdx].performance || 0).toFixed(1)}% momentum
               </Text>
             </View>
           )}
         </View>
       )}
 
-      {/* STEP 3: Enhanced Betting Interface */}
       {account && !derivedUserBet && selectedAssetIdx >= 0 && enhancedAssets.length > 0 && (
         <View style={styles.bettingSection}>
           <View style={styles.sectionHeaderEnhanced}>
@@ -1570,16 +1481,15 @@ function _EnhancedCommitPhase({
               </Text>
             </View>
           </View>
-          
+
           <LinearGradient
             colors={['rgba(0, 0, 0, 0.8)', 'rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.8)']}
             style={styles.bettingPanel}
           >
-            {/* Bet Amount Input with Better UX */}
             <View style={styles.betInputSectionEnhanced}>
               <View style={styles.betInputHeader}>
                 <Text style={styles.betInputLabelEnhanced}>Bet Amount</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.balanceIndicator}
                   onPress={refreshUserBalance}
                   disabled={isLoadingBalance}
@@ -1589,32 +1499,41 @@ function _EnhancedCommitPhase({
                 >
                   <Animated.View
                     style={{
-                      transform: [{
-                        rotate: balanceRefreshAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ['0deg', '360deg'],
-                        }),
-                      }],
-                    }}
-                  >
-                    <MaterialCommunityIcons 
-                      name={isLoadingBalance ? "loading" : "wallet"} 
-                      size={14} 
-                      color={COLORS.secondary} 
-                    />
-                  </Animated.View>
-                  <Text style={styles.balanceText}>
-                    Balance: {isLoadingBalance ? 'Loading...' : userBalance !== null ? `$${userBalance.toFixed(2)} USDC` : 'Tap to load'}
-                  </Text>
-                  {!isLoadingBalance && (
-                    <Animated.View
-                      style={{
-                        transform: [{
+                      transform: [
+                        {
                           rotate: balanceRefreshAnim.interpolate({
                             inputRange: [0, 1],
                             outputRange: ['0deg', '360deg'],
                           }),
-                        }],
+                        },
+                      ],
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name={isLoadingBalance ? 'loading' : 'wallet'}
+                      size={14}
+                      color={COLORS.secondary}
+                    />
+                  </Animated.View>
+                  <Text style={styles.balanceText}>
+                    Balance:{' '}
+                    {isLoadingBalance
+                      ? 'Loading...'
+                      : userBalance !== null
+                        ? `$${userBalance.toFixed(2)} USDC`
+                        : 'Tap to load'}
+                  </Text>
+                  {!isLoadingBalance && (
+                    <Animated.View
+                      style={{
+                        transform: [
+                          {
+                            rotate: balanceRefreshAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ['0deg', '360deg'],
+                            }),
+                          },
+                        ],
                       }}
                     >
                       <MaterialCommunityIcons name="refresh" size={12} color={COLORS.secondary} />
@@ -1622,7 +1541,7 @@ function _EnhancedCommitPhase({
                   )}
                 </TouchableOpacity>
               </View>
-              
+
               <Animated.View
                 style={[
                   styles.betInputWrapperEnhanced,
@@ -1657,7 +1576,7 @@ function _EnhancedCommitPhase({
                   accessibilityHint="Enter the amount in USDC you want to bet on the selected asset"
                   accessibilityValue={{ text: betAmount ? `${betAmount} dollars` : 'No amount entered' }}
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.maxButtonEnhanced}
                   onPress={handleMaxBetAmount}
                   accessibilityLabel="Set maximum bet amount"
@@ -1668,8 +1587,7 @@ function _EnhancedCommitPhase({
                 </TouchableOpacity>
               </Animated.View>
             </View>
-            
-            {/* Enhanced Quick Amounts with Modern Design */}
+
             <View style={styles.quickBetSectionEnhanced}>
               <View style={styles.quickBetLabelContainer}>
                 <MaterialCommunityIcons name="cash-multiple" size={16} color="#9945FF" />
@@ -1689,7 +1607,7 @@ function _EnhancedCommitPhase({
                         style={[
                           styles.quickBetButtonEnhanced,
                           isSelected && styles.quickBetButtonSelectedEnhanced,
-                          { minHeight: MIN_TOUCH_TARGET }
+                          { minHeight: MIN_TOUCH_TARGET },
                         ]}
                         onPress={() => handleQuickAmountSelection(amount)}
                         accessibilityLabel={`Quick bet ${amount} dollars`}
@@ -1698,19 +1616,17 @@ function _EnhancedCommitPhase({
                         accessibilityHint={`Sets your bet amount to ${amount} dollars${isSelected ? '. Currently selected' : ''}`}
                         activeOpacity={0.8}
                       >
-                        {/* Gradient background for modern look */}
                         <LinearGradient
                           colors={
-                            isSelected 
+                            isSelected
                               ? ['rgba(255, 215, 0, 0.3)', 'rgba(255, 215, 0, 0.1)']
                               : ['rgba(255, 255, 255, 0.1)', 'rgba(255, 255, 255, 0.05)']
                           }
                           style={styles.quickBetGradientBackground}
                         >
-                          <Text style={[
-                            styles.quickBetTextEnhanced,
-                            isSelected && styles.quickBetTextSelectedEnhanced
-                          ]}>
+                          <Text
+                            style={[styles.quickBetTextEnhanced, isSelected && styles.quickBetTextSelectedEnhanced]}
+                          >
                             ${amount}
                           </Text>
                         </LinearGradient>
@@ -1720,20 +1636,21 @@ function _EnhancedCommitPhase({
                 })}
               </View>
             </View>
-            
-            {/* Real-time Bet Preview */}
+
             {betAmount && !isNaN(parseFloat(betAmount)) && parseFloat(betAmount) >= 0.1 && (
               <Animated.View
                 style={[
                   styles.betPreviewSection,
                   {
                     opacity: previewSlideAnim,
-                    transform: [{
-                      translateY: previewSlideAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [20, 0],
-                      }),
-                    }],
+                    transform: [
+                      {
+                        translateY: previewSlideAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [20, 0],
+                        }),
+                      },
+                    ],
                   },
                 ]}
               >
@@ -1745,7 +1662,7 @@ function _EnhancedCommitPhase({
                     <MaterialCommunityIcons name="calculator" size={16} color="#9945FF" />
                     <Text style={styles.betPreviewTitle}>Bet Preview</Text>
                   </View>
-                  
+
                   <View style={styles.betPreviewDetails}>
                     <View style={styles.previewRow}>
                       <Text style={styles.previewLabel}>Your Bet</Text>
@@ -1769,7 +1686,6 @@ function _EnhancedCommitPhase({
               </Animated.View>
             )}
 
-            {/* Validation Message Display */}
             {!canPlaceBet && betAmount && (
               <Animated.View style={styles.errorContainerEnhanced}>
                 <MaterialCommunityIcons name="alert-circle" size={16} color="#FF4444" />
@@ -1777,16 +1693,16 @@ function _EnhancedCommitPhase({
               </Animated.View>
             )}
 
-            {/* Enhanced Place Bet Button OR Inline Confirmation Modal */}
             <View style={styles.placeBetSection}>
               {showBetConfirmation && race && enhancedAssets.length > 0 ? (
-                // Inline Confirmation Modal (replaces Place Bet button area)
                 <Animated.View
                   style={[
                     styles.confirmationModalInline,
                     {
                       opacity: confirmationAnim,
-                      transform: [{ scale: confirmationAnim.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1] }) }],
+                      transform: [
+                        { scale: confirmationAnim.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1] }) },
+                      ],
                     },
                   ]}
                   accessibilityViewIsModal={true}
@@ -1795,7 +1711,7 @@ function _EnhancedCommitPhase({
                   onAccessibilityEscape={() => setShowBetConfirmation(false)}
                 >
                   <LinearGradient
-                    colors={["rgba(0, 0, 0, 0.95)", "rgba(0, 0, 0, 0.9)"]}
+                    colors={['rgba(0, 0, 0, 0.95)', 'rgba(0, 0, 0, 0.9)']}
                     style={styles.confirmationModalContent}
                   >
                     <View style={styles.confirmationHeader}>
@@ -1824,8 +1740,8 @@ function _EnhancedCommitPhase({
                         ref={cancelRef}
                         style={styles.confirmationCancelButton}
                         onPress={() => {
-                          setShowBetConfirmation(false);
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                          setShowBetConfirmation(false)
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
                         }}
                         disabled={isPlacingBet}
                         accessibilityLabel="Cancel bet confirmation"
@@ -1841,8 +1757,8 @@ function _EnhancedCommitPhase({
                         ref={confirmRef}
                         style={styles.confirmationConfirmButton}
                         onPress={() => {
-                          confirmBet();
-                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                          confirmBet()
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
                         }}
                         disabled={isPlacingBet}
                         activeOpacity={0.8}
@@ -1852,11 +1768,10 @@ function _EnhancedCommitPhase({
                         accessibilityHint="Places your bet and submits it to the race"
                         onFocus={() => {}}
                       >
-                        <LinearGradient
-                          colors={["#9945FF", "#14F195"]}
-                          style={styles.confirmationConfirmGradient}
-                        >
-                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+                        <LinearGradient colors={['#9945FF', '#14F195']} style={styles.confirmationConfirmGradient}>
+                          <View
+                            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 }}
+                          >
                             {isPlacingBet ? (
                               <ActivityIndicator size="small" color="#000" />
                             ) : (
@@ -1869,7 +1784,6 @@ function _EnhancedCommitPhase({
                   </LinearGradient>
                 </Animated.View>
               ) : (
-                // Place Bet Button (shown when not confirming)
                 <Animated.View
                   style={{
                     transform: [{ scale: placeBetPulseAnim }],
@@ -1879,10 +1793,10 @@ function _EnhancedCommitPhase({
                     style={[
                       styles.placeBetButtonEnhanced,
                       (!canPlaceBet || isPlacingBet) && styles.placeBetButtonDisabledEnhanced,
-                      { minHeight: MIN_TOUCH_TARGET + 12 }
+                      { minHeight: MIN_TOUCH_TARGET + 12 },
                     ]}
                     onPress={() => {
-                      handleBetAttempt();
+                      handleBetAttempt()
                     }}
                     disabled={!canPlaceBet || isPlacingBet}
                     activeOpacity={0.8}
@@ -1890,18 +1804,16 @@ function _EnhancedCommitPhase({
                       isPlacingBet
                         ? 'Placing bet, please wait'
                         : !canPlaceBet
-                        ? validationMessage
-                        : `Place ${betAmount} dollar bet on ${race?.assets[selectedAssetIdx]?.symbol}`
+                          ? validationMessage
+                          : `Place ${betAmount} dollar bet on ${race?.assets[selectedAssetIdx]?.symbol}`
                     }
                     accessibilityRole="button"
                     accessibilityState={{
                       disabled: !canPlaceBet || isPlacingBet,
-                      busy: isPlacingBet
+                      busy: isPlacingBet,
                     }}
                     accessibilityHint={
-                      isPlacingBet
-                        ? 'Your bet is being processed'
-                        : 'Confirms and submits your bet to the race'
+                      isPlacingBet ? 'Your bet is being processed' : 'Confirms and submits your bet to the race'
                     }
                   >
                     <LinearGradient
@@ -1929,7 +1841,6 @@ function _EnhancedCommitPhase({
                   </TouchableOpacity>
                 </Animated.View>
               )}
-              {/* Trust Signals */}
               <View style={styles.trustSignals}>
                 <View style={styles.trustItem}>
                   <MaterialCommunityIcons name="shield-check" size={12} color="#14F195" />
@@ -1950,13 +1861,9 @@ function _EnhancedCommitPhase({
           </LinearGradient>
         </View>
       )}
-
-
     </View>
   )
 }
-
-
 
 const styles = StyleSheet.create({
   confirmationModalInline: {
@@ -1976,7 +1883,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: isTablet ? SPACING.xxl : SPACING.xl,
     paddingBottom: SPACING.sm,
   },
-  // Welcome Section
+
   welcomeSection: {
     marginBottom: 20,
   },
@@ -2075,8 +1982,7 @@ const styles = StyleSheet.create({
     marginRight: 4,
     fontFamily: 'Orbitron-SemiBold',
   },
-  
-  // Success Section
+
   successSection: {
     marginBottom: 20,
   },
@@ -2154,8 +2060,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
   },
 
-
-  // Race Stats Section
   raceStatsSection: {
     marginBottom: 20,
   },
@@ -2209,7 +2113,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-Regular',
   },
 
-  // Asset Selection Section
   assetSelectionSection: {
     marginBottom: SPACING.xl,
     paddingHorizontal: isTablet ? SPACING.sm : 0,
@@ -2391,7 +2294,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Betting Section
   bettingSection: {
     marginBottom: 20,
   },
@@ -2494,7 +2396,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginBottom: 8, // Add a little space below the grid
+    marginBottom: 8,
   },
   quickBetButtonEnhanced: {
     flex: 1,
@@ -2514,8 +2416,8 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH_TARGET,
     position: 'relative',
     overflow: 'hidden',
-    marginHorizontal: 4, // Horizontal margin for spacing
-    marginVertical: 4, // Vertical margin for spacing
+    marginHorizontal: 4,
+    marginVertical: 4,
   },
   quickBetTextEnhanced: {
     ...TYPOGRAPHY.body,
@@ -2683,7 +2585,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
   },
 
-  // Modal Styles
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -2805,7 +2706,6 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 
-  // Shared Section Header
   sectionHeaderEnhanced: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2895,7 +2795,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     justifyContent: 'center',
     alignItems: 'center',
-    height: MIN_TOUCH_TARGET + 8, // Match input wrapper height exactly
+    height: MIN_TOUCH_TARGET + 8,
   },
   maxButtonTextEnhanced: {
     ...TYPOGRAPHY.caption,
@@ -2905,7 +2805,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Enhanced Error, Loading, and Empty States for Commit Phase
   errorContainerCommit: {
     flex: 1,
     justifyContent: 'center',
@@ -2972,7 +2871,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-Regular',
   },
 
-  // Increase Bet Styles
   increaseBetButton: {
     borderRadius: 12,
     overflow: 'hidden',
@@ -3096,11 +2994,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginBottom: 8, // Add a little space below the grid
+    marginBottom: 8,
   },
   quickAdditionalButton: {
-    // flex: 1, // Remove flex: 1 for fixed width
-    width: 64, // Fixed width for neat alignment
+    width: 64,
     borderRadius: isTablet ? 14 : 12,
     paddingVertical: isTablet ? SPACING.md : SPACING.sm + 2,
     paddingHorizontal: isTablet ? SPACING.sm : SPACING.xs,
@@ -3117,8 +3014,8 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH_TARGET,
     position: 'relative',
     overflow: 'hidden',
-    marginHorizontal: 4, // Horizontal margin for spacing
-    marginVertical: 4, // Vertical margin for spacing
+    marginHorizontal: 4,
+    marginVertical: 4,
   },
   quickAdditionalText: {
     ...TYPOGRAPHY.body,
@@ -3182,7 +3079,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     justifyContent: 'center',
     alignItems: 'center',
-    height: MIN_TOUCH_TARGET + 8, // Match input wrapper height exactly
+    height: MIN_TOUCH_TARGET + 8,
   },
   maxButtonTextSmall: {
     ...TYPOGRAPHY.caption,
@@ -3191,4 +3088,4 @@ const styles = StyleSheet.create({
     fontFamily: 'Orbitron-Bold',
     letterSpacing: 1,
   },
-}) 
+})
