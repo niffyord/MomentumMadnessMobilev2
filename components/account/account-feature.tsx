@@ -86,7 +86,7 @@ interface UserPosition {
   claimed: boolean
   isWinner: boolean | null
   potentialPayout: number | null
-  raceState: 'Betting' | 'Running' | 'SettlementReady' | 'Settled'
+  raceState: 'Betting' | 'Running' | 'Settled'
   performance?: number
   timestamp?: number
 }
@@ -303,14 +303,6 @@ const PositionCard: React.FC<{
                     : `-${formatValue(position.amount)}`
                   }
                 </Text>
-              </View>
-            )}
-
-            {/* Settlement Pending Display for SettlementReady races */}
-            {position.raceState === 'SettlementReady' && (
-              <View style={styles.settlementPendingContainer}>
-                <MaterialCommunityIcons name="clock-outline" size={16} color={COLORS.warning} />
-                <Text style={styles.settlementPendingLabel}>Settlement in progress...</Text>
               </View>
             )}
           </View>
@@ -787,8 +779,7 @@ const HistoryGroupComponent: React.FC<{
 const EmptyState: React.FC<{
   activeTab: 'active' | 'history' | 'unclaimed'
   isConnected: boolean
-  pendingSettlementCount?: number
-}> = React.memo(({ activeTab, isConnected, pendingSettlementCount = 0 }) => (
+}> = React.memo(({ activeTab, isConnected }) => (
   <View style={styles.emptyContainer}>
     <MaterialCommunityIcons 
       name={!isConnected ? 'wallet-outline' : activeTab === 'active' ? 'rocket-launch' : activeTab === 'history' ? 'history' : 'wallet-plus'} 
@@ -811,12 +802,8 @@ const EmptyState: React.FC<{
         : activeTab === 'active' 
           ? 'Join a race to start your momentum trading journey!' 
           : activeTab === 'history'
-            ? pendingSettlementCount > 0 
-              ? `${pendingSettlementCount} race${pendingSettlementCount > 1 ? 's' : ''} being settled will appear here once complete`
-              : 'Your completed races will appear here'
-            : pendingSettlementCount > 0
-              ? `Checking ${pendingSettlementCount} race${pendingSettlementCount > 1 ? 's' : ''} being settled for rewards...`
-              : 'Your unclaimed rewards will be displayed here'
+            ? 'Your completed races will appear here'
+            : 'Your unclaimed rewards will be displayed here'
       }
     </Text>
   </View>
@@ -892,26 +879,30 @@ export function AccountFeature() {
 
   // Process user positions from backend data
   const userPositions = useMemo(() => {
-    if (!userBets || userBets.length === 0) return []
+    if (!userBets || userBets.length === 0) {
+      return []
+    }
     
-    return userBets.map(bet => ({
-      raceId: bet.raceId,
-      assetIdx: bet.assetIdx,
-      assetSymbol: ['BTC', 'ETH', 'SOL'][bet.assetIdx] || 'Unknown',
-      amount: bet.amount,
-      claimed: bet.claimed || localClaimedRaces.has(bet.raceId),
-      isWinner: bet.isWinner,
-      potentialPayout: bet.potentialPayout,
-      raceState: bet.raceState as any,
-      timestamp: (bet as any).timestamp || Date.now(), // Safely handle timestamp
-    }))
+    return userBets.map(bet => {
+      // Handle legacy SettlementReady state by converting to Settled
+      const normalizedRaceState = bet.raceState === 'SettlementReady' ? 'Settled' : bet.raceState
+      
+      return {
+        raceId: bet.raceId,
+        assetIdx: bet.assetIdx,
+        assetSymbol: ['BTC', 'ETH', 'SOL'][bet.assetIdx] || 'Unknown',
+        amount: bet.amount,
+        claimed: bet.claimed || localClaimedRaces.has(bet.raceId),
+        isWinner: bet.isWinner,
+        potentialPayout: bet.potentialPayout,
+        raceState: normalizedRaceState as any,
+        timestamp: (bet as any).timestamp || Date.now(), // Safely handle timestamp
+      }
+    })
   }, [userBets, localClaimedRaces])
 
   // Filter positions based on active tab - CLEAR LOGIC
   const filteredPositions = useMemo(() => {
-    console.log('🔍 Filtering positions for tab:', activeTab)
-    console.log('📊 User positions:', userPositions.map(p => ({ raceId: p.raceId, raceState: p.raceState, isWinner: p.isWinner, claimed: p.claimed })))
-    
     if (activeTab === 'active') {
       return userPositions.filter(pos => 
         pos.raceState === 'Betting' || pos.raceState === 'Running'
@@ -923,7 +914,6 @@ export function AccountFeature() {
       const historyPositions = userPositions.filter(pos => 
         pos.raceState === 'Settled'
       )
-      console.log('📚 History positions found:', historyPositions.length)
       return historyPositions
     }
     
@@ -934,7 +924,6 @@ export function AccountFeature() {
         pos.isWinner === true && 
         pos.raceState === 'Settled'
       )
-      console.log('💰 Unclaimed positions found:', unclaimedPositions.length)
       return unclaimedPositions
     }
     
@@ -1071,8 +1060,6 @@ export function AccountFeature() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     
     try {
-      console.log(`💰 Claiming payout for race ${raceId}`)
-      
       const success = await claimPayout(
         account.publicKey.toString(),
         raceId,
@@ -1096,7 +1083,6 @@ export function AccountFeature() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
       }
     } catch (error) {
-      console.error('Failed to claim payout:', error)
       // Error notification for failed claim
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
     }
@@ -1108,7 +1094,6 @@ export function AccountFeature() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     // Navigate to racing tab
     // This would typically use navigation
-    console.log(`Viewing race ${raceId}`)
   }, [])
 
   // Handle refresh
@@ -1124,7 +1109,6 @@ export function AccountFeature() {
       // Light success feedback for successful refresh
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     } catch (error) {
-      console.error('Failed to refresh:', error)
       // Error notification for failed refresh
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
     } finally {
@@ -1153,9 +1137,6 @@ export function AccountFeature() {
       formatValue={formatValue}
     />
   ), [handleClaim, handleViewRace, formatValue])
-
-  // Get settlement ready count for banners
-  const settlementReadyCount = userPositions.filter(pos => pos.raceState === 'SettlementReady').length
 
   return (
     <View style={styles.container}>
@@ -1207,7 +1188,7 @@ export function AccountFeature() {
           }
         >
           {!account ? (
-            <EmptyState activeTab={activeTab} isConnected={false} pendingSettlementCount={0} />
+            <EmptyState activeTab={activeTab} isConnected={false} />
           ) : (
             <>
               {/* Portfolio Stats */}
@@ -1224,37 +1205,6 @@ export function AccountFeature() {
                 historyCount={userPositions.filter(pos => pos.raceState === 'Settled').length}
                 unclaimedCount={portfolioStats.unclaimedRewards}
               />
-
-              {/* Settlement Pending Section - Show races being processed */}
-              {settlementReadyCount > 0 && (
-                <View style={styles.settlementPendingSection}>
-                  <LinearGradient
-                    colors={['rgba(255, 215, 0, 0.2)', 'rgba(255, 165, 0, 0.1)', 'rgba(0, 0, 0, 0.3)']}
-                    style={styles.settlementPendingCard}
-                  >
-                    <View style={styles.settlementPendingHeader}>
-                      <MaterialCommunityIcons name="clock-outline" size={20} color={COLORS.warning} />
-                      <Text style={styles.settlementPendingTitle}>Races Being Settled</Text>
-                    </View>
-                    <Text style={styles.settlementPendingText}>
-                      {settlementReadyCount} race{settlementReadyCount > 1 ? 's' : ''} finished and being processed. Final results coming soon!
-                    </Text>
-                    <View style={styles.settlementPendingRaces}>
-                      {userPositions.filter(pos => pos.raceState === 'SettlementReady').slice(0, 3).map((position, index) => (
-                        <View key={position.raceId} style={styles.settlementPendingRace}>
-                          <MaterialCommunityIcons name="flag-checkered" size={12} color={COLORS.text.tertiary} />
-                          <Text style={styles.settlementPendingRaceText}>Race #{position.raceId}</Text>
-                        </View>
-                      ))}
-                      {settlementReadyCount > 3 && (
-                        <Text style={styles.settlementPendingMore}>
-                          +{settlementReadyCount - 3} more
-                        </Text>
-                      )}
-                    </View>
-                  </LinearGradient>
-                </View>
-              )}
 
               {/* Search and Sort for History Tab */}
               {activeTab === 'history' && (
@@ -1321,7 +1271,7 @@ export function AccountFeature() {
                     windowSize={3}
                   />
                 ) : processedPositions.length === 0 ? (
-                  <EmptyState activeTab={activeTab} isConnected={true} pendingSettlementCount={settlementReadyCount} />
+                  <EmptyState activeTab={activeTab} isConnected={true} />
                 ) : (
                   <FlatList
                     data={processedPositions}
@@ -1742,73 +1692,6 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.1)',
   },
 
-  // Settlement pending section
-  settlementPendingSection: {
-    marginHorizontal: SPACING.xl,
-    marginVertical: SPACING.lg,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: COLORS.warning,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  settlementPendingCard: {
-    borderRadius: 16,
-    padding: SPACING.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  settlementPendingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.md,
-  },
-  settlementPendingTitle: {
-    ...TYPOGRAPHY.subtitle,
-    fontWeight: '700',
-    color: COLORS.text.primary,
-    fontFamily: 'Orbitron-Bold',
-  },
-  settlementPendingText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text.secondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    fontFamily: 'Orbitron-Regular',
-    marginBottom: SPACING.md,
-  },
-  settlementPendingRaces: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: SPACING.xs,
-  },
-  settlementPendingRace: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 8,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-  },
-  settlementPendingRaceText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text.tertiary,
-    fontWeight: '600',
-    fontFamily: 'Orbitron-SemiBold',
-  },
-  settlementPendingMore: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text.secondary,
-    fontWeight: '600',
-    fontFamily: 'Orbitron-SemiBold',
-  },
-
   // Unclaimed summary
   unclaimedSummary: {
     marginHorizontal: SPACING.xl,
@@ -1984,25 +1867,6 @@ const styles = StyleSheet.create({
   winnerProfitLoss: {
     borderColor: 'rgba(0,255,136,0.3)',
     backgroundColor: 'rgba(0,255,136,0.1)',
-  },
-  settlementPendingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.3)',
-    gap: SPACING.xs,
-    marginTop: SPACING.sm,
-  },
-  settlementPendingLabel: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.warning,
-    fontWeight: '600',
-    fontFamily: 'Orbitron-SemiBold',
   },
   cardActions: {
     flexDirection: 'row',
