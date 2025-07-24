@@ -1123,7 +1123,7 @@ function _EnhancedPerformancePhase({
               },
             ]}
           >
-            <View style={styles.liveIndicator}>
+            <View style={styles.headerLiveIndicator}>
               <Animated.View
                 style={[
                   styles.liveDot,
@@ -1144,7 +1144,7 @@ function _EnhancedPerformancePhase({
                   },
                 ]}
               />
-              <Text style={styles.liveText}>
+              <Text style={styles.headerLiveText}>
                 {raceProgress > 0.9 ? 'FINAL MOMENTS!' : 'LIVE RACE'}
               </Text>
             </View>
@@ -1461,16 +1461,20 @@ function _EnhancedPerformancePhase({
           </View>
         </View>
 
-        {/* Enhanced Asset Performance Cards with Live Updates */}
+        {/* 🚀 ULTRA-THIN RACING CARDS - Redesigned for Maximum Excitement */}
         <View style={styles.assetLeaderboard}>
           {assetPerformances.map((asset: any, position: number) => {
             const isRecentlyUpdated = recentlyUpdatedAssets.has(asset.symbol)
+            const isMovingUp = asset.performance >= 0
+            const isHot = asset.velocity === 'hot'
+            const isCrashing = asset.velocity === 'crash'
+            const momentumIntensity = Math.min(Math.max(asset.momentum / 5, 0.2), 1)
             
             return (
               <Animated.View 
                 key={asset.index} 
                 style={[
-                  styles.assetRaceCard,
+                  styles.ultraThinRaceCard,
                   isRecentlyUpdated && {
                     transform: [{
                       scale: priceUpdateAnim.interpolate({
@@ -1481,325 +1485,234 @@ function _EnhancedPerformancePhase({
                   }
                 ]}
               >
+              {/* 🌟 Ultra-Thin Glassmorphism Card */}
               <LinearGradient
                 colors={
                   asset.isUserAsset
-                    ? ['rgba(153, 69, 255, 0.4)', 'rgba(20, 241, 149, 0.2)', 'rgba(0, 0, 0, 0.8)']
+                    ? ['rgba(153, 69, 255, 0.8)', 'rgba(20, 241, 149, 0.6)', 'rgba(0, 0, 0, 0.95)']
                     : position === 0
-                    ? ['rgba(255, 215, 0, 0.3)', 'rgba(255, 165, 0, 0.1)', 'rgba(0, 0, 0, 0.8)']
-                    : position === 1
-                    ? ['rgba(192, 192, 192, 0.3)', 'rgba(168, 168, 168, 0.1)', 'rgba(0, 0, 0, 0.8)']
-                    : position === 2
-                    ? ['rgba(205, 127, 50, 0.3)', 'rgba(139, 69, 19, 0.1)', 'rgba(0, 0, 0, 0.8)']
-                    : ['rgba(0, 0, 0, 0.7)', 'rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.8)']
+                    ? ['rgba(255, 215, 0, 0.8)', 'rgba(255, 165, 0, 0.6)', 'rgba(0, 0, 0, 0.95)']
+                    : isHot
+                    ? ['rgba(255, 107, 107, 0.8)', 'rgba(255, 68, 68, 0.6)', 'rgba(0, 0, 0, 0.95)']
+                    : isCrashing
+                    ? ['rgba(255, 68, 68, 0.8)', 'rgba(139, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.95)']
+                    : isMovingUp
+                    ? ['rgba(0, 255, 136, 0.6)', 'rgba(20, 241, 149, 0.4)', 'rgba(0, 0, 0, 0.95)']
+                    : ['rgba(255, 68, 68, 0.6)', 'rgba(220, 38, 127, 0.4)', 'rgba(0, 0, 0, 0.95)']
                 }
-                style={styles.assetRaceGradient}
+                style={styles.ultraThinGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
               >
-                {/* Enhanced Leaderboard Rank Badge */}
-                <Animated.View
-                  style={[
-                    {
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      zIndex: 10,
-                      shadowColor: position < 3 ? '#000' : 'rgba(255,255,255,0.3)',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 8,
-                    },
-                  ]}
-                >
+                {/* 🏆 Enhanced Premium Position Badge */}
+                <Animated.View style={[
+                  styles.compactPositionBadge,
+                  position === 0 ? styles.goldBadge :
+                  position === 1 ? styles.silverBadge :
+                  position === 2 ? styles.bronzeBadge :
+                  styles.regularBadge,
+                  position < 3 && {
+                    transform: [{
+                      scale: priceUpdateFlashAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.08],
+                      })
+                    }]
+                  }
+                ]}>
                   <LinearGradient
                     colors={
-                      position === 0 
-                        ? ['#FFD700', '#FFA500', '#FF8C00'] // Gold gradient
-                        : position === 1 
-                        ? ['#E5E5E5', '#C0C0C0', '#A8A8A8'] // Silver gradient
-                        : position === 2 
-                        ? ['#D2691E', '#CD7F32', '#8B4513'] // Bronze gradient
-                        : ['rgba(99, 102, 241, 0.8)', 'rgba(79, 70, 229, 0.6)', 'rgba(55, 48, 163, 0.4)'] // Purple gradient for others
+                      position === 0 ? ['#FFD700', '#FFA500', '#FF8C00'] : 
+                      position === 1 ? ['#E8E8E8', '#C0C0C0', '#A8A8A8'] : 
+                      position === 2 ? ['#CD853F', '#CD7F32', '#8B4513'] : 
+                      ['rgba(153, 69, 255, 1)', 'rgba(79, 70, 229, 0.8)', 'rgba(67, 56, 202, 0.6)']
                     }
+                    style={[
+                      styles.positionBadgeGradient,
+                      position === 0 ? styles.goldBadge :
+                      position === 1 ? styles.silverBadge :
+                      position === 2 ? styles.bronzeBadge :
+                      styles.regularBadge
+                    ]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={[
-                      {
-                        width: 44,
-                        height: 44,
-                        borderRadius: 22,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        borderWidth: position < 3 ? 3 : 2,
-                        borderColor: position === 0 ? '#FFED4A' : position === 1 ? '#F7FAFC' : position === 2 ? '#F6AD55' : 'rgba(255,255,255,0.3)',
-                      },
-                    ]}
                   >
-                    {/* Crown for 1st place, Trophy for 2nd, Medal for 3rd */}
+                    {/* Subtle Inner Glow Effect */}
+                    <View style={[
+                      StyleSheet.absoluteFillObject,
+                      {
+                        borderRadius: 16,
+                        backgroundColor: position < 3 ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                        opacity: 0.6,
+                      }
+                    ]} />
+                    
+                    {/* Icons and Numbers */}
                     {position === 0 && (
-                      <View style={{ position: 'absolute', top: -2 }}>
-                        <MaterialCommunityIcons name="crown" size={16} color="#8B4513" />
-                      </View>
+                      <MaterialCommunityIcons 
+                        name="crown" 
+                        size={14} 
+                        color="#1A202C" 
+                        style={{ position: 'absolute', top: 2 }}
+                      />
                     )}
                     {position === 1 && (
-                      <View style={{ position: 'absolute', top: -1 }}>
-                        <MaterialCommunityIcons name="trophy-variant" size={14} color="#4A5568" />
-                      </View>
+                      <MaterialCommunityIcons 
+                        name="trophy-variant" 
+                        size={12} 
+                        color="#2D3748" 
+                        style={{ position: 'absolute', top: 2 }}
+                      />
                     )}
                     {position === 2 && (
-                      <View style={{ position: 'absolute', top: -1 }}>
-                        <MaterialCommunityIcons name="medal" size={14} color="#744210" />
-                      </View>
+                      <MaterialCommunityIcons 
+                        name="medal" 
+                        size={12} 
+                        color="#2D3748" 
+                        style={{ position: 'absolute', top: 2 }}
+                      />
                     )}
                     
-                    {/* Rank Number with enhanced styling */}
                     <Text style={[
+                      styles.positionNumber,
+                      position < 3 ? styles.topThreePosition : { color: '#FFFFFF' },
                       {
-                        color: position < 3 ? '#1A202C' : '#FFFFFF',
-                        fontSize: position < 3 ? 18 : 16,
+                        marginTop: position < 3 ? 8 : 0,
+                        fontSize: position < 3 ? 10 : 12,
                         fontWeight: '900',
-                        fontFamily: 'Orbitron-Black',
-                        textAlign: 'center',
-                        textShadowColor: position < 3 ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.8)',
-                        textShadowOffset: { width: 1, height: 1 },
+                        textShadowColor: 'rgba(0, 0, 0, 0.8)',
+                        textShadowOffset: { width: 0, height: 1 },
                         textShadowRadius: 2,
-                        letterSpacing: 0.5,
-                        marginTop: position < 3 ? 14 : 2,
                       }
                     ]}>
                       {position + 1}
                     </Text>
-                    
-                    {/* Subtle glow effect for top 3 */}
-                    {position < 3 && (
-                      <View style={[
-                        {
-                          position: 'absolute',
-                          width: 48,
-                          height: 48,
-                          borderRadius: 24,
-                          backgroundColor: position === 0 ? 'rgba(255, 215, 0, 0.2)' : position === 1 ? 'rgba(192, 192, 192, 0.2)' : 'rgba(205, 127, 50, 0.2)',
-                          top: -2,
-                          left: -2,
-                          zIndex: -1,
-                        }
-                      ]} />
-                    )}
                   </LinearGradient>
                 </Animated.View>
-                <Animated.View
-                  style={[
-                    styles.votingButtons,
-                    styles.hotEffect,
-                    {
-                      opacity: sparkleAnim,
-                      transform: [{
-                        rotate: sparkleAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ['0deg', '360deg'],
-                        }),
-                      }],
-                    },
-                  ]}
-                >
-                  <MaterialCommunityIcons name="fire" size={16} color="#FF4444" />
-                </Animated.View>
-
-                {asset.velocity === 'crash' && (
-                  <Animated.View
-                    style={[
-                      styles.crashEffect,
-                      {
-                        opacity: priceUpdateFlashAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.7, 1],
-                        }),
-                      },
-                    ]}
-                  >
-                    <MaterialCommunityIcons name="trending-down" size={16} color="#FF4444" />
+                {/* 🔥 Dynamic Effects */}
+                {isHot && (
+                  <Animated.View style={[styles.hotIndicator, { opacity: sparkleAnim }]}>
+                    <MaterialCommunityIcons name="fire" size={12} color="#FF6B6B" />
                   </Animated.View>
                 )}
 
-                {/* User Asset Indicator */}
-                {asset.isUserAsset && (
-                  <Animated.View
-                    style={[
-                      styles.userAssetBadge,
-                      {
-                        transform: [{ scale: pulseAnim }],
-                      },
-                    ]}
-                  >
-                    <MaterialCommunityIcons name="account-star" size={12} color="#FFF" />
-                    <Text style={styles.userAssetText}>YOUR BET</Text>
+                {isCrashing && (
+                  <Animated.View style={[styles.crashIndicator, { opacity: priceUpdateFlashAnim }]}>
+                    <MaterialCommunityIcons name="trending-down" size={12} color="#FF4444" />
                   </Animated.View>
                 )}
 
-                <View style={styles.assetRaceContent}>
-                  {/* Enhanced Asset Header with Live Data */}
-                  <View style={styles.assetRaceHeader}>
-                    <View style={styles.assetRaceInfo}>
+
+
+                  {/* ⚡ Main Info Row - Ultra Compact */}
+                  <View style={styles.mainInfoRow}>
+                    <View style={styles.assetInfo}>
                       <View style={[styles.assetDot, { backgroundColor: asset.color }]} />
-                      <View>
-                        <View style={styles.assetSymbolRow}>
-                          <Text style={styles.assetRaceSymbol}>{asset.symbol}</Text>
+                      <View style={styles.nameSection}>
+                        <View style={styles.symbolRow}>
+                          <Text style={styles.assetSymbol}>{asset.symbol}</Text>
                           {asset.hasLivePrice && (
-                              <Animated.View 
-                                style={[
-                                  styles.liveDataBadge,
-                                  {
-                                    opacity: liveIndicatorAnim.interpolate({
-                                      inputRange: [0, 1],
-                                      outputRange: [0.8, 1],
-                                    }),
-                                    transform: isRecentlyUpdated ? [{
-                                      scale: priceUpdateAnim.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: [1, 1.1]
-                                      })
-                                    }] : [],
-                                  }
-                                ]}
-                              >
-                                <Text style={styles.liveDataText}>●LIVE</Text>
-                              </Animated.View>
-                            )}
-                            {getCrowdSentiment(asset.symbol).upPercent > 75 && (
-                              <MaterialCommunityIcons name="trending-up" size={12} color="#00FF88" />
+                            <Animated.View style={[styles.liveIndicator, { opacity: liveIndicatorAnim }]}>
+                              <Text style={styles.liveText}>●</Text>
+                            </Animated.View>
                           )}
                         </View>
-                        <Text style={styles.assetRaceName}>{asset.name}</Text>
+                        <Text style={styles.assetName}>{asset.name}</Text>
                       </View>
                     </View>
                     
-                    <View style={styles.assetRaceStats}>
-                      <Animated.Text
-                        style={[
-                          styles.assetRacePerformance,
-                          { 
-                            color: asset.velocity === 'hot' ? '#FF6B6B' :
-                                   asset.velocity === 'crash' ? '#FF4444' :
-                                   asset.performance >= 0 ? '#00FF88' : '#FF4444',
-                            transform: isRecentlyUpdated ? [{
-                              scale: priceUpdateFlashAnim.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: [1, 1.1],
-                              }),
-                            }] : [],
-                          }
-                        ]}
-                      >
-                          {asset.performance >= 0 ? '+' : ''}{(typeof asset.performance === 'number' && !isNaN(asset.performance)) ? asset.performance.toFixed(2) : '0.00'}%
+                    <View style={styles.performanceSection}>
+                      <Animated.Text style={[
+                        styles.performanceText,
+                        { 
+                          color: isMovingUp ? '#00FF88' : '#FF4444',
+                          transform: isRecentlyUpdated ? [{ scale: priceUpdateFlashAnim }] : []
+                        }
+                      ]}>
+                        {asset.performance >= 0 ? '+' : ''}{asset.performance?.toFixed(2) || '0.00'}%
                       </Animated.Text>
                       <MaterialCommunityIcons 
-                        name={
-                          asset.velocity === 'hot' ? "fire" :
-                          asset.velocity === 'crash' ? "trending-down" :
-                          asset.velocity === 'up' ? "trending-up" : 
-                          asset.velocity === 'down' ? "trending-down" : "trending-neutral"
-                        } 
-                        size={16} 
-                        color={
-                          asset.velocity === 'hot' ? '#FF6B6B' :
-                          asset.velocity === 'crash' ? '#FF4444' :
-                          asset.performance >= 0 ? '#00FF88' : '#FF4444'
-                        } 
+                        name={isMovingUp ? "trending-up" : "trending-down"} 
+                        size={14} 
+                        color={isMovingUp ? '#00FF88' : '#FF4444'} 
                       />
                     </View>
                   </View>
 
-                  {/* Enhanced Price Movement with Confidence */}
-                  <View style={styles.priceMovement}>
+                  {/* 💨 Speed Lines for Movement */}
+                  {(isHot || isCrashing || Math.abs(asset.momentum) > 2) && (
+                    <Animated.View style={[
+                      styles.speedLines,
+                      { 
+                        opacity: momentumBarAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.3, 0.8]
+                        })
+                      }
+                    ]}>
+                      <View style={[styles.speedLine, { backgroundColor: isMovingUp ? '#00FF88' : '#FF4444' }]} />
+                      <View style={[styles.speedLine, { backgroundColor: isMovingUp ? '#00FF88' : '#FF4444', opacity: 0.7 }]} />
+                      <View style={[styles.speedLine, { backgroundColor: isMovingUp ? '#00FF88' : '#FF4444', opacity: 0.5 }]} />
+                    </Animated.View>
+                  )}
+
+                  {/* 📊 Ultra-Thin Momentum Bar */}
+                  <View style={styles.momentumBarSection}>
+                    <View style={styles.momentumTrack}>
+                      <Animated.View style={[
+                        styles.momentumFill,
+                        {
+                          width: `${Math.min(100, Math.max(10, (asset.momentum || 0) * 20 + 20))}%`,
+                          backgroundColor: 
+                            asset.momentum > 3 ? '#FF6B6B' :
+                            asset.momentum > 2 ? '#FFD700' :
+                            asset.momentum > 1 ? '#00FF88' : 
+                            '#555'
+                        }
+                      ]} />
+                      {/* Pulse effect for high momentum */}
+                      {asset.momentum > 3 && (
+                        <Animated.View style={[
+                          styles.momentumPulse,
+                          { opacity: sparkleAnim }
+                        ]} />
+                      )}
+                    </View>
+                    <View style={styles.momentumLabelContainer}>
+                      <Text style={styles.momentumLabel}>
+                        {asset.momentum > 3 ? 'EXTREME' :
+                         asset.momentum > 2 ? 'HIGH' : 
+                         asset.momentum > 1 ? 'MED' : 'LOW'}
+                      </Text>
+                      {/* 💎 Your Bet Indicator - Centered */}
+                      {asset.isUserAsset && (
+                        <Animated.View style={[styles.yourBetBadge, { transform: [{ scale: pulseAnim }] }]}>
+                          <MaterialCommunityIcons name="diamond" size={10} color="#FFD700" />
+                          <Text style={styles.yourBetText}>YOURS</Text>
+                        </Animated.View>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* 💰 Price & Pool Info */}
+                  <View style={styles.pricePoolRow}>
                     <View style={styles.priceInfo}>
-                      <View style={styles.priceLeft}>
-                        <Text style={styles.priceLabel}>Current Price</Text>
-                        <Animated.Text
-                          style={[
-                            styles.priceValue,
-                            isRecentlyUpdated && {
-                              transform: [{
-                                scale: priceUpdateFlashAnim.interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: [1, 1.05],
-                                }),
-                              }],
-                            },
-                          ]}
-                        >
-                          ${asset.currentPrice?.toLocaleString('en-US', { 
-                            minimumFractionDigits: asset.symbol === 'BTC' ? 0 : 2, 
-                            maximumFractionDigits: asset.symbol === 'BTC' ? 0 : 2 
-                          })}
-                        </Animated.Text>
-                      </View>
-                      
-
+                      <Text style={styles.priceLabel}>Price</Text>
+                      <Animated.Text style={[
+                        styles.priceValue,
+                        isRecentlyUpdated && { transform: [{ scale: priceUpdateFlashAnim }] }
+                      ]}>
+                        ${asset.currentPrice?.toLocaleString('en-US', { 
+                          minimumFractionDigits: asset.symbol === 'BTC' ? 0 : 2, 
+                          maximumFractionDigits: asset.symbol === 'BTC' ? 0 : 2 
+                        })}
+                      </Animated.Text>
                     </View>
-                    
-                    {/* Enhanced Momentum Bar with Velocity Indicators */}
-                    <View style={styles.momentumSection}>
-                      <View style={styles.momentumHeader}>
-                        <Text style={styles.momentumLabel}>Momentum</Text>
-                        <Text style={[
-                          styles.momentumValue,
-                          { 
-                            color: asset.momentum > 3 ? '#FF6B6B' :
-                                   asset.momentum > 2 ? '#FFD700' :
-                                   asset.momentum > 1 ? '#00FF88' : '#888'
-                          }
-                        ]}>
-                            {(typeof asset.momentum === 'number' && !isNaN(asset.momentum)) ? asset.momentum.toFixed(1) : '0.0'}
-                        </Text>
-                      </View>
-                      <View style={styles.momentumBarContainer}>
-                        <View style={styles.momentumBarTrack}>
-                          <Animated.View
-                            style={[
-                              styles.momentumBarFill,
-                              {
-                                width: momentumBarAnim.interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: ['20%', `${Math.min(100, Math.max(20, asset.momentum * 20 + 20))}%`],
-                                }),
-                                backgroundColor: asset.velocity === 'hot' ? '#FF6B6B' :
-                                               asset.velocity === 'crash' ? '#FF4444' :
-                                               asset.performance >= 0 ? '#00FF88' : '#FF4444',
-                              },
-                            ]}
-                          />
-                          {/* Enhanced momentum pulse effect for high momentum assets */}
-                          {asset.momentum > 3 && (
-                            <Animated.View
-                              style={[
-                                styles.momentumPulse,
-                                {
-                                  opacity: sparkleAnim.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: [0.3, 0.8],
-                                  }),
-                                },
-                              ]}
-                            />
-                          )}
-                        </View>
-                        <Text style={styles.momentumText}>
-                          {asset.momentum > 3 ? 'Extreme' :
-                           asset.momentum > 2 ? 'High' : 
-                           asset.momentum > 1 ? 'Med' : 'Low'}
-                        </Text>
-                      </View>
+                    <View style={styles.poolInfo}>
+                      <Text style={styles.poolLabel}>Pool</Text>
+                      <Text style={styles.poolValue}>{asset.poolShare?.toFixed(1) || '0.0'}%</Text>
                     </View>
                   </View>
-
-                  {/* Enhanced Pool & Market Data */}
-                  <View style={styles.marketDataSection}>
-                    <View style={styles.poolShareSection}>
-                      <Text style={styles.poolShareLabel}>Pool Share</Text>
-                        <Text style={styles.poolShareValue}>{(typeof asset.poolShare === 'number' && !isNaN(asset.poolShare)) ? asset.poolShare.toFixed(1) : '0.0'}%</Text>
-                    </View>
-                  </View>
-                </View>
               </LinearGradient>
               </Animated.View>
             )
@@ -2032,7 +1945,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 2,
   },
-  liveIndicator: {
+  headerLiveIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -2043,7 +1956,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF4444',
     marginRight: 8,
   },
-  liveText: {
+  headerLiveText: {
     ...TYPOGRAPHY.body,
     fontWeight: '700',
     color: COLORS.error,
@@ -2101,11 +2014,18 @@ const styles = StyleSheet.create({
   positionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(153, 69, 255, 0.15)',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 6,
+    backgroundColor: 'rgba(153, 69, 255, 0.2)',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(153, 69, 255, 0.4)',
+    shadowColor: '#9945FF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
   },
   positionRank: {
     fontSize: 14,
@@ -2363,15 +2283,16 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
     zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.1)',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'column', // Stack icon above number
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
   },
   rankText: {
     fontSize: 12,
@@ -2438,7 +2359,7 @@ const styles = StyleSheet.create({
   priceMovement: {
     marginBottom: 12,
   },
-  priceInfo: {
+  oldPriceInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 8,
@@ -2450,12 +2371,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'flex-end',
   },
-  priceLabel: {
+  oldPriceLabel: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
     fontFamily: 'Orbitron-Regular',
   },
-  priceValue: {
+  oldPriceValue: {
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
@@ -2467,7 +2388,7 @@ const styles = StyleSheet.create({
      marginTop: 8,
      marginBottom: 8,
    },
-  momentumLabel: {
+  oldMomentumLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
     fontFamily: 'Orbitron-Regular',
@@ -2613,19 +2534,315 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Orbitron-Bold',
   },
+
+  // 🚀 ULTRA-THIN RACING CARDS - New Styles
+  ultraThinRaceCard: {
+    marginBottom: SPACING.sm,
+    marginHorizontal: isTablet ? SPACING.lg : SPACING.md,
+    borderRadius: isTablet ? 16 : 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    height: 96, // Increased height to properly show price and pool content
+  },
+  
+  ultraThinGradient: {
+    flex: 1,
+    borderRadius: isTablet ? 16 : 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+
+  // 🏆 Enhanced Compact Position Badge
+  compactPositionBadge: {
+    position: 'absolute',
+    top: 3,
+    right: 3,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 12,
+  },
+
+  positionBadgeGradient: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+
+  // Enhanced Badge Styles for Different Positions
+  goldBadge: {
+    borderColor: 'rgba(255, 215, 0, 0.8)',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    elevation: 15,
+  },
+
+  silverBadge: {
+    borderColor: 'rgba(192, 192, 192, 0.8)',
+    shadowColor: '#C0C0C0',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 12,
+  },
+
+  bronzeBadge: {
+    borderColor: 'rgba(205, 127, 50, 0.8)',
+    shadowColor: '#CD7F32',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 12,
+  },
+
+  regularBadge: {
+    borderColor: 'rgba(153, 69, 255, 0.6)',
+    shadowColor: '#9945FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+
+  positionNumber: {
+    fontSize: 12,
+    fontWeight: '900',
+    fontFamily: 'Orbitron-Black',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+
+  topThreePosition: {
+    color: '#1A202C',
+    fontSize: 13,
+    marginTop: 8,
+  },
+
+  // 🔥 Dynamic Effect Indicators
+  hotIndicator: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    zIndex: 8,
+  },
+
+  crashIndicator: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    zIndex: 8,
+  },
+
+  // Container for momentum label and badge
+  momentumLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  // 💎 Your Bet Badge
+  yourBetBadge: {
+    backgroundColor: 'rgba(255, 215, 0, 0.9)',
+    borderRadius: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFD700',
+    marginLeft: 8,
+  },
+
+  yourBetText: {
+    fontSize: 8,
+    color: '#000',
+    fontWeight: '800',
+    fontFamily: 'Orbitron-Bold',
+    marginLeft: 2,
+  },
+
+  // ⚡ Main Content Layout
+  mainInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    zIndex: 2,
+  },
+
+  assetInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+
+  nameSection: {
+    flex: 1,
+  },
+
+  symbolRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+
+
+  assetName: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontFamily: 'Orbitron-Regular',
+    marginTop: 1,
+  },
+
+  performanceSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  performanceText: {
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: 'Orbitron-Bold',
+    marginRight: 4,
+  },
+
+  // 💨 Speed Lines
+  speedLines: {
+    position: 'absolute',
+    left: 40,
+    top: 20,
+    zIndex: 1,
+  },
+
+  speedLine: {
+    height: 1,
+    marginVertical: 1,
+    borderRadius: 0.5,
+  },
+
+  // 📊 Ultra-Thin Momentum Bar
+  momentumBarSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+    zIndex: 2,
+  },
+
+  momentumTrack: {
+    flex: 1,
+    height: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 1.5,
+    marginRight: 8,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+
+  momentumFill: {
+    height: 3,
+    borderRadius: 1.5,
+    minWidth: '10%',
+  },
+
+  // 💰 Price & Pool Row
+  pricePoolRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    zIndex: 2,
+  },
+
+  poolInfo: {
+    alignItems: 'flex-end',
+  },
+
+  poolLabel: {
+    fontSize: 8,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontFamily: 'Orbitron-Regular',
+  },
+
+  poolValue: {
+    fontSize: 11,
+    color: '#FFD700',
+    fontWeight: '700',
+    fontFamily: 'Orbitron-Bold',
+    marginTop: 1,
+  },
+
+  // 🔥 Live Indicator & Effects
+  liveIndicator: {
+    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+    borderRadius: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    marginLeft: 4,
+  },
+
+  liveText: {
+    fontSize: 7,
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontFamily: 'Orbitron-Bold',
+  },
+
+  momentumLabel: {
+    fontSize: 8,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontFamily: 'Orbitron-Regular',
+    marginLeft: 4,
+  },
+
   momentumPulse: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 3,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
-     marketDataSection: {
-     flexDirection: 'row',
-     justifyContent: 'space-around',
-     marginTop: 12,
-     paddingTop: 12,
-     borderTopWidth: 1,
-     borderTopColor: 'rgba(255,255,255,0.1)',
-   },
+
+  priceInfo: {
+    alignItems: 'flex-start',
+  },
+
+  priceLabel: {
+    fontSize: 8,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontFamily: 'Orbitron-Regular',
+  },
+
+  priceValue: {
+    fontSize: 11,
+    color: '#14F195',
+    fontWeight: '700',
+    fontFamily: 'Orbitron-Bold',
+    marginTop: 1,
+  },
+
+  marketDataSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+  },
   marketStatItem: {
     alignItems: 'center',
   },
