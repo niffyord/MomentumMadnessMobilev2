@@ -33,20 +33,20 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
-// Enhanced error types for better UX
+
 interface ConnectionError {
   type: 'network' | 'wallet' | 'permission' | 'timeout' | 'unknown';
   message: string;
   retry?: boolean;
 }
 
-// Loading states for progressive disclosure
+
 type LoadingState = 'idle' | 'connecting' | 'authorizing' | 'finalizing';
 
 export default function SignIn() {
   const {signIn, isLoading} = useAuth();
 
-  // Onboarding state
+  
   const {
     shouldShowOnboarding,
     isLoading: onboardingLoading,
@@ -54,14 +54,14 @@ export default function SignIn() {
   } = useOnboarding();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Enhanced local state
+  
   const [loadingState, setLoadingState] = useState<LoadingState>('idle');
   const [connectionError, setConnectionError] = useState<ConnectionError | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
 
-  // Enhanced animations with better performance
+  
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const heroAnim = useRef(new Animated.Value(0)).current;
@@ -73,7 +73,7 @@ export default function SignIn() {
   const speedLinesAnim = useRef(new Animated.Value(0)).current;
   const mysteryPulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Check accessibility settings
+  
   useEffect(() => {
     const checkScreenReader = async () => {
       const enabled = await AccessibilityInfo.isScreenReaderEnabled();
@@ -82,11 +82,11 @@ export default function SignIn() {
     checkScreenReader();
   }, []);
 
-  // Enhanced entrance animation sequence
+  
   useEffect(() => {
     const createEntranceSequence = () => {
       if (reducedMotion) {
-        // Simple fade-in for reduced motion
+        
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 300,
@@ -95,15 +95,15 @@ export default function SignIn() {
         return;
       }
 
-      // Racing-inspired entrance sequence
+      
       Animated.sequence([
-        // Initial hero burst
+        
         Animated.timing(heroAnim, {
           toValue: 1,
           duration: 800,
           useNativeDriver: true,
         }),
-        // Speed lines effect
+        
         Animated.timing(speedLinesAnim, {
           toValue: 1,
           duration: 600,
@@ -111,7 +111,7 @@ export default function SignIn() {
         }),
       ]).start();
 
-      // Staggered content reveal
+      
       Animated.stagger(150, [
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -141,7 +141,7 @@ export default function SignIn() {
         }),
       ]).start();
 
-      // Continuous animations
+      
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 1200,
@@ -152,7 +152,7 @@ export default function SignIn() {
     createEntranceSequence();
   }, [reducedMotion]);
 
-  // Enhanced pulse animation for CTAs
+  
   useEffect(() => {
     if (!reducedMotion) {
       const pulseLoop = Animated.loop(
@@ -174,10 +174,10 @@ export default function SignIn() {
     }
   }, [reducedMotion]);
 
-  // Mystery button pulse animation for attention
+  
   useEffect(() => {
     if (!reducedMotion) {
-      // Start mystery pulse after features animation completes
+      
       const timer = setTimeout(() => {
         const mysteryPulseLoop = Animated.loop(
           Animated.sequence([
@@ -195,13 +195,13 @@ export default function SignIn() {
         );
         mysteryPulseLoop.start();
         return () => mysteryPulseLoop.stop();
-      }, 3000); // Start after 3 seconds
+      }, 3000); 
       
       return () => clearTimeout(timer);
     }
   }, [reducedMotion]);
 
-  // Progressive onboarding flow
+  
   useEffect(() => {
     if (!onboardingLoading && shouldShowOnboarding) {
       const timer = setTimeout(() => {
@@ -214,7 +214,7 @@ export default function SignIn() {
     }
   }, [shouldShowOnboarding, onboardingLoading, reducedMotion]);
 
-  // Enhanced wallet connection with comprehensive error handling
+  
   const handleConnectWallet = async () => {
     try {
       setLoadingState('connecting');
@@ -224,7 +224,7 @@ export default function SignIn() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
-      // Simulate connection phases for better UX
+      
       await new Promise(resolve => setTimeout(resolve, 500));
       setLoadingState('authorizing');
       
@@ -245,7 +245,7 @@ export default function SignIn() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
 
-      // Enhanced error categorization with Mock MWA Wallet specific handling
+      
       let errorDetails: ConnectionError;
       
       if (error.message?.includes('Wallet authentication required') || 
@@ -288,7 +288,7 @@ export default function SignIn() {
     }
   };
 
-  // Enhanced retry mechanism
+  
   const handleRetry = () => {
     if (!reducedMotion) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -296,7 +296,7 @@ export default function SignIn() {
     handleConnectWallet();
   };
 
-  // Loading state messages
+  
   const getLoadingMessage = () => {
     switch (loadingState) {
       case 'connecting': return 'Starting engines...';
@@ -314,7 +314,6 @@ export default function SignIn() {
         translucent
       />
 
-      {/* Racing Speed Lines Effect */}
       <Animated.View 
         style={[
           styles.speedLinesContainer,
@@ -346,7 +345,6 @@ export default function SignIn() {
           showsVerticalScrollIndicator={false}
           accessibilityLabel="Momentum Racing sign in screen"
         >
-          {/* Hero Section with Racing Dynamics */}
           <Animated.View 
             style={[
               styles.heroSection,
@@ -368,7 +366,6 @@ export default function SignIn() {
           >
             <RocketHero />
             
-            {/* Environment Badge with Racing Styling */}
             <Animated.View 
               style={[
                 styles.environmentBadge,
@@ -383,7 +380,6 @@ export default function SignIn() {
             </Animated.View>
           </Animated.View>
 
-          {/* Enhanced Title Section */}
           <Animated.View
             style={[
               styles.titleSection,
@@ -400,7 +396,6 @@ export default function SignIn() {
               },
             ]}
           >
-            {/* Racing Title with Dynamic Effects */}
             <View style={styles.titleContainer}>
               <LinearGradient
                 colors={['#FFD700', '#FF6B00', '#9945FF']}
@@ -419,7 +414,6 @@ export default function SignIn() {
                   </NeonText>
                   <Text style={styles.titlePost}>MOMENTUM</Text>
                   
-                  {/* Racing Stripe */}
                   <View style={styles.racingStripe}>
                     <View style={styles.stripeSegment} />
                     <View style={styles.stripeSegment} />
@@ -429,7 +423,6 @@ export default function SignIn() {
               </LinearGradient>
             </View>
 
-            {/* Enhanced Value Proposition */}
             <View style={styles.valueProposition}>
               <View style={styles.rewardHighlight}>
                 <MaterialCommunityIcons name="trophy" size={24} color="#FFD700" />
@@ -439,7 +432,6 @@ export default function SignIn() {
             </View>
           </Animated.View>
 
-          {/* Enhanced CTA Section */}
           <Animated.View 
             style={[
               styles.ctaSection,
@@ -459,7 +451,6 @@ export default function SignIn() {
               }
             ]}
           >
-            {/* Enhanced Error Display - Moved above button for better visibility */}
             {connectionError && (
               <Animated.View 
                 style={styles.errorCard}
@@ -490,7 +481,6 @@ export default function SignIn() {
               </Animated.View>
             )}
 
-            {/* Connection Progress */}
             {loadingState !== 'idle' && (
               <View style={styles.raceProgressContainer}>
                 <View style={styles.raceTrack}>
@@ -516,7 +506,6 @@ export default function SignIn() {
               </View>
             )}
 
-            {/* Racing-themed Connect Button */}
             <TouchableOpacity
               style={[
                 styles.raceButton,
@@ -553,7 +542,6 @@ export default function SignIn() {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Interactive Features Section */}
           <Animated.View 
             style={[
               styles.featuresSection,
@@ -606,7 +594,6 @@ export default function SignIn() {
         </Animated.ScrollView>
       </SafeAreaView>
 
-      {/* Enhanced Onboarding Tutorial */}
       <OnboardingTutorial
         visible={showOnboarding}
         onComplete={() => {
@@ -643,7 +630,7 @@ const styles = StyleSheet.create({
     minHeight: screenHeight,
   },
 
-  // Enhanced Loading States
+  
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -669,7 +656,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Speed Lines Effect
+  
   speedLinesContainer: {
     position: 'absolute',
     top: 0,
@@ -688,7 +675,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
 
-  // Hero Section
+  
   heroSection: {
     alignItems: 'center',
     marginBottom: 32,
@@ -718,7 +705,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
 
-  // Title Section
+  
   titleSection: {
     alignItems: 'center',
     marginBottom: 32,
@@ -798,7 +785,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
 
-  // CTA Section
+  
   ctaSection: {
     width: '100%',
     maxWidth: 380,
@@ -865,7 +852,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Error States
+  
   errorCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -876,7 +863,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 68, 68, 0.3)',
     gap: 16,
     width: '100%',
-    marginBottom: 20, // Added margin to separate from button
+    marginBottom: 20, 
   },
   errorContent: {
     flex: 1,
@@ -917,7 +904,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Features Section
+  
   featuresSection: {
     width: '100%',
     maxWidth: 420,
