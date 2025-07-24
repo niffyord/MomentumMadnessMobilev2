@@ -805,6 +805,15 @@ function _EnhancedCommitPhase({
     }, 3000) // Wait 3 seconds for transaction settlement
   }
 
+  // Add effect to refresh user bets after successful bet placement
+  useEffect(() => {
+    if (placeBetMutation.isSuccess && account?.publicKey) {
+      // Refresh user bets to show the "You're In The Race!" section
+      fetchUserBets(account.publicKey.toBase58(), false)
+      console.log('✅ Refreshing user bets after successful bet placement')
+    }
+  }, [placeBetMutation.isSuccess, account?.publicKey, fetchUserBets])
+
   // Enhanced bet placement with the new hook and haptic feedback
   useEffect(() => {
     if (account?.publicKey && !userBalance && !isLoadingBalance) {
@@ -1301,7 +1310,7 @@ function _EnhancedCommitPhase({
                           setAdditionalBetAmount('')
                           // Refresh user bets to show updated amount
                           if (account?.publicKey) {
-                            useRaceStore.getState().fetchUserBets(account.publicKey.toBase58(), false)
+                            fetchUserBets(account.publicKey.toBase58(), false)
                           }
                         }
                       })
@@ -1824,8 +1833,9 @@ function _EnhancedCommitPhase({
                         accessibilityState={{ disabled: isPlacingBet }}
                         accessibilityHint="Dismisses the bet confirmation dialog"
                         onFocus={() => {}}
+                        activeOpacity={0.7}
                       >
-                        <Text style={[styles.confirmationCancelText, {width: '100%', textAlign: 'center'}]} numberOfLines={1} ellipsizeMode="tail">Cancel</Text>
+                        <MaterialCommunityIcons name="close" size={24} color="#fff" />
                       </TouchableOpacity>
                       <TouchableOpacity
                         ref={confirmRef}
@@ -1846,13 +1856,12 @@ function _EnhancedCommitPhase({
                           colors={["#9945FF", "#14F195"]}
                           style={styles.confirmationConfirmGradient}
                         >
-                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                            {isPlacingBet && (
-                              <ActivityIndicator size="small" color="#000" style={{ marginRight: 8 }} />
+                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+                            {isPlacingBet ? (
+                              <ActivityIndicator size="small" color="#000" />
+                            ) : (
+                              <MaterialCommunityIcons name="check" size={24} color="#000" />
                             )}
-                            <Text style={[styles.confirmationConfirmText, { flexShrink: 0, minWidth: 80 }]}>
-                              {isPlacingBet ? 'Confirming...' : 'Confirm'}
-                            </Text>
                           </View>
                         </LinearGradient>
                       </TouchableOpacity>
@@ -2735,19 +2744,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: 8,
+    marginHorizontal: 12,
+    marginTop: 4,
+    gap: 12,
   },
   confirmationCancelButton: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    flex: 0.8,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
-    minHeight: 44,
+    minHeight: 52,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   confirmationCancelText: {
     fontSize: 16,
@@ -2755,19 +2771,25 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Orbitron-Bold',
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   confirmationConfirmButton: {
-    flex: 1,
-    borderRadius: 12,
+    flex: 0.8,
+    borderRadius: 14,
     overflow: 'hidden',
-    marginLeft: 8,
+    minHeight: 52,
+    shadowColor: '#9945FF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 5,
   },
   confirmationConfirmGradient: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    minHeight: 44,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    minHeight: 52,
     width: '100%',
   },
   confirmationConfirmText: {
@@ -2776,6 +2798,7 @@ const styles = StyleSheet.create({
     color: '#000',
     fontFamily: 'Orbitron-Bold',
     textAlign: 'center',
+    letterSpacing: 0.5,
     flexShrink: 1,
     flexGrow: 1,
     width: '100%',
