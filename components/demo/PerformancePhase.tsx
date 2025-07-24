@@ -2174,8 +2174,11 @@ const styles = StyleSheet.create({
   // Race Statistics Grid
   raceStatsGrid: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     gap: 10,
     marginTop: 16,
+    paddingHorizontal: 8,
   },
   raceStatCard: {
     flex: 1,
@@ -3039,7 +3042,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
   },
   statItem: {
+    flex: 1,
     alignItems: 'center',
+    paddingHorizontal: 4,
+    minWidth: 0, // Prevents flex item from overflowing
   },
   statValue: {
     fontSize: 16,
