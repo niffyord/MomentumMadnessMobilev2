@@ -1,5 +1,6 @@
 import React from 'react'
 
+import * as Haptics from 'expo-haptics'
 import { Tabs } from 'expo-router'
 import { Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -8,6 +9,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets()
+  
+  const handleTabPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+  }
   
   return (
     <Tabs 
@@ -68,6 +73,9 @@ export default function TabLayout() {
             />
           ),
         }}
+        listeners={{
+          tabPress: handleTabPress,
+        }}
       />
       
       <Tabs.Screen
@@ -86,6 +94,9 @@ export default function TabLayout() {
               }}
             />
           ),
+        }}
+        listeners={{
+          tabPress: handleTabPress,
         }}
       />
     </Tabs>
