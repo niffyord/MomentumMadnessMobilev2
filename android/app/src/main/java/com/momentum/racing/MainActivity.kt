@@ -1,4 +1,4 @@
-package com.anonymous.MomentumMadnessMobilev2
+package com.momentum.racing
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

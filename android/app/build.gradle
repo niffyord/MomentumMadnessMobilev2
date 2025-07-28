@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.MomentumMadnessMobilev2'
+    namespace 'com.momentum.racing'
     defaultConfig {
-        applicationId 'com.anonymous.MomentumMadnessMobilev2'
+        applicationId 'com.momentum.racing'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

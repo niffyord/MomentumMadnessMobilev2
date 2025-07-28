@@ -1,4 +1,4 @@
-package com.anonymous.MomentumMadnessMobilev2
+package com.momentum.racing
 
 import android.app.Application
 import android.content.res.Configuration
