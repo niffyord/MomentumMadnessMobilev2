@@ -1,7 +1,15 @@
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
+import * as Sharing from 'expo-sharing'
 import {
   AccessibilityInfo,
   Animated,
@@ -14,6 +22,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { captureScreen } from 'react-native-view-shot'
 
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 
@@ -659,9 +668,25 @@ function _EnhancedSettledPhase({
           `Ready to join the action? 🚀`
       }
 
+      try {
+        // Attempt to capture a screenshot and share as an image
+        const uri = await captureScreen({ format: 'png', quality: 0.9 })
+        if (uri && (await Sharing.isAvailableAsync())) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'image/png',
+            dialogTitle: shareTitle,
+          })
+          return
+        }
+      } catch (_err) {
+        // Ignore and fall back to text share
+      }
+
+      // Fallback to plain text share if image capture or sharing fails
       await Share.share({
         message: shareMessage,
         title: shareTitle,
+        url: undefined,
       })
 
       triggerHaptic('selection')
