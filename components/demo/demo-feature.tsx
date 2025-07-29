@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import { LinearGradient } from 'expo-linear-gradient'
 import {
@@ -20,7 +26,12 @@ import { useConnection } from '@/components/solana/solana-provider'
 import { useWalletUi } from '@/components/solana/use-wallet-ui'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 
-import { getCurrentPhase, getTimeRemaining, type Phase as RacePhase, useRaceStore } from '../../store/useRaceStore'
+import {
+  getCurrentPhase,
+  getTimeRemaining,
+  type Phase as RacePhase,
+  useRaceStore,
+} from '../../store/useRaceStore'
 import { EnhancedCommitPhase } from './CommitPhase'
 import { EnhancedPerformancePhase } from './PerformancePhase'
 import { EnhancedSettledPhase } from './SettledPhase'
@@ -616,7 +627,7 @@ export function DemoFeature() {
 
           <View style={styles.loadingTextContainer}>
             <LinearGradient colors={['#9945FF', '#14F195']} style={styles.loadingTextGradient}>
-              <Text style={styles.enhancedLoadingTitle}>MOMENTUM RACING</Text>
+              <Text style={styles.enhancedLoadingTitle}>MOMENTUM MADNESS</Text>
             </LinearGradient>
             <Text style={styles.enhancedLoadingSubtitle}>Connecting to Race Server...</Text>
 

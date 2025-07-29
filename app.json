@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Momentum Racing",
+    "name": "Momentum Madness",
     "slug": "MomentumMadnessMobilev2",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "momentum-racing",
+    "scheme": "momentum-madness",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

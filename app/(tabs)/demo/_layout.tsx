@@ -84,7 +84,7 @@ function DemoHeader() {
             color: '#fff',
             fontFamily: 'Orbitron-Bold',
           }}>
-            Momentum Racing
+            Momentum Madness
           </Text>
           <Text style={{
             fontSize: 12,

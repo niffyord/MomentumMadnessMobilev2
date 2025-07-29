@@ -3,11 +3,11 @@ import { ClusterNetwork } from '@/components/cluster/cluster-network'
 import { clusterApiUrl } from '@solana/web3.js'
 
 export class AppConfig {
-  static name = 'Momentum Racing'
+  static name = 'Momentum Madness'
   // Use a proper HTTPS URI for better wallet app recognition
-  static uri = 'https://momentum-racing.app' // Changed to HTTPS for better compatibility
-  static icon = 'icon.png' // This will resolve to https://momentum-racing.app/icon.png
-  static scheme = 'momentum-racing' // Simplified scheme name
+  static uri = 'https://momentum-madness.app'
+  static icon = 'icon.png' // This will resolve to https://momentum-madness.app/icon.png
+  static scheme = 'momentum-madness'
   static clusters: Cluster[] = [
     {
       id: 'solana:devnet',

@@ -1,4 +1,11 @@
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -20,7 +27,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { PublicKey } from '@solana/web3.js'
 
 import { useRaceStore } from '../../store/useRaceStore'
-import { useCanPlaceBet, usePlaceBet } from './use-place-bet'
+import {
+  useCanPlaceBet,
+  usePlaceBet,
+} from './use-place-bet'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
@@ -932,9 +942,9 @@ function _EnhancedCommitPhase({
             <TouchableOpacity
               style={[styles.learnMoreButton, { minHeight: MIN_TOUCH_TARGET, paddingVertical: SPACING.sm }]}
               onPress={() => setShowTips(true)}
-              accessibilityLabel="Learn more about momentum racing"
+              accessibilityLabel="Learn more about momentum madness"
               accessibilityRole="button"
-              accessibilityHint="Opens help information about how momentum racing works"
+              accessibilityHint="Opens help information about how momentum madness works"
             >
               <Text style={styles.learnMoreText}>Learn More About Racing</Text>
               <MaterialCommunityIcons name="help-circle-outline" size={16} color={COLORS.primary} />

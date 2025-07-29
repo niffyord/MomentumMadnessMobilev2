@@ -343,7 +343,7 @@ export default function SignIn() {
             },
           ]}
           showsVerticalScrollIndicator={false}
-          accessibilityLabel="Momentum Racing sign in screen"
+          accessibilityLabel="Momentum Madness sign in screen"
         >
           <Animated.View 
             style={[
