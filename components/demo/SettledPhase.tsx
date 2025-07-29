@@ -22,7 +22,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { captureScreen } from 'react-native-view-shot'
+import {
+  captureRef,
+  captureScreen,
+} from 'react-native-view-shot'
 
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 
@@ -204,6 +207,8 @@ function _EnhancedSettledPhase({
 
   const claimButtonScaleAnim = useRef(new Animated.Value(1)).current
   const shareButtonPulseAnim = useRef(new Animated.Value(1)).current
+  // Ref to capture only the winner announcement card
+  const shareCaptureRef = useRef<View>(null)
   const resultRowStaggerAnim = useRef(new Animated.Value(0)).current
   const confettiAnim = useRef(new Animated.Value(0)).current
   const sparkleAnim = useRef(new Animated.Value(0)).current
@@ -635,57 +640,35 @@ function _EnhancedSettledPhase({
     ]).start()
 
     try {
-      let shareMessage = ''
-      let shareTitle = ''
-
-      if (userPosition?.isWinner) {
-        const returnPercentage =
-          userPosition.originalAmount > 0 ? (userPosition.actualPayout / userPosition.originalAmount) * 100 : 0
-
-        shareTitle = '🏆 I WON on Momentum Madness!'
-        shareMessage =
-          `I just won $${userPosition.claimableAmount.toFixed(2)} with a +${returnPercentage.toFixed(0)}% return! 🚀\n\n` +
-          `🥇 My winning ${userPosition.asset.symbol} pick: +${userPosition.finalPerformance.toFixed(2)}%\n` +
-          `👥 Beat ${userPosition.totalParticipants - 1} other racers\n` +
-          `🎯 Race Intensity: ${raceResults?.raceIntensity.toUpperCase()}\n\n` +
-          `Think you can beat me? Join the race! 🏁`
-      } else if (userPosition) {
-        shareTitle = '🏁 I raced on Momentum Madness!'
-        shareMessage =
-          `I just competed in a ${raceResults?.raceIntensity} intensity race! 🏎️\n\n` +
-          `🎯 My ${userPosition.asset.symbol} pick: ${userPosition.finalPerformance >= 0 ? '+' : ''}${userPosition.finalPerformance.toFixed(2)}%\n` +
-          `👥 Competed with ${userPosition.totalParticipants} total racers\n` +
-          `🏆 Winner: ${winnerAsset?.symbol} (+${winnerAsset?.performance.toFixed(2)}%)\n\n` +
-          `Join the next race and test your prediction skills! 🚀`
-      } else {
-        shareTitle = '👀 I watched an epic race!'
-        shareMessage =
-          `Just watched an intense ${raceResults?.raceIntensity} race on Momentum Madness! 🏁\n\n` +
-          `🏆 Winner: ${winnerAsset?.symbol} (+${winnerAsset?.performance.toFixed(2)}%)\n` +
-          `📊 Performance Spread: ${raceResults?.performanceSpread.toFixed(1)}%\n` +
-          `💰 Total Pool: ${formatValue(race?.totalPool || 0)}\n` +
-          `👥 ${race?.participantCount || 0} racers competed\n\n` +
-          `Ready to join the action? 🚀`
+      // Attempt to capture only the winner section
+      let uri: string | undefined
+      if (shareCaptureRef.current) {
+        uri = await captureRef(shareCaptureRef.current, { format: 'png', quality: 0.9 })
       }
-
-      try {
-        // Attempt to capture a screenshot and share as an image
-        const uri = await captureScreen({ format: 'png', quality: 0.9 })
-        if (uri && (await Sharing.isAvailableAsync())) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'image/png',
-            dialogTitle: shareTitle,
-          })
-          return
-        }
-      } catch (_err) {
-        // Ignore and fall back to text share
+      // Fallback to full screen if specific capture fails
+      if (!uri) {
+        uri = await captureScreen({ format: 'png', quality: 0.9 })
+      }
+      if (uri && (await Sharing.isAvailableAsync())) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: '🏆 I WON on Momentum Madness!',
+        })
+        return
       }
 
       // Fallback to plain text share if image capture or sharing fails
+      const returnPercentage = userPosition && userPosition.originalAmount > 0
+        ? (userPosition.actualPayout / userPosition.originalAmount) * 100
+        : 0
       await Share.share({
-        message: shareMessage,
-        title: shareTitle,
+        message:
+          `I just won $${userPosition?.claimableAmount.toFixed(2)} with a +${returnPercentage.toFixed(0)}% return! 🚀\n\n` +
+          `🥇 My winning ${userPosition?.asset.symbol} pick: +${userPosition?.finalPerformance.toFixed(2)}%\n` +
+          `👥 Beat ${userPosition?.totalParticipants - 1} other racers\n` +
+          `🎯 Race Intensity: ${raceResults?.raceIntensity.toUpperCase()}\n\n` +
+          `Think you can beat me? Join the race! 🏁`,
+        title: '🏆 I WON on Momentum Madness!',
         url: undefined,
       })
 
@@ -719,6 +702,8 @@ function _EnhancedSettledPhase({
 
         {derivedUserBet && account ? (
           <Animated.View
+            ref={shareCaptureRef}
+            collapsable={false}
             style={[
               styles.userResultSection,
               {
@@ -1340,6 +1325,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#000000',
   },
   userResultHeader: {
     flexDirection: 'row',
