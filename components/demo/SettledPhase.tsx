@@ -179,13 +179,27 @@ function _EnhancedSettledPhase({
   error = null,
 }: SettledPhaseProps) {
   const claimPayoutMutation = useClaimPayout()
-  const { userBets, fetchSettledPhaseData } = useRaceStore()
+  const { userBets, fetchSettledPhaseData, connectWebSocket, subscribeToRace, isConnected } = useRaceStore()
 
   React.useEffect(() => {
     if (account?.publicKey) {
       fetchSettledPhaseData(race?.raceId, account.publicKey.toBase58())
     }
   }, [race?.raceId, account?.publicKey])
+
+  // Connect to websocket for real-time settled phase updates
+  React.useEffect(() => {
+    if (race?.raceId && !isConnected) {
+      connectWebSocket().then(() => {
+        if (race.raceId) {
+          subscribeToRace(race.raceId)
+          console.log(`🔌 Connected to websocket for settled phase updates on race ${race.raceId}`)
+        }
+      })
+    } else if (race?.raceId && isConnected) {
+      subscribeToRace(race.raceId)
+    }
+  }, [race?.raceId, isConnected, connectWebSocket, subscribeToRace])
 
   const derivedUserBet = React.useMemo(() => {
     if (userBet) return userBet
@@ -195,11 +209,7 @@ function _EnhancedSettledPhase({
     return undefined
   }, [userBet, userBets, race?.raceId])
 
-  React.useEffect(() => {
-    if (claimPayoutMutation.isSuccess && account?.publicKey) {
-      fetchSettledPhaseData(race?.raceId, account.publicKey.toBase58(), false)
-    }
-  }, [claimPayoutMutation.isSuccess, account?.publicKey])
+  // Removed duplicate data fetching - the claim mutation success handler already refreshes data
 
   const celebrationAnim = useRef(new Animated.Value(0)).current
   const winnerGlowAnim = useRef(new Animated.Value(0)).current
@@ -312,22 +322,33 @@ function _EnhancedSettledPhase({
     )
   }
 
-  const assetPerformances = useMemo(() => {
+  // Optimized asset performance calculations with granular memoization
+  const rawAssetData = useMemo(() => {
     if (!race?.assets) return []
+    return race.assets.map((asset: any, index: number) => ({ asset, index }))
+  }, [race?.assets])
 
-    return race.assets
-      .map((asset: any, index: number) => {
+  const poolData = useMemo(() => ({
+    totalPool: race?.totalPool || 0,
+    assetPools: race?.assetPools || [],
+    participantCount: race?.participantCount || 0,
+  }), [race?.totalPool, race?.assetPools, race?.participantCount])
+
+  const assetPerformances = useMemo(() => {
+    if (!rawAssetData.length) return []
+
+    return rawAssetData
+      .map(({ asset, index }: { asset: any; index: number }) => {
         const startPrice = asset.startPrice || 100
         const endPrice = asset.endPrice || asset.currentPrice || startPrice
 
-        let performance = 0
-        if (typeof startPrice === 'number' && typeof endPrice === 'number' && startPrice > 0) {
-          performance = ((endPrice - startPrice) / startPrice) * 100
-        }
+        // Optimized performance calculation
+        const performance = (startPrice > 0 && typeof startPrice === 'number' && typeof endPrice === 'number') 
+          ? ((endPrice - startPrice) / startPrice) * 100 
+          : 0
 
-        const totalPool = race.totalPool || 0
-        const assetPool = race.assetPools?.[index] || 0
-        const poolShare = totalPool > 0 ? (assetPool / totalPool) * 100 : 0
+        const assetPool = poolData.assetPools[index] || 0
+        const poolShare = poolData.totalPool > 0 ? (assetPool / poolData.totalPool) * 100 : 0
 
         return {
           ...asset,
@@ -336,11 +357,11 @@ function _EnhancedSettledPhase({
           startPrice,
           endPrice,
           poolShare,
-          participantCount: Math.floor((poolShare * (race?.participantCount || 0)) / 100),
+          participantCount: Math.floor((poolShare * poolData.participantCount) / 100),
         }
       })
       .sort((a: any, b: any) => b.performance - a.performance)
-  }, [race?.assets, race?.totalPool, race?.assetPools, race?.participantCount])
+  }, [rawAssetData, poolData])
 
   const raceResults = useMemo(() => {
     if (!assetPerformances.length) return null
@@ -588,6 +609,9 @@ function _EnhancedSettledPhase({
 
     triggerHaptic('medium')
 
+    // Optimistic update - immediately show claimed status for instant UX
+    setLocalClaimUpdate(true)
+
     Animated.sequence([
       Animated.timing(claimButtonScaleAnim, {
         toValue: 0.95,
@@ -610,13 +634,13 @@ function _EnhancedSettledPhase({
         playerAddress: account.publicKey,
       })
 
-      setLocalClaimUpdate(true)
-
       setTimeout(() => triggerHaptic('success'), 200)
       setTimeout(() => triggerHaptic('light'), 400)
 
       console.log(`✅ Payout claim submitted successfully`)
     } catch (error) {
+      // Revert optimistic update on error
+      setLocalClaimUpdate(false)
       triggerHaptic('error')
       console.error('Failed to claim payout:', error)
     }

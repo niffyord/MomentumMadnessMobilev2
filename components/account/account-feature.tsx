@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react'
+
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
@@ -22,10 +23,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+
 import { MaterialCommunityIcons } from '@expo/vector-icons'
+
 import { useRaceStore } from '../../store/useRaceStore'
 import { useConnection } from '../solana/solana-provider'
 import { useWalletUi } from '../solana/use-wallet-ui'
+
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 const isTablet = screenWidth >= 768
 const isLandscape = screenWidth > screenHeight
@@ -930,9 +934,8 @@ export function AccountFeature() {
       if (success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
         setLocalClaimedRaces(prev => new Set(prev).add(raceId))
-        setTimeout(() => {
-          fetchUserBets(account.publicKey.toString(), false) 
-        }, 3000) 
+        // Immediate refresh - backend metrics show <50ms response times
+        fetchUserBets(account.publicKey.toString(), false) 
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
       }

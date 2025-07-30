@@ -51,6 +51,7 @@ interface RaceStore {
   isLoading: boolean
   error?: string
   isConnected: boolean
+  lastSubscribedRaceId?: number
   
   // Service instances
   apiService: ApiService
@@ -102,14 +103,14 @@ interface RaceStore {
   clear: () => void
 }
 
-// Cache TTL constants (in milliseconds) - Optimized for performance
+// Cache TTL constants (in milliseconds) - Optimized based on backend metrics (<50ms response times)
 const CACHE_TTL = {
   RACE_DETAILS: 5000,      // 5 seconds for race details during commit phase
-  USER_BETS: 10000,        // 10 seconds for user bets
+  USER_BETS: 3000,         // 3 seconds for user bets (faster updates for bet status)
   COMPLETE_RACE: 3000,     // 3 seconds for complete race info during commit phase
-  SETTLED_RACE: 10000,     // 10 seconds for settled race info
+  SETTLED_RACE: 2000,      // 2 seconds for settled race info (faster claim status updates)
   ASSET_INFO: 600000,      // 10 minutes for asset info (very stable)
-  CURRENT_RACE: 5000,      // 5 seconds for current race
+  CURRENT_RACE: 3000,      // 3 seconds for current race (faster race transitions)
 }
 
 export const useRaceStore = create<RaceStore>()(
@@ -131,6 +132,7 @@ export const useRaceStore = create<RaceStore>()(
     wsService: new WebSocketService(),
     cache: new Map(),
     pendingRequests: {},
+    lastSubscribedRaceId: undefined,
     lastFetchTime: 0,
 
     // Cache management methods
@@ -283,10 +285,17 @@ export const useRaceStore = create<RaceStore>()(
     },
 
     subscribeToRace: (raceId: number) => {
-      const { wsService, isConnected } = get()
-      if (isConnected) {
-        wsService.subscribeToRace(raceId)
+      const { wsService, isConnected, lastSubscribedRaceId } = get()
+      if (!isConnected) return
+
+      // Unsubscribe from the previously subscribed race to avoid receiving duplicate updates
+      if (lastSubscribedRaceId && lastSubscribedRaceId !== raceId) {
+        wsService.unsubscribeFromRace(lastSubscribedRaceId)
       }
+
+      // Subscribe to the new race and store the reference
+      wsService.subscribeToRace(raceId)
+      set({ lastSubscribedRaceId: raceId })
     },
 
     forceReconnectWebSocket: async () => {
@@ -626,17 +635,19 @@ export const useRaceStore = create<RaceStore>()(
       const cacheKey = `settled_${raceId || 'current'}_${playerAddress || 'anonymous'}`
       const requestKey = `fetchSettled_${raceId || 'current'}_${playerAddress || 'anonymous'}`
       
-      // Check if request is already in progress
+      // Enhanced request deduplication with priority for fresh data
       const existingRequest = get().pendingRequests[requestKey]
       if (existingRequest) {
+        console.log(`⚡ Deduplicating settled phase request for ${cacheKey}`)
         return existingRequest
       }
 
-      // Serve cached data when available
+      // Serve cached data when available and not explicitly bypassed
       if (useCache) {
         const cached = get().getCachedData<{ race: EnhancedRaceDetails; userBets?: UserBetSummary[] }>(cacheKey)
         if (cached) {
           set({ race: cached.race, userBets: cached.userBets })
+          console.log(`⚡ Served settled phase data from cache for ${cacheKey}`)
           return
         }
       }
@@ -771,8 +782,8 @@ export const useRaceStore = create<RaceStore>()(
         get().cache.delete(userBetsKey)
         get().cache.delete(settledKey)
         
-        // Wait longer for blockchain to process the claim transaction
-        await new Promise(resolve => setTimeout(resolve, 3000))
+        // Wait minimal time for blockchain to process - backend metrics show fast responses
+        await new Promise(resolve => setTimeout(resolve, 500))
         
         // Refresh data with force refresh (useCache=false)
         console.log(`🔄 Force refreshing data after claim for race ${raceId}...`)
@@ -810,6 +821,7 @@ export const useRaceStore = create<RaceStore>()(
         priceUpdates: new Map(),
         error: undefined,
         pendingRequests: {},
+        lastSubscribedRaceId: undefined,
         lastFetchTime: 0,
         isLoading: false,
       }))

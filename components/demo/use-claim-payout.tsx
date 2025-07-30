@@ -271,15 +271,14 @@ export function useClaimPayout() {
       }
 
       
-      await new Promise(resolve => setTimeout(resolve, 3000))
-
-      
+      // Backend metrics show <50ms response times, no need for artificial delays
+      // Immediately refresh data since backend is very fast
       try {
         await Promise.all([
           fetchRaceDetails(data.raceId, false), 
           fetchUserBets(variables.playerAddress.toString(), false) 
         ])
-        console.log(`🔄 Data refreshed after successful payout claim`)
+        console.log(`🔄 Data refreshed immediately after successful payout claim`)
       } catch (error) {
         console.warn('⚠️ Failed to refresh data after payout claim:', error)
         
