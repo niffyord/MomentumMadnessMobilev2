@@ -28,6 +28,7 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="momentum-racing"/>
         <data android:scheme="exp+momentummadnessmobilev2"/>
+        <data android:scheme="momentum-madness"/>
       </intent-filter>
       <intent-filter android:autoVerify="true" data-generated="true">
         <action android:name="android.intent.action.VIEW"/>

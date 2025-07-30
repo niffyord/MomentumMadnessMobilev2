@@ -261,6 +261,12 @@ export function DemoFeature() {
               } else {
                 await fetchSettledPhaseData(undefined, account?.publicKey?.toString(), false)
               }
+
+              // Ensure WebSocket is connected to receive live updates for the new race
+              if (!isConnected) {
+                await connectWebSocket()
+              }
+              subscribeToRace(newRaceId)
             }
           }
         } catch (error) {

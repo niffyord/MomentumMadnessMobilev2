@@ -15,6 +15,7 @@ import {
 } from '../services/backendTypes'
 import { OnChainService } from '../services/onchainService'
 import { WebSocketService } from '../services/websocketService'
+import { persistKey } from './hydration'
 
 // Cache interface for intelligent data management
 interface CacheEntry<T> {
@@ -173,6 +174,7 @@ export const useRaceStore = create<RaceStore>()(
 
     // Enhanced setters with batched updates for better performance
     setRace: (race: EnhancedRaceDetails) => {
+      persistKey('lastRace', race)
       set((state) => {
         // Cache the race data
         get().setCachedData(`race_${race.raceId}`, race, CACHE_TTL.RACE_DETAILS)
