@@ -484,7 +484,7 @@ export function DemoFeature() {
   }, [])
 
   useEffect(() => {
-    if (!race && !isLoading && !error) {
+    if (!race && !error) {
       const animateLoadingDots = () => {
         const staggeredAnimations = loadingDotsAnim.map((anim, index) =>
           Animated.loop(
@@ -554,7 +554,7 @@ export function DemoFeature() {
     }
   }, [race, isLoading, error])
 
-  if (!race && !isLoading && !error) {
+  if (!race && !error) {
     return (
       <AppView style={styles.container}>
         <LinearGradient colors={['#000814', '#001D3D', '#003566', '#0077B6']} style={StyleSheet.absoluteFill} />
@@ -732,7 +732,7 @@ export function DemoFeature() {
     )
   }
 
-  if (isLoading && !race) {
+  if (false) {
     return (
       <AppView style={styles.container}>
         <LinearGradient colors={['#000814', '#001D3D', '#003566', '#0077B6']} style={StyleSheet.absoluteFill} />
