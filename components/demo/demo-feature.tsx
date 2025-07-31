@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { LinearGradient } from 'expo-linear-gradient'
 import {
@@ -26,12 +20,7 @@ import { useConnection } from '@/components/solana/solana-provider'
 import { useWalletUi } from '@/components/solana/use-wallet-ui'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 
-import {
-  getCurrentPhase,
-  getTimeRemaining,
-  type Phase as RacePhase,
-  useRaceStore,
-} from '../../store/useRaceStore'
+import { getCurrentPhase, getTimeRemaining, type Phase as RacePhase, useRaceStore } from '../../store/useRaceStore'
 import { EnhancedCommitPhase } from './CommitPhase'
 import { EnhancedPerformancePhase } from './PerformancePhase'
 import { EnhancedSettledPhase } from './SettledPhase'
@@ -324,7 +313,9 @@ export function DemoFeature() {
         })
       }
     } else if (currentPhase === 'settled') {
-      fetchSettledPhaseData(undefined, playerAddress)
+      // Always fetch fresh data when entering the settled phase to avoid
+      // displaying stale results from cache
+      fetchSettledPhaseData(undefined, playerAddress, false)
     }
   }, [currentPhase, account?.publicKey])
 
@@ -976,7 +967,14 @@ export function DemoFeature() {
           )}
 
           {currentPhase === 'settled' && race && (
-            <EnhancedSettledPhase race={race} userBet={userBet} formatValue={formatValue} account={account} />
+            <EnhancedSettledPhase
+              race={race}
+              userBet={userBet}
+              formatValue={formatValue}
+              account={account}
+              isLoading={isLoading}
+              error={error}
+            />
           )}
         </ScrollView>
       </Animated.View>
