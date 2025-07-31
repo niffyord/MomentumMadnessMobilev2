@@ -86,6 +86,7 @@ interface RaceStore {
   fetchCommitPhaseData: (raceId?: number, playerAddress?: string, useCache?: boolean) => Promise<void>
   fetchPerformancePhaseData: (raceId?: number, playerAddress?: string, useCache?: boolean) => Promise<void>
   fetchSettledPhaseData: (raceId?: number, playerAddress?: string, useCache?: boolean) => Promise<void>
+  fetchPhaseAwareData: (playerAddress?: string, useCache?: boolean) => Promise<void>
   
   // Transaction methods
   placeBet: (playerAddress: string, raceId: number, assetIdx: number, amount: number, connection: Connection, signAndSendTransaction: any) => Promise<boolean>
@@ -692,6 +693,24 @@ export const useRaceStore = create<RaceStore>()(
 
       get().pendingRequests[requestKey] = request
       return request
+    },
+
+    fetchPhaseAwareData: async (playerAddress?: string, useCache: boolean = true) => {
+      // Always refresh or retrieve the current race first to know the correct phase
+      await get().fetchCurrentRace(useCache)
+
+      const currentRace = get().race
+      if (!currentRace) return
+
+      const phase = getCurrentPhase(currentRace)
+
+      if (phase === 'commit') {
+        await get().fetchCommitPhaseData(currentRace.raceId, playerAddress, useCache)
+      } else if (phase === 'performance') {
+        await get().fetchPerformancePhaseData(currentRace.raceId, playerAddress, useCache)
+      } else {
+        await get().fetchSettledPhaseData(currentRace.raceId, playerAddress, useCache)
+      }
     },
 
     // Transaction methods
