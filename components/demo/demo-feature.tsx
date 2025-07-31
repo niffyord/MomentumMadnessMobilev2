@@ -173,6 +173,7 @@ export function DemoFeature() {
     fetchCommitPhaseData,
     fetchPerformancePhaseData,
     fetchSettledPhaseData,
+    fetchPhaseAwareData,
     connectWebSocket,
     subscribeToRace,
     isConnected,
@@ -254,13 +255,7 @@ export function DemoFeature() {
               const newPhase = getCurrentPhase(response.data)
               console.log(`🔄 New race ${newRaceId} is in ${newPhase} phase`)
 
-              if (newPhase === 'commit') {
-                await fetchCommitPhaseData(undefined, account?.publicKey?.toString(), false)
-              } else if (newPhase === 'performance') {
-                await fetchPerformancePhaseData(undefined, account?.publicKey?.toString(), false)
-              } else {
-                await fetchSettledPhaseData(undefined, account?.publicKey?.toString(), false)
-              }
+              await fetchPhaseAwareData(account?.publicKey?.toString(), false)
 
               // Ensure WebSocket is connected to receive live updates for the new race
               if (!isConnected) {
@@ -331,7 +326,7 @@ export function DemoFeature() {
   useEffect(() => {
     const playerAddress = account?.publicKey?.toString()
     if (!race && !isLoading) {
-      fetchCommitPhaseData(undefined, playerAddress)
+      fetchPhaseAwareData(playerAddress)
     }
   }, [race, isLoading, account?.publicKey])
 
@@ -667,7 +662,7 @@ export function DemoFeature() {
             style={styles.enhancedRetryButton}
             onPress={() => {
               const playerAddress = account?.publicKey?.toString()
-              fetchCommitPhaseData(undefined, playerAddress)
+              fetchPhaseAwareData(playerAddress)
             }}
             accessibilityLabel="Retry connection to race server"
             accessibilityRole="button"
@@ -776,7 +771,7 @@ export function DemoFeature() {
             style={styles.enhancedRetryButton}
             onPress={() => {
               const playerAddress = account?.publicKey?.toString()
-              fetchCommitPhaseData(undefined, playerAddress)
+              fetchPhaseAwareData(playerAddress)
             }}
             accessibilityLabel="Retry connection"
             accessibilityRole="button"
