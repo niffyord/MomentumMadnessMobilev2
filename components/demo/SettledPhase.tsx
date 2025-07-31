@@ -1,4 +1,11 @@
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -15,7 +22,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { captureRef, captureScreen } from 'react-native-view-shot'
+import {
+  captureRef,
+  captureScreen,
+} from 'react-native-view-shot'
 
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 
@@ -173,8 +183,7 @@ function _EnhancedSettledPhase({
 
   React.useEffect(() => {
     if (account?.publicKey) {
-      // Bypass cache when entering the settled phase to ensure results are fresh
-      fetchSettledPhaseData(race?.raceId, account.publicKey.toBase58(), false)
+      fetchSettledPhaseData(race?.raceId, account.publicKey.toBase58())
     }
   }, [race?.raceId, account?.publicKey])
 
@@ -319,14 +328,11 @@ function _EnhancedSettledPhase({
     return race.assets.map((asset: any, index: number) => ({ asset, index }))
   }, [race?.assets])
 
-  const poolData = useMemo(
-    () => ({
-      totalPool: race?.totalPool || 0,
-      assetPools: race?.assetPools || [],
-      participantCount: race?.participantCount || 0,
-    }),
-    [race?.totalPool, race?.assetPools, race?.participantCount],
-  )
+  const poolData = useMemo(() => ({
+    totalPool: race?.totalPool || 0,
+    assetPools: race?.assetPools || [],
+    participantCount: race?.participantCount || 0,
+  }), [race?.totalPool, race?.assetPools, race?.participantCount])
 
   const assetPerformances = useMemo(() => {
     if (!rawAssetData.length) return []
@@ -337,10 +343,9 @@ function _EnhancedSettledPhase({
         const endPrice = asset.endPrice || asset.currentPrice || startPrice
 
         // Optimized performance calculation
-        const performance =
-          startPrice > 0 && typeof startPrice === 'number' && typeof endPrice === 'number'
-            ? ((endPrice - startPrice) / startPrice) * 100
-            : 0
+        const performance = (startPrice > 0 && typeof startPrice === 'number' && typeof endPrice === 'number') 
+          ? ((endPrice - startPrice) / startPrice) * 100 
+          : 0
 
         const assetPool = poolData.assetPools[index] || 0
         const poolShare = poolData.totalPool > 0 ? (assetPool / poolData.totalPool) * 100 : 0
@@ -677,10 +682,9 @@ function _EnhancedSettledPhase({
       }
 
       // Fallback to plain text share if image capture or sharing fails
-      const returnPercentage =
-        userPosition && userPosition.originalAmount > 0
-          ? (userPosition.actualPayout / userPosition.originalAmount) * 100
-          : 0
+      const returnPercentage = userPosition && userPosition.originalAmount > 0
+        ? (userPosition.actualPayout / userPosition.originalAmount) * 100
+        : 0
       await Share.share({
         message:
           `I just won $${userPosition?.claimableAmount.toFixed(2)} with a +${returnPercentage.toFixed(0)}% return! 🚀\n\n` +
