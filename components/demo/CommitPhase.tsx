@@ -80,40 +80,67 @@ const calculatePotentialPayout = (
   betAmount: string,
   race: any,
   selectedAssetIdx: number,
-): { totalPayout: number; profit: number } => {
+): { totalPayout: number; profit: number; riskWarning: string } => {
   if (!betAmount || isNaN(parseFloat(betAmount))) {
-    return { totalPayout: 0, profit: 0 }
+    return { totalPayout: 0, profit: 0, riskWarning: "Enter bet amount" }
   }
 
   const betAmountNum = parseFloat(betAmount)
 
+  // If race is already settled and has a payout ratio (shouldn't happen in commit phase)
   if (race?.payoutRatio && race.payoutRatio > 0) {
     const totalPayout = (betAmountNum * race.payoutRatio) / 1_000_000_000_000
     const profit = Math.max(0, totalPayout - betAmountNum)
-    return { totalPayout, profit }
+    return { totalPayout, profit, riskWarning: "Race settled" }
   }
 
   if (race?.totalPool && race?.assetPools && selectedAssetIdx >= 0 && selectedAssetIdx < race.assetPools.length) {
     const totalPoolUSD = race.totalPool / 1_000_000
     const selectedPoolUSD = (race.assetPools[selectedAssetIdx] || 0) / 1_000_000
-    const feeRate = (race.feeBps || 250) / 10000
-    const netPool = totalPoolUSD * (1 - feeRate)
+    const feeRate = (race.feeBps || 500) / 10000
+    
+    // Calculate projected pools after this bet
+    const projectedSelectedPool = selectedPoolUSD + betAmountNum
+    const projectedTotalPool = totalPoolUSD + betAmountNum
+    const projectedNetPool = projectedTotalPool * (1 - feeRate)
 
-    if (selectedPoolUSD > 0) {
-      const projectedSelectedPool = selectedPoolUSD + betAmountNum
-      const projectedTotalPool = totalPoolUSD + betAmountNum
-      const projectedNetPool = projectedTotalPool * (1 - feeRate)
-
-      const estimatedPayout = (betAmountNum / projectedSelectedPool) * projectedNetPool
-      const profit = Math.max(0, estimatedPayout - betAmountNum)
-      return { totalPayout: estimatedPayout, profit }
+    // WINNER-TAKES-ALL: Only calculate payout IF your asset wins
+    // Assume worst case: you're competing against all other pools combined
+    const otherPoolsTotal = projectedTotalPool - projectedSelectedPool
+    
+    if (projectedSelectedPool > 0 && projectedNetPool > 0) {
+      // IF your asset wins (has highest performance), you get:
+      // (your_bet_amount / winning_pool) * net_pool
+      const potentialPayout = (betAmountNum / projectedSelectedPool) * projectedNetPool
+      const profit = Math.max(0, potentialPayout - betAmountNum)
+      
+      // Calculate odds of winning based on pool sizes (rough estimate)
+      const winProbability = projectedSelectedPool / projectedTotalPool
+      const riskWarning = winProbability > 0.5 ? 
+        "Leading pool - good odds" : 
+        winProbability > 0.3 ? 
+          "Competitive pool" : 
+          "Underdog pick - high risk"
+      
+      return { 
+        totalPayout: potentialPayout, 
+        profit, 
+        riskWarning 
+      }
     }
   }
 
-  const estimatedMultiplier = 1.5
-  const totalPayout = betAmountNum * estimatedMultiplier
+  // Fallback: Conservative estimate for new pools
+  // Assume you win with roughly equal competition
+  const conservativeMultiplier = 2.0 // If you win against 1 other equal-sized pool
+  const totalPayout = betAmountNum * conservativeMultiplier
   const profit = totalPayout - betAmountNum
-  return { totalPayout, profit }
+  
+  return { 
+    totalPayout, 
+    profit, 
+    riskWarning: "IF you win - 100% loss if you don't!" 
+  }
 }
 
 interface CommitPhaseProps {
@@ -1008,9 +1035,15 @@ function _EnhancedCommitPhase({
               </View>
               <View style={styles.raceInfoDivider} />
               <View style={styles.raceInfoItem}>
-                <Text style={styles.raceInfoLabel}>Potential Win</Text>
+                <Text style={styles.raceInfoLabel}>IF You Win</Text>
                 <Text style={styles.raceInfoValue}>
                   ${userBet.potentialPayout ? (userBet.potentialPayout / 1_000_000).toFixed(2) : 'TBD'}
+                </Text>
+              </View>
+              <View style={styles.raceInfoWarning}>
+                <MaterialCommunityIcons name="alert-circle" size={12} color="#FFD700" />
+                <Text style={styles.raceInfoWarningText}>
+                  100% loss if your asset doesn't win
                 </Text>
               </View>
               <View style={styles.raceInfoDivider} />
@@ -1684,11 +1717,23 @@ function _EnhancedCommitPhase({
                         +${calculatePotentialPayout(betAmount, race, selectedAssetIdx).profit.toFixed(2)} profit
                       </Text>
                     </View>
+                    <View style={styles.previewRow}>
+                      <Text style={styles.previewLabel}>If {enhancedAssets[selectedAssetIdx]?.symbol} loses</Text>
+                      <Text style={[styles.previewValue, styles.previewLoss]}>
+                        -${parseFloat(betAmount).toFixed(2)} (100% loss)
+                      </Text>
+                    </View>
                     <View style={styles.previewDivider} />
                     <View style={styles.previewRow}>
-                      <Text style={styles.previewLabelTotal}>Total Payout</Text>
+                      <Text style={styles.previewLabelTotal}>Potential Payout (if win)</Text>
                       <Text style={styles.previewValueTotal}>
                         ${calculatePotentialPayout(betAmount, race, selectedAssetIdx).totalPayout.toFixed(2)}
+                      </Text>
+                    </View>
+                    <View style={styles.riskWarningRow}>
+                      <MaterialCommunityIcons name="alert" size={14} color="#FFD700" />
+                      <Text style={styles.riskWarningText}>
+                        {calculatePotentialPayout(betAmount, race, selectedAssetIdx).riskWarning}
                       </Text>
                     </View>
                   </View>
@@ -1739,9 +1784,21 @@ function _EnhancedCommitPhase({
                         <Text style={styles.confirmationValue}>${betAmount} USDC</Text>
                       </View>
                       <View style={styles.confirmationRow}>
-                        <Text style={styles.confirmationLabel}>Potential Win</Text>
+                        <Text style={styles.confirmationLabel}>IF {enhancedAssets[selectedAssetIdx]?.symbol} Wins</Text>
                         <Text style={[styles.confirmationValue, styles.confirmationWin]}>
                           ${calculatePotentialPayout(betAmount, race, selectedAssetIdx).totalPayout.toFixed(2)}
+                        </Text>
+                      </View>
+                      <View style={styles.confirmationRow}>
+                        <Text style={styles.confirmationLabel}>IF {enhancedAssets[selectedAssetIdx]?.symbol} Loses</Text>
+                        <Text style={[styles.confirmationValue, { color: '#FF4444' }]}>
+                          -${betAmount} (100% loss)
+                        </Text>
+                      </View>
+                      <View style={styles.confirmationRiskWarning}>
+                        <MaterialCommunityIcons name="alert" size={14} color="#FFD700" />
+                        <Text style={styles.confirmationRiskText}>
+                          Winner-takes-all: Only the highest performing asset wins
                         </Text>
                       </View>
                     </View>
@@ -2063,6 +2120,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     fontFamily: 'Orbitron-Bold',
+  },
+  raceInfoWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  raceInfoWarningText: {
+    fontSize: 10,
+    color: '#FFD700',
+    fontFamily: 'Orbitron-Regular',
+    flex: 1,
   },
   raceInfoDivider: {
     width: 1,
@@ -2504,11 +2579,32 @@ const styles = StyleSheet.create({
   previewWin: {
     color: '#14F195',
   },
+  previewLoss: {
+    color: '#FF4444',
+  },
   previewDivider: {
     width: '100%',
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.1)',
     marginVertical: 10,
+  },
+  riskWarningRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  riskWarningText: {
+    fontSize: 10,
+    color: '#FFD700',
+    fontFamily: 'Orbitron-Regular',
+    flex: 1,
   },
   previewLabelTotal: {
     fontSize: 12,
@@ -2650,6 +2746,25 @@ const styles = StyleSheet.create({
   },
   confirmationWin: {
     color: '#14F195',
+  },
+  confirmationRiskWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  confirmationRiskText: {
+    fontSize: 11,
+    color: '#FFD700',
+    fontFamily: 'Orbitron-Regular',
+    flex: 1,
+    lineHeight: 16,
   },
   confirmationActions: {
     flexDirection: 'row',

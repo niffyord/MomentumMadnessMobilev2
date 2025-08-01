@@ -626,16 +626,17 @@ function _EnhancedPerformancePhase({
         currentBetValue = potentialPayout
         profitLoss = currentBetValue - originalAmount
       } else {
-        const estimatedMultiplier = Math.max(1.2, Math.min(3.0, 1 + (Math.abs(userAsset.performance) / 100)))
-        currentBetValue = originalAmount * estimatedMultiplier
-        profitLoss = currentBetValue - originalAmount
-        potentialPayout = currentBetValue
+        // If winningPool is 0, then nobody is actually winning - this is an edge case
+        // According to program logic: if no winning pool, you lose everything
+        currentBetValue = 0
+        profitLoss = -originalAmount
+        potentialPayout = 0
       }
     } else {
-      const performanceGap = maxPerformance - userAsset.performance
-      const lossMultiplier = Math.max(0.1, Math.min(1.0, 1 - (performanceGap / 100)))
-      currentBetValue = originalAmount * lossMultiplier
-      profitLoss = currentBetValue - originalAmount
+      // According to program logic: if not winning, you lose everything (100% loss)
+      // Only winning assets get payouts, all others lose their entire bet
+      currentBetValue = 0
+      profitLoss = -originalAmount // Total loss
       potentialPayout = 0
     }
     
@@ -655,8 +656,8 @@ function _EnhancedPerformancePhase({
       rank: assetPerformances.findIndex((a: any) => a.index === currentUserBet.assetIdx) + 1,
       potentialPayout,
       winProbability: isActuallyWinning ? 
-        Math.max(70, Math.min(95, 80 + Math.abs(userAsset.performance - assetPerformances[1]?.performance || 0) * 5)) : 
-        Math.max(5, Math.min(30, 20 - Math.abs(maxPerformance - userAsset.performance) * 3)),
+        Math.min(99, Math.max(85, 90 + (userAsset.performance - (assetPerformances[1]?.performance || 0)) * 2)) : 
+        Math.max(1, Math.min(15, 10 - Math.abs(maxPerformance - userAsset.performance) * 2)),
     }
   }, [userBet, userBets, race?.raceId, assetPerformances, race?.assetPools, race?.totalPool, race?.feeBps])
 
@@ -1121,7 +1122,7 @@ function _EnhancedPerformancePhase({
       {userPosition && (
         <Animated.View 
           style={[
-            styles.userPositionCard,
+            styles.ultraThinUserPositionCard,
             {
               shadowColor: userPosition.isCurrentlyWinning ? '#00FF88' : '#9945FF',
               shadowOpacity: userPosition.isCurrentlyWinning ? 0.4 : 0.2,
@@ -1130,7 +1131,7 @@ function _EnhancedPerformancePhase({
                 scale: userPosition.isCurrentlyWinning ? 
                   pulseAnim.interpolate({
                     inputRange: [1, 1.08],
-                    outputRange: [1, 1.02],
+                    outputRange: [1, 1.01],
                   }) : 1
               }],
             }
@@ -1139,131 +1140,93 @@ function _EnhancedPerformancePhase({
           <LinearGradient
             colors={
               userPosition.isCurrentlyWinning ? 
-                ['rgba(0, 255, 136, 0.3)', 'rgba(20, 241, 149, 0.2)', 'rgba(0, 0, 0, 0.9)'] :
+                ['rgba(0, 255, 136, 0.4)', 'rgba(20, 241, 149, 0.3)', 'rgba(0, 0, 0, 0.95)'] :
                 userPosition.profitLoss >= 0 ?
-                  ['rgba(153, 69, 255, 0.4)', 'rgba(20, 241, 149, 0.2)', 'rgba(0, 0, 0, 0.8)'] :
-                  ['rgba(255, 68, 68, 0.3)', 'rgba(153, 69, 255, 0.2)', 'rgba(0, 0, 0, 0.8)']
+                  ['rgba(153, 69, 255, 0.5)', 'rgba(20, 241, 149, 0.3)', 'rgba(0, 0, 0, 0.95)'] :
+                  ['rgba(255, 68, 68, 0.4)', 'rgba(153, 69, 255, 0.3)', 'rgba(0, 0, 0, 0.95)']
             }
-            style={styles.userPositionGradient}
+            style={styles.ultraThinUserGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
           >
-            <View style={styles.userPositionHeader}>
-              <View style={styles.userPositionMainInfo}>
-                <View style={styles.positionBadge}>
-                  <Animated.View
-                    style={{
-                      transform: [{ scale: pulseAnim }],
-                    }}
-                  >
-                    <MaterialCommunityIcons 
-                      name={userPosition.isCurrentlyWinning ? "trophy" : userPosition.rank <= 2 ? "medal" : "account-star"} 
-                      size={20} 
-                      color={userPosition.profitLoss > 0 ? '#00FF88' : '#FF4444'} 
-                    />
-                  </Animated.View>
-                  <Text style={styles.positionRank}>#{userPosition.rank}</Text>
-                </View>
-                
-                <View style={styles.userPositionTitleSection}>
-                  <Text style={styles.userPositionTitle}>Your Race Position</Text>
-                  <View style={styles.userPositionDetails}>
-                    <Text style={styles.assetSymbol}>{userPosition.asset.symbol}</Text>
-                    <View style={styles.winChanceContainer}>
-                      <MaterialCommunityIcons name="target" size={12} color="#FFD700" />
-                      <Text style={styles.winChanceText}>
-                        {(typeof userPosition.winProbability === 'number' && !isNaN(userPosition.winProbability)) ? userPosition.winProbability.toFixed(0) : '0'}% chance
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-              
-              <View style={styles.performanceDisplaySection}>
-                <Animated.Text
-                  style={[
-                    styles.userPerformanceValue,
-                    { 
-                      color: userPosition.profitLoss >= 0 ? '#00FF88' : '#FF4444',
-                      transform: [{
-                        scale: priceUpdateFlashAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [1, 1.1],
-                        }),
-                      }],
-                    }
-                  ]}
-                >
-                  {userPosition.profitLossPercent >= 0 ? '+' : ''}{(typeof userPosition.profitLossPercent === 'number' && !isNaN(userPosition.profitLossPercent)) ? userPosition.profitLossPercent.toFixed(1) : '0.0'}%
-                </Animated.Text>
-                <Text style={styles.userPerformanceLabel}>P&L</Text>
-              </View>
-            </View>
-            
-            <View style={styles.betSummarySection}>
-              <View style={styles.betSummaryGrid}>
-                <View style={styles.betSummaryCard}>
-                  <Text style={styles.betSummaryLabel}>Original Bet</Text>
-                  <View style={styles.betSummaryValueContainer}>
-                    <MaterialCommunityIcons name="currency-usd" size={16} color="rgba(255,255,255,0.6)" />
-                    <Text style={styles.betSummaryValue}>
-                      ${(typeof userPosition.originalAmount === 'number' && !isNaN(userPosition.originalAmount)) ? userPosition.originalAmount.toFixed(2) : '0.00'}
-                    </Text>
-                  </View>
-                </View>
-                
-                <View style={[styles.betSummaryCard, styles.currentValueCard]}>
-                  <Text style={styles.betSummaryLabel}>Current Value</Text>
-                  <View style={styles.betSummaryValueContainer}>
-                    <MaterialCommunityIcons 
-                      name={userPosition.profitLoss >= 0 ? "trending-up" : "trending-down"} 
-                      size={16} 
-                      color={userPosition.profitLoss >= 0 ? '#00FF88' : '#FF4444'} 
-                    />
-                    <Animated.Text
-                      style={[
-                        styles.betSummaryValue,
-                        { 
-                          color: userPosition.profitLoss >= 0 ? '#00FF88' : '#FF4444',
-                          transform: [{
-                            scale: priceUpdateFlashAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [1, 1.05],
-                            }),
-                          }],
-                        }
-                      ]}
-                    >
-                      ${(typeof userPosition.currentBetValue === 'number' && !isNaN(userPosition.currentBetValue)) ? userPosition.currentBetValue.toFixed(2) : '0.00'}
-                    </Animated.Text>
-                  </View>
-                </View>
-              </View>
-              
-              <View style={styles.potentialWinCard}>
-                <View style={styles.potentialWinHeader}>
-                  <MaterialCommunityIcons name="trophy-award" size={18} color="#FFD700" />
-                  <Text style={styles.potentialWinLabel}>Potential Win</Text>
-                </View>
-                <Text style={styles.potentialWinValue}>
-                  ${(typeof userPosition.potentialPayout === 'number' && !isNaN(userPosition.potentialPayout)) ? userPosition.potentialPayout.toFixed(2) : '0.00'}
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.profitLossHeroSection}>
-              <View style={styles.profitLossMainCard}>
-                <View style={styles.profitLossHeader}>
+            {/* Position Badge */}
+            <Animated.View style={[
+              styles.compactUserPositionBadge,
+              userPosition.rank === 1 ? styles.goldBadge :
+              userPosition.rank === 2 ? styles.silverBadge :
+              userPosition.rank === 3 ? styles.bronzeBadge :
+              styles.regularBadge,
+              {
+                transform: [{
+                  scale: userPosition.isCurrentlyWinning ? pulseAnim : 1
+                }]
+              }
+            ]}>
+              <LinearGradient
+                colors={
+                  userPosition.rank === 1 ? ['#FFD700', '#FFA500', '#FF8C00'] : 
+                  userPosition.rank === 2 ? ['#E8E8E8', '#C0C0C0', '#A8A8A8'] : 
+                  userPosition.rank === 3 ? ['#CD853F', '#CD7F32', '#8B4513'] : 
+                  ['rgba(153, 69, 255, 1)', 'rgba(79, 70, 229, 0.8)', 'rgba(67, 56, 202, 0.6)']
+                }
+                style={styles.positionBadgeGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                {userPosition.rank === 1 && (
                   <MaterialCommunityIcons 
-                    name={userPosition.profitLoss >= 0 ? "rocket-launch" : "trending-down"} 
-                    size={20} 
-                    color={userPosition.profitLoss >= 0 ? '#00FF88' : '#FF4444'} 
+                    name="crown" 
+                    size={12} 
+                    color="#1A202C" 
+                    style={{ position: 'absolute', top: 1 }}
                   />
-                  <Text style={styles.profitLossLabel}>
-                    {userPosition.profitLoss >= 0 ? 'Profit' : 'Loss'}
-                  </Text>
+                )}
+                {userPosition.rank === 2 && (
+                  <MaterialCommunityIcons 
+                    name="trophy-variant" 
+                    size={10} 
+                    color="#2D3748" 
+                    style={{ position: 'absolute', top: 1 }}
+                  />
+                )}
+                {userPosition.rank === 3 && (
+                  <MaterialCommunityIcons 
+                    name="medal" 
+                    size={10} 
+                    color="#2D3748" 
+                    style={{ position: 'absolute', top: 1 }}
+                  />
+                )}
+                <Text style={[
+                  styles.positionNumber,
+                  userPosition.rank <= 3 ? styles.topThreePosition : {}
+                ]}>
+                  {userPosition.rank}
+                </Text>
+              </LinearGradient>
+            </Animated.View>
+
+            {/* Main Content Row */}
+            <View style={styles.ultraThinUserContent}>
+              {/* Left: Asset & Position Info */}
+              <View style={styles.ultraThinLeftSection}>
+                <View style={styles.assetInfoRow}>
+                  <View style={[styles.assetDotSmall, { backgroundColor: userPosition.asset.color }]} />
+                  <Text style={styles.compactAssetSymbol}>{userPosition.asset.symbol}</Text>
+                  <MaterialCommunityIcons 
+                    name={userPosition.isCurrentlyWinning ? "trophy" : "account-star"} 
+                    size={12} 
+                    color={userPosition.profitLoss > 0 ? '#00FF88' : '#FF4444'} 
+                  />
                 </View>
+                <Text style={styles.ultraThinPositionText}>Your Position</Text>
+              </View>
+
+              {/* Center: Performance */}
+              <View style={styles.ultraThinCenterSection}>
                 <Animated.Text
                   style={[
-                    styles.profitLossValue,
+                    styles.compactPerformanceValue,
                     { 
                       color: userPosition.profitLoss >= 0 ? '#00FF88' : '#FF4444',
                       transform: [{
@@ -1275,53 +1238,58 @@ function _EnhancedPerformancePhase({
                     }
                   ]}
                 >
-                  {userPosition.profitLoss >= 0 ? '+' : ''}${(typeof userPosition.profitLoss === 'number' && !isNaN(userPosition.profitLoss)) ? Math.abs(userPosition.profitLoss).toFixed(2) : '0.00'}
+                  {userPosition.profitLossPercent >= 0 ? '+' : ''}{(typeof userPosition.profitLossPercent === 'number' && !isNaN(userPosition.profitLossPercent)) ? userPosition.profitLossPercent.toFixed(1) : '0.0'}%
                 </Animated.Text>
+                <Text style={styles.compactPerformanceLabel}>P&L</Text>
               </View>
-            </View>
-            
-            <View style={styles.raceStatsGrid}>
-              <View style={styles.raceStatCard}>
-                <Text style={styles.raceStatLabel}>Pool Share</Text>
-                <Text style={styles.raceStatValue}>{(typeof userPosition.userPoolShare === 'number' && !isNaN(userPosition.userPoolShare)) ? userPosition.userPoolShare.toFixed(2) : '0.00'}%</Text>
+
+              {/* Right: Bet Values */}
+              <View style={styles.ultraThinRightSection}>
+                <View style={styles.compactValueRow}>
+                  <Text style={styles.compactValueLabel}>Bet:</Text>
+                  <Text style={styles.compactValueAmount}>
+                    ${(typeof userPosition.originalAmount === 'number' && !isNaN(userPosition.originalAmount)) ? userPosition.originalAmount.toFixed(0) : '0'}
+                  </Text>
+                </View>
+                <View style={styles.compactValueRow}>
+                  <Text style={styles.compactValueLabel}>Now:</Text>
+                  <Animated.Text
+                    style={[
+                      styles.compactValueAmount,
+                      { 
+                        color: userPosition.profitLoss >= 0 ? '#00FF88' : '#FF4444',
+                        transform: [{
+                          scale: priceUpdateFlashAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [1, 1.03],
+                          }),
+                        }],
+                      }
+                    ]}
+                  >
+                    ${(typeof userPosition.currentBetValue === 'number' && !isNaN(userPosition.currentBetValue)) ? userPosition.currentBetValue.toFixed(0) : '0'}
+                  </Animated.Text>
+                </View>
               </View>
-              
-              <View style={[styles.raceStatCard, userPosition.isCurrentlyWinning ? styles.winningCard : styles.losingCard]}>
-                <Text style={styles.raceStatLabel}>Status</Text>
+
+              {/* Far Right: Status */}
+              <View style={styles.ultraThinStatusSection}>
                 <Animated.Text
                   style={[
-                    styles.raceStatValue,
+                    styles.compactStatusText,
                     {
                       color: userPosition.isCurrentlyWinning ? '#00FF88' : '#FF4444',
                       transform: [{
-                        scale: pulseAnim,
+                        scale: userPosition.isCurrentlyWinning ? pulseAnim : 1,
                       }],
                     },
                   ]}
                 >
-                  {userPosition.isCurrentlyWinning ? 'WINNING' : 'LOSING'}
+                  {userPosition.isCurrentlyWinning ? 'WIN' : 'LOSE'}
                 </Animated.Text>
-              </View>
-              
-              <View style={styles.raceStatCard}>
-                <Text style={styles.raceStatLabel}>Trend</Text>
-                <View style={styles.trendValueContainer}>
-                  <MaterialCommunityIcons 
-                    name={
-                      getOddsTrend(userPosition.asset.index) === 'increasing' ? "trending-up" : 
-                      getOddsTrend(userPosition.asset.index) === 'decreasing' ? "trending-down" : "trending-neutral"
-                    } 
-                    size={16} 
-                    color={
-                      getOddsTrend(userPosition.asset.index) === 'increasing' ? '#FF4444' : 
-                      getOddsTrend(userPosition.asset.index) === 'decreasing' ? '#00FF88' : '#FFD700'
-                    } 
-                  />
-                  <Text style={[styles.raceStatValue, styles.trendText]}>
-                    {getOddsTrend(userPosition.asset.index) === 'increasing' ? 'Rising' : 
-                     getOddsTrend(userPosition.asset.index) === 'decreasing' ? 'Falling' : 'Stable'}
-                  </Text>
-                </View>
+                <Text style={styles.compactWinChance}>
+                  {(typeof userPosition.winProbability === 'number' && !isNaN(userPosition.winProbability)) ? userPosition.winProbability.toFixed(0) : '0'}%
+                </Text>
               </View>
             </View>
           </LinearGradient>
@@ -1852,94 +1820,154 @@ const styles = StyleSheet.create({
     width: 60,
   },
   
-  userPositionCard: {
-    marginBottom: SPACING.xl,
-    marginHorizontal: isTablet ? SPACING.xxl : SPACING.xl,
-    borderRadius: isTablet ? 20 : 16,
+  // Ultra-thin user position card (similar to leaderboard design)
+  ultraThinUserPositionCard: {
+    marginBottom: SPACING.sm,
+    marginHorizontal: isTablet ? SPACING.lg : SPACING.md,
+    borderRadius: isTablet ? 16 : 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(153, 69, 255, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    height: 70, // Ultra thin height
   },
-  userPositionGradient: {
-    padding: isTablet ? SPACING.xxl : SPACING.xl,
+  
+  ultraThinUserGradient: {
+    flex: 1,
+    borderRadius: isTablet ? 16 : 12,
+    overflow: 'hidden',
+    position: 'relative',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  userPositionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
+
+  compactUserPositionBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 8,
   },
-  userPositionMainInfo: {
+
+  ultraThinUserContent: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: 8,
+    paddingRight: 32, // Space for badge
+    paddingVertical: 8,
   },
-  positionBadge: {
+
+  ultraThinLeftSection: {
+    flex: 1,
+    minWidth: 0, // Allow text truncation
+  },
+
+  assetInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(153, 69, 255, 0.2)',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(153, 69, 255, 0.4)',
-    shadowColor: '#9945FF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
+    gap: 6,
+    marginBottom: 2,
   },
-  positionRank: {
-    fontSize: 14,
+
+  compactAssetSymbol: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#9945FF',
+    fontFamily: 'Orbitron-Bold',
+  },
+
+  ultraThinPositionText: {
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.6)',
+    fontFamily: 'Orbitron-Regular',
+  },
+
+  ultraThinCenterSection: {
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+
+  compactPerformanceValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: 'Orbitron-ExtraBold',
+    textAlign: 'center',
+  },
+
+  compactPerformanceLabel: {
+    fontSize: 8,
+    color: 'rgba(255,255,255,0.6)',
+    fontFamily: 'Orbitron-Regular',
+    textAlign: 'center',
+  },
+
+  ultraThinRightSection: {
+    alignItems: 'flex-end',
+    minWidth: 60,
+  },
+
+  compactValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 1,
+  },
+
+  compactValueLabel: {
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.6)',
+    fontFamily: 'Orbitron-Regular',
+  },
+
+  compactValueAmount: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#fff',
     fontFamily: 'Orbitron-Bold',
   },
-  userPositionTitleSection: {
-    flex: 1,
-  },
-  userPositionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text.primary,
-    fontFamily: 'Orbitron-Bold',
-    marginBottom: 4,
-  },
-  userPositionDetails: {
-    flexDirection: 'row',
+
+  ultraThinStatusSection: {
     alignItems: 'center',
-    gap: 12,
+    minWidth: 40,
   },
+
+  compactStatusText: {
+    fontSize: 10,
+    fontWeight: '800',
+    fontFamily: 'Orbitron-ExtraBold',
+    textAlign: 'center',
+  },
+
+  compactWinChance: {
+    fontSize: 8,
+    color: 'rgba(255,255,255,0.6)',
+    fontFamily: 'Orbitron-Regular',
+    textAlign: 'center',
+  },
+
+  assetDotSmall: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 2,
+  },
+
+  // Shared styles for asset symbol (used in leaderboard)
   assetSymbol: {
     fontSize: 14,
     fontWeight: '600',
     color: '#9945FF',
     fontFamily: 'Orbitron-SemiBold',
-  },
-  winChanceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  winChanceText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    fontFamily: 'Orbitron-Regular',
-  },
-  performanceDisplaySection: {
-    alignItems: 'flex-end',
-  },
-  userPerformanceValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    fontFamily: 'Orbitron-ExtraBold',
-  },
-  userPerformanceLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
   },
   betSummarySection: {
     marginTop: 20,
