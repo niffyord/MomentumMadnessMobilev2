@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.momentum.racing"
+      "bundleIdentifier": "com.momentum.racing",
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,9 +31,26 @@
               "scheme": "momentum-racing"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "momentum-racing"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
-      ]
+      ],
+      "runtimeVersion": "1.0.0"
     },
     "web": {
       "bundler": "metro",
@@ -60,7 +80,12 @@
     },
     "extra": {
       "router": {},
-      "eas": {}
+      "eas": {
+        "projectId": "1e9a06a8-c617-41d7-a5b2-99b5372dc8f7"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1e9a06a8-c617-41d7-a5b2-99b5372dc8f7"
     }
   }
 }

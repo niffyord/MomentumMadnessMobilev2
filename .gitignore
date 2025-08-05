@@ -37,3 +37,6 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+# Solana Mobile dApp Store build files
+dapp-store-build/
