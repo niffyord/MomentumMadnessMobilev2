@@ -7,8 +7,8 @@ import { toUint8Array } from 'js-base64'
 
 import { useCluster } from '@/components/cluster/cluster-provider'
 import { AppConfig } from '@/constants/app-config'
-import { ellipsify } from '@/utils/ellipsify'
 import { storage } from '@/store/storage'
+import { ellipsify } from '@/utils/ellipsify'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
   Account as AuthorizedAccount,
@@ -166,9 +166,9 @@ export function useAuthorization() {
   )
 
   const authorizeSession = useCallback(
-    async (wallet: AuthorizeAPI) => {
+    async (wallet: AuthorizeAPI, opts?: { suppressLogs?: boolean }) => {
       try {
-        console.log('🔐 Starting MWA authorization...', {
+        !opts?.suppressLogs && console.log('🔐 Starting MWA authorization...', {
           identity,
           chain: selectedCluster.id,
           hasAuthToken: !!fetchQuery.data?.authToken,
@@ -180,14 +180,14 @@ export function useAuthorization() {
           auth_token: fetchQuery.data?.authToken,
         })
 
-        console.log('✅ MWA authorization successful:', {
+        !opts?.suppressLogs && console.log('✅ MWA authorization successful:', {
           accountsCount: authorizationResult.accounts.length,
           hasAuthToken: !!authorizationResult.auth_token,
         })
 
         return (await handleAuthorizationResult(authorizationResult)).selectedAccount
       } catch (error: any) {
-        console.error('❌ MWA authorization failed:', error)
+        !opts?.suppressLogs && console.error('❌ MWA authorization failed:', error)
         
         // Enhanced error handling for Mock MWA Wallet
         if (error.message?.includes('authorization request declined')) {

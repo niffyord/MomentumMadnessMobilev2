@@ -11,4 +11,9 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
+# Socket.IO client
+-keep class io.socket.** { *; }
+-keep class okhttp3.** { *; }
+-keep class okio.** { *; }
+
 # Add any project specific keep options here:

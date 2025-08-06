@@ -41,7 +41,7 @@ export class WebSocketService {
 
     return new Promise((resolve, reject) => {
       this.socket = io(this.baseUrl, {
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],  // allow fallback to HTTP polling on networks that block pure WebSocket
         forceNew: false, // Reuse existing connection if available
         timeout: 30000, // Increased to 30s for blockchain operations
         reconnection: true, // Use Socket.IO's built-in reconnection
@@ -66,8 +66,9 @@ export class WebSocketService {
       this.socket.on('connect_error', (error) => {
         this.isConnecting = false;
         this.isConnected = false;
-        if (error.description) {
-          console.error('📄 Error description:', error.description);
+        const desc = (error as any)?.description || (error as any)?.message
+        if (desc) {
+          console.error('📄 Error description:', desc);
         }
         reject(error);
       });
