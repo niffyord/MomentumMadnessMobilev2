@@ -33,7 +33,12 @@ export class ApiService {
       console.log(`🌐 API Request: ${fullUrl}`);
       console.log(`🌐 Base URL: ${this.baseUrl}`);
       
-      const res = await fetch(fullUrl, options);
+      // Add an 8-second timeout so slow requests don’t block the UI forever
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const res = await fetch(fullUrl, { ...options, signal: controller.signal });
+      clearTimeout(timeoutId);
       
       // Handle non-JSON responses (e.g., HTML error pages)
       const contentType = res.headers.get('content-type');

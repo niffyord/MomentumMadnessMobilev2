@@ -609,9 +609,7 @@ function _EnhancedSettledPhase({
 
     triggerHaptic('medium')
 
-    // Optimistic update - immediately show claimed status for instant UX
-    setLocalClaimUpdate(true)
-
+    // Start press animation
     Animated.sequence([
       Animated.timing(claimButtonScaleAnim, {
         toValue: 0.95,
@@ -633,6 +631,9 @@ function _EnhancedSettledPhase({
         raceId: race.raceId,
         playerAddress: account.publicKey,
       })
+
+      // Mark as claimed only after successful tx
+      setLocalClaimUpdate(true)
 
       setTimeout(() => triggerHaptic('success'), 200)
       setTimeout(() => triggerHaptic('light'), 400)

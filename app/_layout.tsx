@@ -57,7 +57,13 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
+
+  // Avoid flicker to sign-in screen while the cache is still loading
+  if (isLoading) {
+    return null
+  }
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={isAuthenticated}>

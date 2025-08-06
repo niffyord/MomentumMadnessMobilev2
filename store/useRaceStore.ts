@@ -223,7 +223,10 @@ export const useRaceStore = create<RaceStore>()(
       }
     }),
 
-    setAssetInfo: (info: AssetInfo[]) => set((state) => ({ ...state, assetInfo: info })),
+    setAssetInfo: (info: AssetInfo[]) => set((state) => {
+      persistKey('assetInfo', info)
+      return { ...state, assetInfo: info }
+    }),
     setUserBets: (bets: UserBetSummary[]) => set((state) => ({ ...state, userBets: bets })),
 
     // Real-time methods
@@ -596,23 +599,24 @@ export const useRaceStore = create<RaceStore>()(
         try {
           console.log('📊 Fetching performance phase data...')
           
-          // Fetch current race and user bets in parallel
+          // Fetch race data, user bets, and (if needed) open WebSocket – all in parallel
           const promises = [
             raceId ? get().fetchRaceDetails(raceId, false) : get().fetchCurrentRace(false),
           ]
-          
+
           if (playerAddress) {
             promises.push(get().fetchUserBets(playerAddress, false))
           }
-          
-          await Promise.all(promises)
-          
-          // Start WebSocket connection for real-time updates if not connected
+
           if (!get().isConnected) {
-            await get().connectWebSocket()
-            if (get().race?.raceId) {
-              get().subscribeToRace(get().race.raceId)
-            }
+            promises.push(get().connectWebSocket())
+          }
+
+          await Promise.all(promises)
+
+          // After connection is ready, subscribe to live updates
+          if (get().race?.raceId && get().isConnected) {
+            get().subscribeToRace(get().race.raceId)
           }
           
           set({ lastFetchTime: Date.now() })

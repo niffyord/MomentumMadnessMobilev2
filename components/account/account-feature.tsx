@@ -29,6 +29,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useRaceStore } from '../../store/useRaceStore'
 import { useConnection } from '../solana/solana-provider'
 import { useWalletUi } from '../solana/use-wallet-ui'
+import { useNotification } from '@/components/ui/NotificationProvider'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 const isTablet = screenWidth >= 768
@@ -733,6 +734,7 @@ const EmptyState: React.FC<{
 ))
 export function AccountFeature() {
   const { account, signAndSendTransaction } = useWalletUi()
+  const { showSuccess, showError } = useNotification()
   const connection = useConnection()
   const { 
     userBets, 
@@ -924,25 +926,30 @@ export function AccountFeature() {
   const handleClaim = useCallback(async (raceId: number) => {
     if (!account?.publicKey || !connection || !signAndSendTransaction) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+
     try {
       const success = await claimPayout(
         account.publicKey.toString(),
         raceId,
         connection,
-        signAndSendTransaction
+        signAndSendTransaction,
       )
+
       if (success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        showSuccess('Reward claimed successfully')
         setLocalClaimedRaces(prev => new Set(prev).add(raceId))
-        // Immediate refresh - backend metrics show <50ms response times
-        fetchUserBets(account.publicKey.toString(), false) 
+        // Immediate refresh to reflect the claimed state
+        fetchUserBets(account.publicKey.toString(), false)
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+        showError('Unable to claim reward')
       }
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      showError('Something went wrong while claiming')
     }
-  }, [account, connection, signAndSendTransaction, claimPayout, fetchUserBets])
+  }, [account, connection, signAndSendTransaction, claimPayout, fetchUserBets, showSuccess, showError])
   const handleViewRace = useCallback((raceId: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
   }, [])

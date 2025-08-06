@@ -8,6 +8,7 @@ import { toUint8Array } from 'js-base64'
 import { useCluster } from '@/components/cluster/cluster-provider'
 import { AppConfig } from '@/constants/app-config'
 import { ellipsify } from '@/utils/ellipsify'
+import { storage } from '@/store/storage'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
   Account as AuthorizedAccount,
@@ -106,7 +107,12 @@ function usePersistAuthorization() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (auth: WalletAuthorization | null): Promise<void> => {
-      await AsyncStorage.setItem(AUTHORIZATION_STORAGE_KEY, JSON.stringify(auth))
+      // Persist to fast MMKV and fallback AsyncStorage for compatibility
+      storage.set(AUTHORIZATION_STORAGE_KEY, JSON.stringify(auth))
+      try {
+        await AsyncStorage.setItem(AUTHORIZATION_STORAGE_KEY, JSON.stringify(auth))
+      } catch(_) {}
+
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey })
@@ -118,7 +124,17 @@ function useFetchAuthorization() {
   return useQuery({
     queryKey,
     queryFn: async (): Promise<WalletAuthorization | null> => {
-      const cacheFetchResult = await AsyncStorage.getItem(AUTHORIZATION_STORAGE_KEY)
+      let cacheFetchResult = storage.getString(AUTHORIZATION_STORAGE_KEY)
+      if (!cacheFetchResult) {
+        // Attempt migration from AsyncStorage (legacy)
+        try {
+          cacheFetchResult = await AsyncStorage.getItem(AUTHORIZATION_STORAGE_KEY) || null
+          if (cacheFetchResult) {
+            // migrate to MMKV for future fast reads
+            storage.set(AUTHORIZATION_STORAGE_KEY, cacheFetchResult)
+          }
+        } catch (_) {}
+      }
 
       // Return prior authorization, if found.
       return cacheFetchResult ? JSON.parse(cacheFetchResult, cacheReviver) : null
