@@ -81,11 +81,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "1e9a06a8-c617-41d7-a5b2-99b5372dc8f7"
+        "projectId": "6fb96f96-47dc-4a1f-877a-1c5a8d9c252a"
       }
     },
-    "updates": {
-      "url": "https://u.expo.dev/1e9a06a8-c617-41d7-a5b2-99b5372dc8f7"
-    }
+    "owner": "niffyxyz"
   }
 }
