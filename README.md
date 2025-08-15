@@ -42,7 +42,7 @@ Seeker/
 
 ### **Main Program**
 
-- **Program ID**: `3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4`
+- **Program ID**: `5Ha7KjZ3ggJ3pNea7Q7jdRevQDVuzQzKBm4aPi9JAGS8`
 - **Network**: Devnet/Mainnet
 - **Anchor Version**: 0.31.1
 
@@ -197,7 +197,7 @@ cd MomentumMadnessMobilev2 && npm test
 DATABASE_URL=postgresql://user:pass@localhost:5432/momentum_madness
 REDIS_URL=redis://localhost:6379
 RPC_URL=https://api.devnet.solana.com
-PROGRAM_ID=3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4
+PROGRAM_ID=5Ha7KjZ3ggJ3pNea7Q7jdRevQDVuzQzKBm4aPi9JAGS8
 ```
 
 ### Mobile Apps

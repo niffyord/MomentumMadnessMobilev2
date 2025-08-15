@@ -5,6 +5,7 @@ import { useWalletUi } from '@/components/solana/use-wallet-ui'
 import { PublicKey } from '@solana/web3.js'
 import { useMutation } from '@tanstack/react-query'
 
+import { getCurrentConfig } from '../../services/config'
 import { OnChainService } from '../../services/onchainService'
 import { useRaceStore } from '../../store/useRaceStore'
 
@@ -133,7 +134,7 @@ export function useClaimPayout() {
                 
                 await new Promise(resolve => setTimeout(resolve, 2000))
                 
-                const programId = new PublicKey('3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4')
+                const { programId } = getCurrentConfig()
                 
                 const payoutClaimed = await checkPayoutClaimed(connection, programId, raceId, playerAddress)
                 
@@ -153,7 +154,7 @@ export function useClaimPayout() {
         if (confirmationAttempts >= maxAttempts) {
           console.log(`🔍 Final check: Looking for claimed payout on-chain after all confirmation attempts failed...`)
           
-          const programId = new PublicKey('3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4')
+          const { programId } = getCurrentConfig()
           
           const payoutClaimed = await checkPayoutClaimed(connection, programId, raceId, playerAddress)
           
@@ -177,7 +178,7 @@ export function useClaimPayout() {
           console.log(`🔍 Error occurred but we have signature ${signature}, checking if payout was claimed...`)
           
           try {
-            const programId = new PublicKey('3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4')
+            const { programId } = getCurrentConfig()
             
             const payoutClaimed = await checkPayoutClaimed(connection, programId, raceId, playerAddress)
             

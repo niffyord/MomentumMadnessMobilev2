@@ -5,6 +5,7 @@ import { useMobileWallet } from '@/components/solana/use-mobile-wallet'
 import { PublicKey } from '@solana/web3.js'
 import { useMutation } from '@tanstack/react-query'
 
+import { getCurrentConfig } from '../../services/config'
 import { OnChainService } from '../../services/onchainService'
 import { useRaceStore } from '../../store/useRaceStore'
 
@@ -125,7 +126,7 @@ export function usePlaceBet() {
                 
                 await new Promise(resolve => setTimeout(resolve, 2000))
                 
-                const programId = new PublicKey('3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4')
+                const { programId } = getCurrentConfig()
                 
                 const betExists = await checkBetExists(connection, programId, raceId, playerAddress)
                 
@@ -145,7 +146,7 @@ export function usePlaceBet() {
         if (confirmationAttempts >= maxAttempts) {
           console.log(`🔍 Final check: Looking for bet on-chain after all confirmation attempts failed...`)
           
-          const programId = new PublicKey('3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4')
+          const { programId } = getCurrentConfig()
           
           const betExists = await checkBetExists(connection, programId, raceId, playerAddress)
           
@@ -172,7 +173,7 @@ export function usePlaceBet() {
           console.log(`🔍 Error occurred but we have signature ${signature}, checking if bet exists...`)
           
           try {
-            const programId = new PublicKey('3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4')
+            const { programId } = getCurrentConfig()
             
             const betExists = await checkBetExists(connection, programId, raceId, playerAddress)
             

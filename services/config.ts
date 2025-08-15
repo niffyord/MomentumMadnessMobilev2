@@ -37,7 +37,7 @@ export interface Config {
 export const CURRENT_ENVIRONMENT: Environment = 'devnet';
 
 // Program ID - UPDATED with deployed program
-const PROGRAM_ID = new PublicKey('3jmrCqY1DBayvf1LhdEvFhsfSAsdHb1ieX1LrgnHASp4');
+const PROGRAM_ID = new PublicKey('5Ha7KjZ3ggJ3pNea7Q7jdRevQDVuzQzKBm4aPi9JAGS8');
 
 // Admin Authority - UPDATED from bootstrap
 const ADMIN_AUTHORITY = new PublicKey('3TGYaZaNyCyA74zmM8yyqKAFHLxTrGD46nmxpUKdXFhV');
@@ -46,11 +46,11 @@ const ADMIN_AUTHORITY = new PublicKey('3TGYaZaNyCyA74zmM8yyqKAFHLxTrGD46nmxpUKdX
 const USDC_MINT_DEVNET = new PublicKey('DMXms6qWM89Y6HyvDMcRFVSTnVQvAmtXwB5dxsHHW8kK'); // Custom devnet USDC
 const USDC_MINT_MAINNET = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'); // Mainnet USDC
 
-// UPDATED PDA addresses from latest deployment (Dec 19, 2024)
+// UPDATED PDA addresses from latest deployment
 const DEVNET_PDAS = {
-  config: new PublicKey('3DzQ8aMMb8DZxTJ7jN1cqVsxPMTZC7hFQvLWqdVBCM89'),
-  treasury: new PublicKey('GcocDTNv4XdStwDwd7Nk8u73K8MkiLQJHXod7y8mKBqM'),
-  vault: new PublicKey('Cjjy7VYmk1Vu4somjZUajbV4z9du4UDk33zFUUc9aLEp'),
+  config: new PublicKey('HVU8xLFaRJCFJMM3EF9YJiyuuFASFi6WUr5r75UneCTA'),
+  treasury: new PublicKey('FpcShb3AG5PPEZstWJHn8ju5oZiDNz6TGAirruPBQAQK'),
+  vault: new PublicKey('BjEyPiXzfnZ2S46mbNDcVpyKgnPjvNNRVueYiK26CJWa'),
 };
 
 // Pyth Feed IDs (same for all networks) - Updated to match deployment config

@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
   AccessibilityInfo,
+  ActivityIndicator,
   Animated,
   AppState,
   Dimensions,
@@ -122,17 +123,32 @@ function _EnhancedPerformancePhase({
   error = null,
   account
 }: PerformancePhaseProps) {
-  const { 
-    odds, 
-    previousOdds, 
-    priceUpdates, 
+  const {
+    odds,
+    previousOdds,
+    priceUpdates,
     isConnected,
-    connectWebSocket,
-    subscribeToRace,
-    forceReconnectWebSocket,
     liveRaceData,
-    userBets
-  } = useRaceStore()
+    userBets,
+  } = useRaceStore(
+    useCallback(
+      (s) => ({
+        odds: s.odds,
+        previousOdds: s.previousOdds,
+        priceUpdates: s.priceUpdates,
+        isConnected: s.isConnected,
+        liveRaceData: s.liveRaceData,
+        userBets: s.userBets,
+      }),
+      []
+    )
+  )
+
+  // Stable refs for store actions to avoid effect dependency churn
+  const connectWebSocketRef = useRef(useRaceStore.getState().connectWebSocket)
+  const subscribeToRaceRef = useRef(useRaceStore.getState().subscribeToRace)
+  const forceReconnectWebSocketRef = useRef(useRaceStore.getState().forceReconnectWebSocket)
+  const subscribedRaceIdRef = useRef<number | null>(null)
 
   const raceTrackAnim = useRef(new Animated.Value(0)).current
   const pulseAnim = useRef(new Animated.Value(1)).current
@@ -150,7 +166,7 @@ function _EnhancedPerformancePhase({
   const rankChangeAnim = useRef(new Animated.Value(0)).current
   
   const animationRefs = useRef<Animated.CompositeAnimation[]>([])
-  const intervalRefs = useRef<number[]>([])
+  const intervalRefs = useRef<Array<ReturnType<typeof setTimeout>>>([])
   
   const [raceIntensity, setRaceIntensity] = useState<'low' | 'medium' | 'high' | 'extreme'>('medium')
   const [reduceMotion, setReduceMotion] = useState(ANIMATION_REDUCE_MOTION)
@@ -227,12 +243,8 @@ function _EnhancedPerformancePhase({
     priceUpdates.forEach((priceData, symbol) => {
       if (priceData && typeof priceData.price === 'number') {
         const currentPrevious = previousPrices.current.get(symbol)
-        if (currentPrevious && currentPrevious.price !== priceData.price) {
-          previousPrices.current.set(symbol, { 
-            price: currentPrevious.price, 
-            timestamp: currentPrevious.timestamp 
-          })
-        } else if (!currentPrevious) {
+        // Initialize previous price if missing; subsequent updates handled in priceUpdates effect
+        if (!currentPrevious) {
           previousPrices.current.set(symbol, { 
             price: priceData.price, 
             timestamp: priceData.timestamp || Date.now() 
@@ -316,10 +328,21 @@ function _EnhancedPerformancePhase({
         }).start()
       })
       
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setRecentlyUpdatedAssets(() => new Set())
       }, 1000)
+      intervalRefs.current.push(timeoutId)
     }
+
+    // After processing, advance previous prices to current snapshot
+    priceUpdates.forEach((priceData, symbol) => {
+      if (priceData && typeof priceData.price === 'number') {
+        previousPrices.current.set(symbol, {
+          price: priceData.price,
+          timestamp: priceData.timestamp || Date.now(),
+        })
+      }
+    })
   }, [priceUpdates])
 
   const raceProgress = useMemo(() => {
@@ -369,8 +392,11 @@ function _EnhancedPerformancePhase({
         setIsAppActive(true)
         
         if (race?.raceId) {
-          forceReconnectWebSocket().then(() => {
-            subscribeToRace(race.raceId)
+          forceReconnectWebSocketRef.current().then(() => {
+            if (subscribedRaceIdRef.current !== race.raceId) {
+              subscribeToRaceRef.current(race.raceId)
+              subscribedRaceIdRef.current = race.raceId
+            }
             const { wsService } = useRaceStore.getState()
             wsService.subscribeToPrice()
           }).catch((error) => {
@@ -389,23 +415,33 @@ function _EnhancedPerformancePhase({
     return () => {
       subscription?.remove()
     }
-  }, [race?.raceId, forceReconnectWebSocket, subscribeToRace])
+  }, [race?.raceId])
 
   useEffect(() => {
-    if (!isConnected && race?.raceId && isAppActive) {
-      connectWebSocket().then(() => {
-        subscribeToRace(race.raceId)
-        const { wsService } = useRaceStore.getState()
-        wsService.subscribeToPrice()
-      }).catch((error) => {
-        console.error('❌ Failed to connect to WebSocket:', error)
-      })
-    } else if (isConnected && race?.raceId && isAppActive) {
-      subscribeToRace(race.raceId)
+    if (!race?.raceId || !isAppActive) return
+
+    if (!isConnected) {
+      connectWebSocketRef.current()
+        .then(() => {
+          if (subscribedRaceIdRef.current !== race.raceId) {
+            subscribeToRaceRef.current(race.raceId)
+            subscribedRaceIdRef.current = race.raceId
+          }
+          const { wsService } = useRaceStore.getState()
+          wsService.subscribeToPrice()
+        })
+        .catch((error) => {
+          console.error('❌ Failed to connect to WebSocket:', error)
+        })
+    } else {
+      if (subscribedRaceIdRef.current !== race.raceId) {
+        subscribeToRaceRef.current(race.raceId)
+        subscribedRaceIdRef.current = race.raceId
+      }
       const { wsService } = useRaceStore.getState()
       wsService.subscribeToPrice()
     }
-  }, [race?.raceId, isConnected, connectWebSocket, subscribeToRace, isAppActive])
+  }, [race?.raceId, isConnected, isAppActive])
 
   useEffect(() => {
     const checkReduceMotion = async () => {
@@ -422,8 +458,13 @@ function _EnhancedPerformancePhase({
       animationRefs.current.forEach(animation => {
         if (animation && typeof animation.stop === 'function') animation.stop()
       })
-      intervalRefs.current.forEach(interval => {
-        clearInterval(interval)
+      intervalRefs.current.forEach(timer => {
+        // Clear any pending timers
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        clearTimeout(timer as any)
+        // Also clearInterval in case any intervals were stored here
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        clearInterval(timer as any)
       })
       animationRefs.current = []
       intervalRefs.current = []
@@ -448,12 +489,7 @@ function _EnhancedPerformancePhase({
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <MaterialCommunityIcons 
-          name="loading" 
-          size={48} 
-          color={COLORS.primary}
-          accessibilityLabel="Loading race performance data"
-        />
+        <ActivityIndicator size="large" color={COLORS.primary} accessibilityLabel="Loading race performance data" />
         <Text style={styles.loadingText}>Loading Race Performance...</Text>
       </View>
     )
@@ -690,11 +726,9 @@ function _EnhancedPerformancePhase({
             triggerHaptic('light', 'race intensity increased')
           }
         }
-        
         previousIntensity.current = newIntensity
+        setRaceIntensity(newIntensity)
       }
-      
-      setRaceIntensity(newIntensity)
     }
   }, [assetPerformances, triggerHaptic])
 
