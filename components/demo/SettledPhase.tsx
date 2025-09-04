@@ -804,11 +804,16 @@ function _EnhancedSettledPhase({
       // Attempt to capture only the winner section
       let uri: string | undefined
       if (shareCaptureRef.current) {
-        uri = await captureRef(shareCaptureRef.current, { format: 'png', quality: 0.9 })
+        uri = await captureRef(shareCaptureRef.current, {
+          format: 'png',
+          quality: 0.9,
+          result: 'tmpfile',
+          backgroundColor: '#000000',
+        })
       }
       // Fallback to full screen if specific capture fails
       if (!uri) {
-        uri = await captureScreen({ format: 'png', quality: 0.9 })
+        uri = await captureScreen({ format: 'png', quality: 0.9, backgroundColor: '#000000' as any })
       }
       if (uri && (await Sharing.isAvailableAsync())) {
         await Sharing.shareAsync(uri, {
@@ -863,8 +868,6 @@ function _EnhancedSettledPhase({
 
         {derivedUserBet && account ? (
           <Animated.View
-            ref={shareCaptureRef}
-            collapsable={false}
             style={[
               styles.userResultSection,
               {
@@ -907,6 +910,20 @@ function _EnhancedSettledPhase({
                 <MaterialCommunityIcons name={isWinner ? 'party-popper' : 'flag-checkered'} size={12} color="#0B0B0B" />
                 <Text style={styles.congratsRibbonText}>{isWinner ? 'CONGRATS' : 'SETTLED'}</Text>
               </View>
+              {/* Share-capture-only area starts */}
+              <View ref={shareCaptureRef} collapsable={false} style={styles.shareCapture}>
+                <LinearGradient
+                  colors={
+                    isWinner
+                      ? ['#0A3322', '#0A0A0A', '#000000']
+                      : ['#331414', '#0A0A0A', '#000000']
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.shareCaptureBg}
+                />
+                <View style={styles.shareCaptureScrim} />
+              
               <View style={styles.userResultHeader}>
                 <Animated.View
                   style={[
@@ -938,27 +955,12 @@ function _EnhancedSettledPhase({
                     size={40}
                     color={isWinner ? '#00FF88' : '#FF4444'}
                   />
-                  {isWinner && !reduceMotion && (
-                    <Animated.View
-                      style={[
-                        styles.confettiOverlay,
-                        {
-                          opacity: confettiAnim,
-                          transform: [
-                            {
-                              scale: confettiAnim.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: [0.5, 1.2],
-                              }),
-                            },
-                          ],
-                        },
-                      ]}
-                    >
+                  {isWinner && (
+                    <View style={[styles.confettiOverlay, { opacity: 0.9 }]}>
                       <MaterialCommunityIcons name="star-four-points" size={16} color="#FFD700" />
                       <MaterialCommunityIcons name="star-four-points" size={12} color="#00FF88" />
                       <MaterialCommunityIcons name="star-four-points" size={14} color="#9945FF" />
-                    </Animated.View>
+                    </View>
                   )}
                 </Animated.View>
 
@@ -1097,6 +1099,8 @@ function _EnhancedSettledPhase({
                     {userPosition?.totalParticipants} total racers
                   </Text>
                 </View>
+              </View>
+              {/* Share-capture-only area ends */}
               </View>
 
               <View style={styles.actionButtonsSection}>
@@ -1569,6 +1573,22 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
+  shareCapture: {
+    paddingTop: 0,
+    position: 'relative',
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  shareCaptureBg: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 16,
+  },
+  shareCaptureScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 16,
+  },
   userCardShine: {
     position: 'absolute',
     top: -120,
@@ -1577,6 +1597,7 @@ const styles = StyleSheet.create({
     height: 360,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 24,
+    zIndex: 1,
   },
   userResultHeader: {
     flexDirection: 'row',
@@ -1613,8 +1634,8 @@ const styles = StyleSheet.create({
   congratsRibbon: {
     position: 'absolute',
     top: 12,
-    left: -8,
-    transform: [{ rotate: '-12deg' }],
+    left: 8,
+    transform: [{ rotate: '-10deg' }],
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -1622,6 +1643,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 10,
     borderWidth: 1,
+    zIndex: 20,
   },
   congratsRibbonWin: {
     backgroundColor: 'rgba(0, 255, 136, 0.2)',
