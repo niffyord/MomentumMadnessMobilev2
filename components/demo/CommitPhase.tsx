@@ -38,6 +38,7 @@ const isTablet = screenWidth >= 768
 const isLandscape = screenWidth > screenHeight
 
 const MIN_TOUCH_TARGET = 44
+const MAX_BET = 1000
 
 const SPACING = {
   xs: 4,
@@ -207,6 +208,13 @@ function _EnhancedCommitPhase({
   const increaseBetExpandAnim = useRef(new Animated.Value(0)).current
   const placeBetPulseAnim = useRef(new Animated.Value(1)).current
   const previewSlideAnim = useRef(new Animated.Value(0)).current
+  const assetsCollapseAnim = useRef(new Animated.Value(1)).current
+  const [assetsOpen, setAssetsOpen] = useState(true)
+  const chevronRotate = assetsCollapseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['180deg', '0deg'],
+  })
+  const headerPressScale = useRef(new Animated.Value(1)).current
 
   const commitAnimationRefs = useRef<Animated.CompositeAnimation[]>([])
 
@@ -217,6 +225,66 @@ function _EnhancedCommitPhase({
     if (!userBets || !race?.raceId) return undefined
     return userBets.find((bet) => bet.raceId === race.raceId)
   }, [userBets, race?.raceId])
+
+  const payout = useMemo(
+    () => calculatePotentialPayout(betAmount, race, selectedAssetIdx),
+    [betAmount, race?.totalPool, race?.assetPools, race?.feeBps, selectedAssetIdx],
+  )
+
+  const handleChangeAdditional = useCallback(
+    (text: string) => {
+      const digitsOnly = text.replace(/[^0-9.]/g, '')
+      const firstDot = digitsOnly.indexOf('.')
+      let sanitized = firstDot >= 0
+        ? digitsOnly.slice(0, firstDot + 1) + digitsOnly.slice(firstDot + 1).replace(/\./g, '')
+        : digitsOnly
+      if (sanitized.includes('.')) {
+        const [intPart, decPart] = sanitized.split('.')
+        sanitized = intPart + '.' + decPart.slice(0, 2)
+      }
+      if (sanitized.startsWith('00')) {
+        sanitized = '0'
+      }
+      if (sanitized === '.') sanitized = '0.'
+      setAdditionalBetAmount(sanitized)
+    },
+    [],
+  )
+
+  const toggleAssetsOpen = useCallback(() => {
+    const next = !assetsOpen
+    setAssetsOpen(next)
+    Animated.timing(assetsCollapseAnim, {
+      toValue: next ? 1 : 0,
+      duration: 220,
+      useNativeDriver: true,
+    }).start()
+    triggerHaptic('selection', next ? 'expand racers' : 'collapse racers')
+  }, [assetsOpen, assetsCollapseAnim, triggerHaptic])
+
+  const handleChangeAmount = useCallback(
+    (text: string) => {
+      // Sanitize: allow only digits and one decimal point, limit to 2 decimals
+      const digitsOnly = text.replace(/[^0-9.]/g, '')
+      const firstDot = digitsOnly.indexOf('.')
+      let sanitized = firstDot >= 0
+        ? digitsOnly.slice(0, firstDot + 1) + digitsOnly.slice(firstDot + 1).replace(/\./g, '')
+        : digitsOnly
+      // Limit decimals to 2
+      if (sanitized.includes('.')) {
+        const [intPart, decPart] = sanitized.split('.')
+        sanitized = intPart + '.' + decPart.slice(0, 2)
+      }
+      // Prevent leading zeros like 00 -> 0
+      if (sanitized.startsWith('00')) {
+        sanitized = '0'
+      }
+      // If user types just '.', make it '0.'
+      if (sanitized === '.') sanitized = '0.'
+      setBetAmount(sanitized)
+    },
+    [setBetAmount],
+  )
 
   const { canPlaceBet, validationMessage, validationErrors } = useCanPlaceBet({
     userBalance,
@@ -674,17 +742,47 @@ function _EnhancedCommitPhase({
         }),
       ]).start()
 
-      setBetAmount(amount.toString())
+      // Clamp to available balance and max bet
+      const allowedMax = Math.min(userBalance ?? MAX_BET, MAX_BET)
+      const finalAmount = Math.max(0.1, Math.min(amount, allowedMax))
+      setBetAmount(finalAmount.toFixed(2))
     },
-    [triggerHaptic],
+    [triggerHaptic, userBalance],
   )
 
   const handleMaxBetAmount = useCallback(() => {
-    const maxAmount = userBalance !== null ? Math.min(userBalance, 1000).toString() : '100'
+    const maxAmount = userBalance !== null ? Math.min(userBalance, MAX_BET).toFixed(2) : '100.00'
     triggerHaptic('selection', 'max bet amount')
 
     setBetAmount(maxAmount)
   }, [userBalance, triggerHaptic])
+
+  const handleQuickPercentSelection = useCallback(
+    (percent: number) => {
+      // Only allow if we know balance; otherwise ignore
+      if (userBalance === null || isNaN(userBalance)) return
+      triggerHaptic('light', `quick percent ${Math.round(percent * 100)}%`)
+
+      Animated.sequence([
+        Animated.timing(quickAmountScaleAnim, {
+          toValue: 0.95,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.spring(quickAmountScaleAnim, {
+          toValue: 1,
+          tension: 150,
+          friction: 4,
+          useNativeDriver: true,
+        }),
+      ]).start()
+
+      const allowedMax = Math.min(userBalance ?? MAX_BET, MAX_BET)
+      const target = Math.max(0.1, Math.min(allowedMax, (userBalance || 0) * percent))
+      setBetAmount(target.toFixed(2))
+    },
+    [userBalance, quickAmountScaleAnim, triggerHaptic],
+  )
 
   const handleBetInputFocus = useCallback(() => {
     triggerHaptic('light', 'bet input focus')
@@ -1156,18 +1254,34 @@ function _EnhancedCommitPhase({
                     <TextInput
                       style={styles.additionalBetInput}
                       value={additionalBetAmount}
-                      onChangeText={setAdditionalBetAmount}
+                      onChangeText={handleChangeAdditional}
                       placeholder="0.00"
                       placeholderTextColor={COLORS.text.tertiary}
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
+                      inputMode="decimal"
+                      returnKeyType="done"
+                      maxLength={12}
+                      blurOnSubmit
                       selectTextOnFocus={true}
                       accessibilityLabel="Additional bet amount input"
                       accessibilityHint="Enter additional USDC amount to add to your existing bet"
+                      onSubmitEditing={() => {
+                        // move focus to confirm button if visible
+                        if (confirmRef.current && typeof (confirmRef.current as any).focus === 'function') {
+                          (confirmRef.current as any).focus()
+                        }
+                      }}
                     />
                     <TouchableOpacity
                       style={styles.maxButtonSmall}
                       onPress={() => {
-                        setAdditionalBetAmount(userBalance !== null ? Math.min(userBalance, 1000).toString() : '100')
+                        const currentBet = userBet ? userBet.amount / 1_000_000 : 0
+                        const remainingCap = Math.max(0, MAX_BET - currentBet)
+                        const maxAdditional = Math.max(
+                          0,
+                          Math.min(userBalance !== null ? userBalance : 0, remainingCap),
+                        )
+                        setAdditionalBetAmount(maxAdditional.toFixed(2))
                         triggerHaptic('light', 'max additional amount')
                       }}
                       accessibilityLabel="Set maximum additional bet amount"
@@ -1181,7 +1295,14 @@ function _EnhancedCommitPhase({
 
                 <View style={styles.quickAdditionalGrid}>
                   {[5, 10, 25, 50].map((amount) => {
-                    const isSelected = additionalBetAmount === amount.toString()
+                    const isSelected = !isNaN(parseFloat(additionalBetAmount)) && parseFloat(additionalBetAmount) === amount
+                    const currentBet = userBet ? userBet.amount / 1_000_000 : 0
+                    const remainingCap = Math.max(0, MAX_BET - currentBet)
+                    const maxAdditional = Math.max(
+                      0,
+                      Math.min(userBalance !== null ? userBalance : 0, remainingCap),
+                    )
+                    const isDisabled = amount > maxAdditional
                     return (
                       <Animated.View
                         key={amount}
@@ -1190,16 +1311,32 @@ function _EnhancedCommitPhase({
                         }}
                       >
                         <TouchableOpacity
-                          style={[styles.quickAdditionalButton, isSelected && styles.quickAdditionalButtonSelected]}
+                          style={[
+                            styles.quickAdditionalButton,
+                            isSelected && styles.quickAdditionalButtonSelected,
+                            isDisabled && { opacity: 0.5 },
+                          ]}
                           onPress={() => {
-                            setAdditionalBetAmount(amount.toString())
+                            if (isDisabled) return
+                            setAdditionalBetAmount(amount.toFixed(2))
                             triggerHaptic('light', `additional ${amount}`)
                           }}
+                          disabled={isDisabled}
                           accessibilityLabel={`Add ${amount} dollars to bet`}
                           accessibilityRole="button"
-                          accessibilityState={{ selected: isSelected }}
+                          accessibilityState={{ selected: isSelected, disabled: isDisabled }}
+                          accessibilityHint={
+                            isDisabled
+                              ? 'Exceeds remaining cap or your balance'
+                              : `Adds ${amount} dollars to your existing bet`
+                          }
                         >
-                          <Text style={[styles.quickAdditionalText, isSelected && styles.quickAdditionalTextSelected]}>
+                          <Text
+                            style={[
+                              styles.quickAdditionalText,
+                              isSelected && styles.quickAdditionalTextSelected,
+                            ]}
+                          >
                             +${amount}
                           </Text>
                         </TouchableOpacity>
@@ -1236,6 +1373,12 @@ function _EnhancedCommitPhase({
                     (!additionalBetAmount ||
                       isNaN(parseFloat(additionalBetAmount)) ||
                       parseFloat(additionalBetAmount) <= 0 ||
+                      (userBalance !== null &&
+                        parseFloat(additionalBetAmount) >
+                          Math.min(
+                            userBalance,
+                            Math.max(0, MAX_BET - (userBet ? userBet.amount / 1_000_000 : 0)),
+                          )) ||
                       isPlacingBet) &&
                       styles.confirmAdditionalBetButtonDisabled,
                   ]}
@@ -1243,7 +1386,13 @@ function _EnhancedCommitPhase({
                     if (
                       additionalBetAmount &&
                       !isNaN(parseFloat(additionalBetAmount)) &&
-                      parseFloat(additionalBetAmount) > 0
+                      parseFloat(additionalBetAmount) > 0 &&
+                      !(userBalance !== null &&
+                        parseFloat(additionalBetAmount) >
+                          Math.min(
+                            userBalance,
+                            Math.max(0, MAX_BET - (userBet ? userBet.amount / 1_000_000 : 0)),
+                          ))
                     ) {
                       triggerHaptic('heavy', 'confirm additional bet')
                       const additionalAmount = parseFloat(additionalBetAmount)
@@ -1272,6 +1421,12 @@ function _EnhancedCommitPhase({
                     !additionalBetAmount ||
                     isNaN(parseFloat(additionalBetAmount)) ||
                     parseFloat(additionalBetAmount) <= 0 ||
+                    (userBalance !== null &&
+                      parseFloat(additionalBetAmount) >
+                        Math.min(
+                          userBalance,
+                          Math.max(0, MAX_BET - (userBet ? userBet.amount / 1_000_000 : 0)),
+                        )) ||
                     isPlacingBet
                   }
                   accessibilityLabel={`Add ${additionalBetAmount} dollars to your bet on ${race.assets[userBet.assetIdx]?.symbol}`}
@@ -1282,6 +1437,12 @@ function _EnhancedCommitPhase({
                       additionalBetAmount &&
                       !isNaN(parseFloat(additionalBetAmount)) &&
                       parseFloat(additionalBetAmount) > 0 &&
+                      !(userBalance !== null &&
+                        parseFloat(additionalBetAmount) >
+                          Math.min(
+                            userBalance,
+                            Math.max(0, MAX_BET - (userBet ? userBet.amount / 1_000_000 : 0)),
+                          )) &&
                       !isPlacingBet
                         ? ['#9945FF', '#14F195']
                         : ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']
@@ -1307,55 +1468,97 @@ function _EnhancedCommitPhase({
         </View>
       )}
 
-      {account && !userBet && (
-        <View style={styles.raceStatsSection}>
-          <LinearGradient colors={['rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.3)']} style={styles.raceStatsCard}>
-            <View style={styles.raceStatsHeader}>
-              <View style={styles.raceStatsTitle}>
-                <MaterialCommunityIcons name="flash" size={20} color="#FFD700" />
-                <Text style={styles.raceStatsTitleText}>Live Race Stats</Text>
-              </View>
-              <Text style={styles.raceNumber}>#{race.raceId}</Text>
-            </View>
-
-            <View style={styles.raceStatsGrid}>
-              <View style={styles.raceStatItem}>
-                <Text style={styles.raceStatValue}>{formatValue(race.totalPool)}</Text>
-                <Text style={styles.raceStatLabel}>Prize Pool</Text>
-              </View>
-              <View style={styles.raceStatItem}>
-                <Text style={styles.raceStatValue}>{race.participantCount || 0}</Text>
-                <Text style={styles.raceStatLabel}>Racers</Text>
-              </View>
-              <View style={styles.raceStatItem}>
-                <Text style={styles.raceStatValue}>
-                  {race.payoutRatio ? `${race.payoutRatio.toFixed(1)}x` : '2.5x'}
-                </Text>
-                <Text style={styles.raceStatLabel}>Avg Payout</Text>
-              </View>
-            </View>
-          </LinearGradient>
-        </View>
-      )}
+      {/* Removed duplicate Live Race Stats card to avoid redundancy */}
 
       {account && !derivedUserBet && enhancedAssets.length > 0 && (
         <View style={styles.assetSelectionSection}>
-          <View style={styles.sectionHeaderEnhanced}>
-            <View style={styles.sectionTitleContainer}>
-              <View style={styles.sectionTitleWithIcon}>
-                <MaterialCommunityIcons name="rocket-launch" size={18} color="#9945FF" />
-                <Text style={styles.sectionTitleMain}>Choose Your Racer</Text>
+          <LinearGradient
+            colors={[`rgba(153,69,255,0.25)`, 'rgba(20,241,149,0.15)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.collapsibleHeaderGradient}
+          >
+            <Animated.View style={[styles.headerSurface, { transform: [{ scale: headerPressScale }] }]}>
+              <TouchableOpacity
+                onPress={toggleAssetsOpen}
+                onPressIn={() => Animated.spring(headerPressScale, { toValue: 0.98, useNativeDriver: true }).start()}
+                onPressOut={() => Animated.spring(headerPressScale, { toValue: 1, useNativeDriver: true }).start()}
+                accessibilityRole="button"
+                accessibilityLabel={`${assetsOpen ? 'Collapse' : 'Expand'} Choose Your Racer section`}
+                accessibilityHint={assetsOpen ? 'Hides the racer grid' : 'Shows the racer grid'}
+                style={styles.sectionHeaderEnhanced}
+                activeOpacity={0.9}
+              >
+                <View style={styles.sectionTitleContainer}>
+                  <View style={styles.sectionTitleWithIcon}>
+                    <Text style={styles.sectionTitleMain}>Choose Your Racer</Text>
+                  </View>
+                  <Text style={[styles.sectionSubtitleEnhanced, styles.sectionSubtitleTight]}>
+                    Pick the crypto you think will have the{' '}
+                    <Text style={styles.subtitleEmphasis}>highest momentum</Text>
+                  </Text>
+                </View>
+                <View style={styles.collapsibleRightRow}>
+                  <View style={styles.collapsibleCountPill}>
+                    <Text style={styles.collapsibleCountText}>{enhancedAssets.length}</Text>
+                  </View>
+                  <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
+                    <MaterialCommunityIcons
+                      name={'chevron-up'}
+                      size={20}
+                      color="#FFFFFF"
+                      style={styles.collapsibleChevron}
+                    />
+                  </Animated.View>
+                </View>
+              </TouchableOpacity>
+              <View style={styles.headerGlowContainer} pointerEvents="none">
+                <LinearGradient
+                  colors={[ 'rgba(153,69,255,0.35)', 'rgba(20,241,149,0.15)', 'transparent' ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.headerGlow}
+                />
               </View>
-              <Text style={styles.sectionSubtitleEnhanced}>
-                Pick the crypto you think will have the highest momentum
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.helpIconButton} onPress={() => setShowTips(true)}>
-              <MaterialCommunityIcons name="help-circle" size={20} color="#9945FF" />
-            </TouchableOpacity>
-          </View>
+              <LinearGradient
+                colors={[ 'transparent', 'rgba(153,69,255,0.35)', 'transparent' ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.headerBottomAccent}
+              />
+            </Animated.View>
+          </LinearGradient>
 
-          <View style={styles.assetCardsContainer}>
+          {!assetsOpen && enhancedAssets[selectedAssetIdx] && (
+            <View style={styles.collapsibleSummary}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={[styles.assetDot, { backgroundColor: enhancedAssets[selectedAssetIdx]?.color || '#FFD700' }]} />
+                <Text style={{ fontFamily: 'Sora-Bold', color: '#fff' }}>
+                  {enhancedAssets[selectedAssetIdx]?.symbol}
+                </Text>
+                <Text style={{ fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.8)' }}>
+                  {enhancedAssets[selectedAssetIdx]?.name}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ fontFamily: 'Inter-SemiBold', color: '#FFD700', fontSize: 12 }}>
+                    {enhancedAssets[selectedAssetIdx]?.poolShare?.toFixed?.(1) ?? 0}%
+                  </Text>
+                  <Text style={{ fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.7)', fontSize: 10 }}>Pool</Text>
+                </View>
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ fontFamily: 'Inter-SemiBold', color: '#14F195', fontSize: 12 }}>
+                    {(enhancedAssets[selectedAssetIdx]?.performance ?? 0).toFixed(2)}%
+                  </Text>
+                  <Text style={{ fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.7)', fontSize: 10 }}>Momentum</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {assetsOpen && (
+            <View style={styles.assetCardsContainer}>
             {enhancedAssets.map((asset: any, index: number) => {
               const isSelected = selectedAssetIdx === index
 
@@ -1491,8 +1694,9 @@ function _EnhancedCommitPhase({
               )
             })}
           </View>
+          )}
 
-          {selectedAssetIdx >= 0 && enhancedAssets[selectedAssetIdx] && (
+          {assetsOpen && selectedAssetIdx >= 0 && enhancedAssets[selectedAssetIdx] && (
             <View style={styles.selectionHint}>
               <MaterialCommunityIcons name="lightbulb-on" size={16} color="#FFD700" />
               <Text style={styles.selectionHintText}>
@@ -1506,17 +1710,32 @@ function _EnhancedCommitPhase({
 
       {account && !derivedUserBet && selectedAssetIdx >= 0 && enhancedAssets.length > 0 && (
         <View style={styles.bettingSection}>
-          <View style={styles.sectionHeaderEnhanced}>
-            <View style={styles.sectionTitleContainer}>
-              <View style={styles.sectionTitleWithIcon}>
-                <MaterialCommunityIcons name="currency-usd" size={18} color="#9945FF" />
-                <Text style={styles.sectionTitleMain}>Place Your Bet</Text>
+          <LinearGradient
+            colors={[`rgba(153,69,255,0.25)`, 'rgba(20,241,149,0.15)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.collapsibleHeaderGradient}
+          >
+            <View style={styles.headerSurface}>
+              <View style={styles.sectionHeaderEnhanced}>
+                <View style={styles.sectionTitleContainer}>
+                  <View style={styles.sectionTitleWithIcon}>
+                    <Text style={styles.sectionTitleMain}>Place Your Bet</Text>
+                  </View>
+                  <Text style={[styles.sectionSubtitleEnhanced, styles.sectionSubtitleTight]}>
+                    How much do you want to risk on{' '}
+                    <Text style={styles.subtitleEmphasis}>{enhancedAssets[selectedAssetIdx]?.symbol}</Text>?
+                  </Text>
+                </View>
               </View>
-              <Text style={styles.sectionSubtitleEnhanced}>
-                How much do you want to risk on {enhancedAssets[selectedAssetIdx]?.symbol}?
-              </Text>
+              <LinearGradient
+                colors={[ 'transparent', 'rgba(153,69,255,0.35)', 'transparent' ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.headerBottomAccent}
+              />
             </View>
-          </View>
+          </LinearGradient>
 
           <LinearGradient
             colors={['rgba(0, 0, 0, 0.8)', 'rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.8)']}
@@ -1601,16 +1820,25 @@ function _EnhancedCommitPhase({
                 <TextInput
                   style={styles.betInputEnhanced}
                   value={betAmount}
-                  onChangeText={setBetAmount}
+                  onChangeText={handleChangeAmount}
                   onFocus={handleBetInputFocus}
                   onBlur={handleBetInputBlur}
                   placeholder="0.00"
                   placeholderTextColor={COLORS.text.tertiary}
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
+                  inputMode="decimal"
+                  returnKeyType="done"
+                  maxLength={12}
+                  blurOnSubmit
                   selectTextOnFocus={true}
                   accessibilityLabel="Bet amount input"
                   accessibilityHint="Enter the amount in USDC you want to bet on the selected asset"
                   accessibilityValue={{ text: betAmount ? `${betAmount} dollars` : 'No amount entered' }}
+                  onSubmitEditing={() => {
+                    if (canPlaceBet && !isPlacingBet) {
+                      handleBetAttempt()
+                    }
+                  }}
                 />
                 <TouchableOpacity
                   style={styles.maxButtonEnhanced}
@@ -1622,6 +1850,9 @@ function _EnhancedCommitPhase({
                   <Text style={styles.maxButtonTextEnhanced}>MAX</Text>
                 </TouchableOpacity>
               </Animated.View>
+              <Text style={styles.inputHelperText}>
+                Min $0.10 • Fee {((race?.feeBps || 500) / 100).toFixed(2)}%
+              </Text>
             </View>
 
             <View style={styles.quickBetSectionEnhanced}>
@@ -1630,40 +1861,56 @@ function _EnhancedCommitPhase({
                 <Text style={styles.quickBetLabelEnhanced}>Quick Amounts</Text>
               </View>
               <View style={styles.quickBetGrid}>
-                {[5, 10, 25, 50].map((amount) => {
-                  const isSelected = betAmount === amount.toString()
+                {[0.25, 0.5, 0.75, 1].map((pct) => {
+                  const balanceVal = userBalance ?? 0
+                  const target = Math.max(0.1, Math.min(MAX_BET, balanceVal * pct))
+                  const label = `${Math.round(pct * 100)}%`
+                  const valueText = userBalance !== null ? `${label} ($${target.toFixed(2)})` : label
+                  const isSelected =
+                    !isNaN(parseFloat(betAmount)) && Math.abs(parseFloat(betAmount) - target) < 0.01
+                  const isDisabled = (userBalance ?? 0) <= 0.1
                   return (
                     <Animated.View
-                      key={amount}
-                      style={{
-                        transform: [{ scale: isSelected ? quickAmountScaleAnim : 1 }],
-                      }}
+                      key={pct}
+                      style={{ transform: [{ scale: isSelected ? quickAmountScaleAnim : 1 }] }}
                     >
                       <TouchableOpacity
                         style={[
                           styles.quickBetButtonEnhanced,
                           isSelected && styles.quickBetButtonSelectedEnhanced,
+                          isDisabled && styles.quickBetButtonDisabledEnhanced,
                           { minHeight: MIN_TOUCH_TARGET },
                         ]}
-                        onPress={() => handleQuickAmountSelection(amount)}
-                        accessibilityLabel={`Quick bet ${amount} dollars`}
+                        onPress={() => !isDisabled && handleQuickPercentSelection(pct)}
+                        accessibilityLabel={`Quick bet ${label} of balance`}
                         accessibilityRole="button"
-                        accessibilityState={{ selected: isSelected }}
-                        accessibilityHint={`Sets your bet amount to ${amount} dollars${isSelected ? '. Currently selected' : ''}`}
+                        accessibilityState={{ selected: isSelected, disabled: isDisabled }}
+                        accessibilityHint={
+                          isDisabled
+                            ? 'Balance too low for percentage shortcuts'
+                            : `Sets your bet amount to ${label} of your USDC balance`
+                        }
                         activeOpacity={0.8}
+                        disabled={isDisabled}
                       >
                         <LinearGradient
                           colors={
-                            isSelected
-                              ? ['rgba(255, 215, 0, 0.3)', 'rgba(255, 215, 0, 0.1)']
-                              : ['rgba(255, 255, 255, 0.1)', 'rgba(255, 255, 255, 0.05)']
+                            isDisabled
+                              ? ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.03)']
+                              : isSelected
+                                ? ['rgba(255, 215, 0, 0.3)', 'rgba(255, 215, 0, 0.1)']
+                                : ['rgba(255, 255, 255, 0.1)', 'rgba(255, 255, 255, 0.05)']
                           }
                           style={styles.quickBetGradientBackground}
                         >
                           <Text
-                            style={[styles.quickBetTextEnhanced, isSelected && styles.quickBetTextSelectedEnhanced]}
+                            style={[
+                              styles.quickBetTextEnhanced,
+                              isSelected && styles.quickBetTextSelectedEnhanced,
+                              isDisabled && styles.quickBetTextDisabledEnhanced,
+                            ]}
                           >
-                            ${amount}
+                            {valueText}
                           </Text>
                         </LinearGradient>
                       </TouchableOpacity>
@@ -1707,7 +1954,7 @@ function _EnhancedCommitPhase({
                     <View style={styles.previewRow}>
                       <Text style={styles.previewLabel}>If {enhancedAssets[selectedAssetIdx]?.symbol} wins</Text>
                       <Text style={[styles.previewValue, styles.previewWin]}>
-                        +${calculatePotentialPayout(betAmount, race, selectedAssetIdx).profit.toFixed(2)} profit
+                        +${payout.profit.toFixed(2)} profit
                       </Text>
                     </View>
                     <View style={styles.previewRow}>
@@ -1720,13 +1967,13 @@ function _EnhancedCommitPhase({
                     <View style={styles.previewRow}>
                       <Text style={styles.previewLabelTotal}>Potential Payout (if win)</Text>
                       <Text style={styles.previewValueTotal}>
-                        ${calculatePotentialPayout(betAmount, race, selectedAssetIdx).totalPayout.toFixed(2)}
+                        ${payout.totalPayout.toFixed(2)}
                       </Text>
                     </View>
                     <View style={styles.riskWarningRow}>
                       <MaterialCommunityIcons name="alert" size={14} color="#FFD700" />
                       <Text style={styles.riskWarningText}>
-                        {calculatePotentialPayout(betAmount, race, selectedAssetIdx).riskWarning}
+                        {payout.riskWarning}
                       </Text>
                     </View>
                   </View>
@@ -1779,7 +2026,7 @@ function _EnhancedCommitPhase({
                       <View style={styles.confirmationRow}>
                         <Text style={styles.confirmationLabel}>IF {enhancedAssets[selectedAssetIdx]?.symbol} Wins</Text>
                         <Text style={[styles.confirmationValue, styles.confirmationWin]}>
-                          ${calculatePotentialPayout(betAmount, race, selectedAssetIdx).totalPayout.toFixed(2)}
+                          ${payout.totalPayout.toFixed(2)}
                         </Text>
                       </View>
                       <View style={styles.confirmationRow}>
@@ -2202,6 +2449,90 @@ const styles = StyleSheet.create({
     gap: isTablet ? SPACING.lg : SPACING.md,
     justifyContent: 'center',
   },
+  assetCardsAnimated: {
+    overflow: 'hidden',
+  },
+  collapsibleHeaderGradient: {
+    borderRadius: 16,
+    marginHorizontal: isTablet ? SPACING.xl : SPACING.lg,
+    marginBottom: SPACING.sm,
+    padding: 2,
+  },
+  headerSurface: {
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+    paddingHorizontal: isTablet ? SPACING.xl : SPACING.lg,
+    paddingVertical: isTablet ? SPACING.md : SPACING.sm,
+  },
+  headerBottomAccent: {
+    height: 2,
+  },
+  // Removed headerIconContainer for a cleaner title-only header
+  sectionSubtitleTight: {
+    marginTop: 2,
+    letterSpacing: 0.2,
+    lineHeight: 18,
+    opacity: 0.95,
+  },
+  subtitleEmphasis: {
+    color: '#14F195',
+    fontFamily: 'Inter-SemiBold',
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  headerGlowContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+  },
+  headerGlow: {
+    height: '100%',
+  },
+  collapsibleChevron: {
+    marginLeft: SPACING.md,
+  },
+  collapsibleSummary: {
+    marginHorizontal: isTablet ? SPACING.xl : SPACING.lg,
+    marginBottom: SPACING.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  collapsibleRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  collapsibleCountPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  collapsibleCountText: {
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+    fontSize: 12,
+  },
   assetCardEnhanced: {
     flex: isTablet ? 0 : 1,
     width: isTablet ? (screenWidth - 80) / 3 - 16 : undefined,
@@ -2366,6 +2697,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 215, 0, 0.3)',
   },
+  inputHelperText: {
+    marginTop: 8,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.7)',
+    fontFamily: 'Inter-Regular',
+  },
   selectionHintText: {
     ...TYPOGRAPHY.caption,
     color: COLORS.warning,
@@ -2475,14 +2812,16 @@ const styles = StyleSheet.create({
   quickBetGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     marginBottom: 8,
+    paddingHorizontal: isTablet ? SPACING.xl : SPACING.lg,
   },
   quickBetButtonEnhanced: {
-    flex: 1,
+    // Wide, easy targets: 2 per row on phone, 3 on tablet
+    width: isTablet ? '31%' : '48%',
     borderRadius: isTablet ? 14 : 12,
-    paddingVertical: isTablet ? SPACING.md : SPACING.sm + 2,
-    paddingHorizontal: isTablet ? SPACING.sm : SPACING.xs,
+    paddingVertical: isTablet ? SPACING.md : SPACING.md,
+    paddingHorizontal: isTablet ? SPACING.md : SPACING.sm,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
@@ -2493,11 +2832,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 4,
     elevation: 4,
-    minHeight: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET + 6,
     position: 'relative',
     overflow: 'hidden',
-    marginHorizontal: 4,
-    marginVertical: 4,
+    marginBottom: 8,
   },
   quickBetTextEnhanced: {
     ...TYPOGRAPHY.body,
@@ -2518,6 +2856,10 @@ const styles = StyleSheet.create({
     elevation: 8,
     transform: [{ scale: 1.02 }],
   },
+  quickBetButtonDisabledEnhanced: {
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.025)',
+  },
   quickBetTextSelectedEnhanced: {
     color: COLORS.warning,
     fontWeight: '800',
@@ -2525,13 +2867,16 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 4,
   },
+  quickBetTextDisabledEnhanced: {
+    color: 'rgba(255,255,255,0.85)',
+  },
   quickBetGradientBackground: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: isTablet ? 12 : 10,
-    paddingVertical: isTablet ? SPACING.sm : SPACING.xs,
-    paddingHorizontal: SPACING.xs,
+    paddingVertical: isTablet ? SPACING.md : SPACING.sm,
+    paddingHorizontal: SPACING.sm,
   },
   betPreviewSection: {
     marginBottom: 16,
