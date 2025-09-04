@@ -1713,61 +1713,7 @@ function _EnhancedPerformancePhase({
         </LinearGradient>
       </View>
 
-      <View style={styles.raceStatsSection}>
-        <LinearGradient
-          colors={['rgba(0, 0, 0, 0.9)', 'rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.9)']}
-          style={styles.raceStatsGradient}
-        >
-          <View style={styles.raceStatsHeader}>
-            <Text style={styles.raceStatsTitle}>Market Analytics</Text>
-            <View style={styles.marketIndicators}>
-              <View style={[
-                styles.marketIndicator,
-                { backgroundColor: raceIntensity === 'extreme' ? 'rgba(255, 68, 68, 0.2)' : 'rgba(0, 255, 136, 0.2)' }
-              ]}>
-                <Text style={[
-                  styles.marketIndicatorText,
-                  { color: raceIntensity === 'extreme' ? '#FF4444' : '#00FF88' }
-                ]}>
-                  {raceIntensity === 'extreme' ? 'VOLATILE' : 'STABLE'}
-                </Text>
-              </View>
-            </View>
-          </View>
-          
-          <View style={styles.raceStatsGrid}>
-            <View style={styles.statItem}>
-              <MaterialCommunityIcons name="account-group" size={20} color="#14F195" />
-              <Text style={styles.statValue}>{race?.participantCount || 0}</Text>
-              <Text style={styles.statLabel}>Active Racers</Text>
-            </View>
-            
-            <View style={styles.statItem}>
-              <MaterialCommunityIcons name="wallet" size={20} color="#FFD700" />
-              <Text style={styles.statValue}>{formatValue(race?.totalPool || 0)}</Text>
-              <Text style={styles.statLabel}>Total Pool</Text>
-            </View>
-            
-            <View style={styles.statItem}>
-              <MaterialCommunityIcons name="flash" size={20} color="#FF6B6B" />
-              <Text style={styles.statValue}>
-                {(typeof Math.max(...assetPerformances.map((a: any) => Math.abs(a.performance))) === 'number' && !isNaN(Math.max(...assetPerformances.map((a: any) => Math.abs(a.performance))))) ? Math.max(...assetPerformances.map((a: any) => Math.abs(a.performance))).toFixed(1) : '0.0'}%
-              </Text>
-              <Text style={styles.statLabel}>Max Swing</Text>
-            </View>
-            
-            <View style={styles.statItem}>
-              <MaterialCommunityIcons name="chart-line" size={20} color="#9945FF" />
-              <Text style={styles.statValue}>
-                {(typeof (assetPerformances.reduce((sum: number, a: any) => sum + a.momentum, 0) / assetPerformances.length) === 'number' && !isNaN((assetPerformances.reduce((sum: number, a: any) => sum + a.momentum, 0) / assetPerformances.length))) ? (assetPerformances.reduce((sum: number, a: any) => sum + a.momentum, 0) / assetPerformances.length).toFixed(1) : '0.0'}
-              </Text>
-              <Text style={styles.statLabel}>Avg Momentum</Text>
-            </View>
-          </View>
-          
-
-        </LinearGradient>
-      </View>
+      {/* Market Analytics section removed per request */}
       </ScrollView>
     </View>
   )
@@ -1854,7 +1800,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-    height: 70, // Ultra thin height
+    height: 76, // Slightly increased for breathing room
   },
   
   ultraThinUserGradient: {
@@ -1863,7 +1809,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
 
   compactUserPositionBadge: {
@@ -1885,7 +1831,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingLeft: 8,
     paddingRight: 32, // Space for badge
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
 
   ultraThinLeftSection: {
@@ -1903,8 +1849,11 @@ const styles = StyleSheet.create({
   compactAssetSymbol: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#9945FF',
+    color: '#FFFFFF',
     fontFamily: 'Sora-Bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 
   ultraThinPositionText: {
@@ -1987,8 +1936,11 @@ const styles = StyleSheet.create({
   assetSymbol: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#9945FF',
+    color: '#FFFFFF',
     fontFamily: 'Inter-SemiBold',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   betSummarySection: {
     marginTop: 20,
@@ -2609,9 +2561,12 @@ const styles = StyleSheet.create({
 
   assetName: {
     fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(255, 255, 255, 0.9)',
     fontFamily: 'Inter-Regular',
     marginTop: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
 
   performanceSection: {
@@ -2862,9 +2817,12 @@ const styles = StyleSheet.create({
   },
   userBetOddsText: {
     fontSize: 8,
-    color: '#9945FF',
+    color: '#FFFFFF',
     fontWeight: '700',
     fontFamily: 'Inter-SemiBold',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   
   poolSummary: {
@@ -2893,101 +2851,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#FFD700',
-    fontFamily: 'Inter-SemiBold',
-  },
-  
-  raceStatsSection: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginHorizontal: 20,
-  },
-  raceStatsGradient: {
-    padding: 20,
-  },
-  raceStatsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  raceStatsTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    fontFamily: 'Sora-Bold',
-  },
-  marketIndicators: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  marketIndicator: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  marketIndicatorText: {
-    fontSize: 8,
-    fontWeight: '700',
-    fontFamily: 'Inter-SemiBold',
-    letterSpacing: 0.2,
-  },
-  originalRaceStatsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    minWidth: 0,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    marginTop: 8,
-    marginBottom: 4,
-    fontFamily: 'Inter-SemiBold',
-  },
-  statLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.7)',
-    textAlign: 'center',
-    fontFamily: 'Inter-Regular',
-  },
-  
-  advancedAnalytics: {
-    marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-  },
-  analyticsTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 12,
-    textAlign: 'center',
-    fontFamily: 'Sora-Bold',
-  },
-  analyticsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  analyticsItem: {
-    alignItems: 'center',
-  },
-  analyticsLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Inter-Regular',
-  },
-  analyticsValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#14F195',
     fontFamily: 'Inter-SemiBold',
   },
   
