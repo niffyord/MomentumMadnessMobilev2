@@ -25,6 +25,7 @@ import {
 } from 'react-native'
 
 import { MaterialCommunityIcons } from '@expo/vector-icons'
+import { PoolDonut } from '@/components/ui/PoolDonut'
 import { PublicKey } from '@solana/web3.js'
 
 import { useRaceStore } from '../../store/useRaceStore'
@@ -1742,6 +1743,14 @@ function _EnhancedCommitPhase({
             colors={['rgba(0, 0, 0, 0.8)', 'rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.8)']}
             style={styles.bettingPanel}
           >
+            {/* Pool dynamics donut */}
+            <View style={{ alignItems: 'center', marginBottom: 12 }}>
+              <PoolDonut
+                totalPoolUsd={(race?.totalPool || 0) / 1_000_000}
+                yourBetUsd={parseFloat(betAmount) || 0}
+                title="Pool Dynamics"
+              />
+            </View>
             <View style={styles.betInputSectionEnhanced}>
               <View style={styles.betInputHeader}>
                 <Text style={styles.betInputLabelEnhanced}>Bet Amount</Text>

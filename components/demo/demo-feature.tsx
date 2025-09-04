@@ -35,6 +35,8 @@ import {
 import { EnhancedCommitPhase } from './CommitPhase'
 import { EnhancedPerformancePhase } from './PerformancePhase'
 import { EnhancedSettledPhase } from './SettledPhase'
+import { PhaseTracker } from '@/components/ui/PhaseTracker'
+import { CircularCountdown } from '@/components/ui/CircularCountdown'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
@@ -933,46 +935,39 @@ export function DemoFeature() {
           )}
         </View>
 
+        {/* Phase tracker */}
+        {race && (
+          <View style={{ paddingHorizontal: isTablet ? SPACING.xxl : SPACING.xl, marginBottom: SPACING.md }}>
+            <PhaseTracker currentPhase={currentPhase} />
+          </View>
+        )}
+
+        {/* Countdown ring */}
         {currentPhase !== 'settled' && race && (
           <View style={styles.countdownSection}>
             <LinearGradient
               colors={['rgba(0, 0, 0, 0.8)', 'rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.8)']}
               style={[styles.countdownContainer, timeCalculations.urgency === 'critical' && styles.criticalCountdown]}
             >
-              <View style={styles.countdownHeader}>
-                <View style={styles.countdownInfo}>
-                  <Text
-                    style={[styles.countdownLabel, timeCalculations.urgency === 'critical' && { color: '#FF4444' }]}
-                  >
-                    {timeCalculations.secondsLeft > 0 ? formatTime(timeCalculations.secondsLeft) : '00:00'}
-                  </Text>
-                  <Text style={styles.countdownSubLabel}>
-                    {timeCalculations.urgency === 'critical' ? 'CLOSING SOON!' : 'remaining'}
-                  </Text>
-                </View>
-                <View style={styles.phaseIndicator}>
-                  <View style={[styles.phaseIcon, { backgroundColor: phaseConfig.color }]} />
-                  <View>
-                    <Text style={[styles.phaseLabel, { color: phaseConfig.accentColor }]}>{phaseConfig.label}</Text>
-                    <Text style={styles.phaseDescription}>{phaseConfig.description}</Text>
-                  </View>
-                </View>
-              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <CircularCountdown
+                  totalSeconds={currentPhase === 'commit' ? race.lockTs - race.startTs : race.settleTs - race.lockTs}
+                  secondsLeft={Math.max(0, timeCalculations.secondsLeft)}
+                  label={currentPhase === 'commit' ? 'until Lock' : 'until Reveal'}
+                />
 
-              <View style={styles.progressBarContainer}>
-                <View style={[styles.progressBar, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
-                  <Animated.View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: `${timeCalculations.progress * 100}%`,
-                        backgroundColor: timeCalculations.urgency === 'critical' ? '#FF4444' : phaseConfig.color,
-                      },
-                    ]}
-                  />
-                  <View style={styles.progressGlow} />
+                <View style={{ flex: 1, marginLeft: 16 }}>
+                  <View style={styles.phaseIndicator}>
+                    <View style={[styles.phaseIcon, { backgroundColor: phaseConfig.color }]} />
+                    <View>
+                      <Text style={[styles.phaseLabel, { color: phaseConfig.accentColor }]}>{phaseConfig.label}</Text>
+                      <Text style={styles.phaseDescription}>{phaseConfig.description}</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.progressText, { position: 'relative', right: 0, top: 8 }]}>
+                    {Math.round(timeCalculations.progress * 100)}% elapsed
+                  </Text>
                 </View>
-                <Text style={styles.progressText}>{Math.round(timeCalculations.progress * 100)}%</Text>
               </View>
             </LinearGradient>
           </View>
