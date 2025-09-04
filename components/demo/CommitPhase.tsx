@@ -20,6 +20,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  ScrollView,
   View,
 } from 'react-native'
 
@@ -1860,12 +1861,16 @@ function _EnhancedCommitPhase({
                 <MaterialCommunityIcons name="cash-multiple" size={16} color="#9945FF" />
                 <Text style={styles.quickBetLabelEnhanced}>Quick Amounts</Text>
               </View>
-              <View style={styles.quickBetGrid}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.quickBetRow}
+              >
                 {[0.25, 0.5, 0.75, 1].map((pct) => {
                   const balanceVal = userBalance ?? 0
                   const target = Math.max(0.1, Math.min(MAX_BET, balanceVal * pct))
                   const label = `${Math.round(pct * 100)}%`
-                  const valueText = userBalance !== null ? `${label} ($${target.toFixed(2)})` : label
+                  const valueText = label
                   const isSelected =
                     !isNaN(parseFloat(betAmount)) && Math.abs(parseFloat(betAmount) - target) < 0.01
                   const isDisabled = (userBalance ?? 0) <= 0.1
@@ -1908,16 +1913,18 @@ function _EnhancedCommitPhase({
                               styles.quickBetTextEnhanced,
                               isSelected && styles.quickBetTextSelectedEnhanced,
                               isDisabled && styles.quickBetTextDisabledEnhanced,
-                            ]}
-                          >
-                            {valueText}
-                          </Text>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  )
-                })}
-              </View>
+                           ]}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                           >
+                             {valueText}
+                           </Text>
+                         </LinearGradient>
+                       </TouchableOpacity>
+                     </Animated.View>
+                   )
+                 })}
+              </ScrollView>
             </View>
 
             {betAmount && !isNaN(parseFloat(betAmount)) && parseFloat(betAmount) >= 0.1 && (
@@ -1963,13 +1970,7 @@ function _EnhancedCommitPhase({
                         -${parseFloat(betAmount).toFixed(2)} (100% loss)
                       </Text>
                     </View>
-                    <View style={styles.previewDivider} />
-                    <View style={styles.previewRow}>
-                      <Text style={styles.previewLabelTotal}>Potential Payout (if win)</Text>
-                      <Text style={styles.previewValueTotal}>
-                        ${payout.totalPayout.toFixed(2)}
-                      </Text>
-                    </View>
+                    
                     <View style={styles.riskWarningRow}>
                       <MaterialCommunityIcons name="alert" size={14} color="#FFD700" />
                       <Text style={styles.riskWarningText}>
@@ -2058,7 +2059,9 @@ function _EnhancedCommitPhase({
                         onFocus={() => {}}
                         activeOpacity={0.7}
                       >
-                        <MaterialCommunityIcons name="close" size={24} color="#fff" />
+                        <View style={styles.confirmationCancelInner}>
+                          <MaterialCommunityIcons name="close" size={24} color="#fff" />
+                        </View>
                       </TouchableOpacity>
                       <TouchableOpacity
                         ref={confirmRef}
@@ -2813,15 +2816,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 8,
     paddingHorizontal: isTablet ? SPACING.xl : SPACING.lg,
+    marginBottom: 12,
+  },
+  quickBetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: isTablet ? SPACING.xl : SPACING.lg,
+    paddingBottom: 8,
   },
   quickBetButtonEnhanced: {
-    // Wide, easy targets: 2 per row on phone, 3 on tablet
-    width: isTablet ? '31%' : '48%',
+    // Horizontal row: size to content, keep large targets
+    flexShrink: 0,
     borderRadius: isTablet ? 14 : 12,
-    paddingVertical: isTablet ? SPACING.md : SPACING.md,
-    paddingHorizontal: isTablet ? SPACING.md : SPACING.sm,
+    paddingVertical: isTablet ? SPACING.md : SPACING.sm,
+    paddingHorizontal: isTablet ? SPACING.md : SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
@@ -2835,7 +2845,8 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH_TARGET + 6,
     position: 'relative',
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 0,
+    marginRight: 8,
   },
   quickBetTextEnhanced: {
     ...TYPOGRAPHY.body,
@@ -2871,12 +2882,13 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.85)',
   },
   quickBetGradientBackground: {
-    flex: 1,
+    // Do not force stretch; let content size the button
+    flex: 0,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: isTablet ? 12 : 10,
     paddingVertical: isTablet ? SPACING.md : SPACING.sm,
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: isTablet ? SPACING.md : SPACING.sm,
   },
   betPreviewSection: {
     marginBottom: 16,
@@ -3116,21 +3128,28 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   confirmationCancelButton: {
-    flex: 0.8,
+    flex: 1,
     borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.25)',
     backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 52,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
+  },
+  confirmationCancelInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    minHeight: 52,
+    width: '100%',
   },
   confirmationCancelText: {
     fontSize: 16,
@@ -3141,7 +3160,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   confirmationConfirmButton: {
-    flex: 0.8,
+    flex: 1,
     borderRadius: 14,
     overflow: 'hidden',
     minHeight: 52,
