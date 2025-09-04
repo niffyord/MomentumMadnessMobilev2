@@ -13,6 +13,7 @@ import {
   AccessibilityInfo,
   ActivityIndicator,
   Animated,
+  Easing,
   AppState,
   Dimensions,
   Platform,
@@ -1165,8 +1166,10 @@ function _EnhancedPerformancePhase({
               {/* Left: Asset & Position Info */}
               <View style={styles.ultraThinLeftSection}>
                 <View style={styles.assetInfoRow}>
-                  <Animated.View style={[styles.assetDotRing, { transform: [{ scale: pulseAnim }] }]} />
-                  <View style={[styles.assetDotSmall, { backgroundColor: userPosition.asset.color }]} />
+                  <View style={styles.assetDotWrapper}>
+                    <Animated.View style={[styles.assetDotRing, { transform: [{ scale: pulseAnim }] }]} />
+                    <View style={[styles.assetDotSmall, { backgroundColor: userPosition.asset.color }]} />
+                  </View>
                   <Text style={styles.compactAssetSymbol}>{userPosition.asset.symbol}</Text>
                   <MaterialCommunityIcons 
                     name={userPosition.isCurrentlyWinning ? "trophy" : "account-star"} 
@@ -1761,6 +1764,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
+  userCardShine: {
+    position: 'absolute',
+    top: -40,
+    left: -100,
+    width: 140,
+    height: 200,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
+  },
+  cornerRibbon: {
+    position: 'absolute',
+    top: 6,
+    left: -10,
+    transform: [{ rotate: '-12deg' }],
+    paddingVertical: 2,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  ribbonWin: {
+    backgroundColor: 'rgba(0, 255, 136, 0.15)',
+    borderColor: 'rgba(0, 255, 136, 0.45)',
+  },
+  ribbonLose: {
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    borderColor: 'rgba(255, 215, 0, 0.4)',
+  },
+  ribbonText: {
+    fontSize: 8,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
 
   compactUserPositionBadge: {
     position: 'absolute',
@@ -1794,6 +1830,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     marginBottom: 2,
+  },
+  assetDotWrapper: {
+    width: 12,
+    height: 12,
+    position: 'relative',
+    marginRight: 2,
+  },
+  assetDotRing: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    top: -1,
+    left: -1,
   },
 
   compactAssetSymbol: {
@@ -1830,6 +1882,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     textAlign: 'center',
   },
+  winProbBar: {
+    marginTop: 4,
+    width: 72,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
+  },
+  winProbFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
 
   ultraThinRightSection: {
     alignItems: 'flex-end',
@@ -1860,12 +1924,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 40,
   },
-
-  compactStatusText: {
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)',
+  },
+  statusPillText: {
     fontSize: 10,
-    fontWeight: '800',
-    fontFamily: 'Sora-ExtraBold',
-    textAlign: 'center',
+    color: '#0B0B0B',
+    fontFamily: 'Inter-SemiBold',
   },
 
   compactWinChance: {
