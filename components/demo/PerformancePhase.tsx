@@ -20,6 +20,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native'
 
@@ -1529,6 +1530,56 @@ function _EnhancedPerformancePhase({
                       <Text style={styles.poolValue}>{asset.poolShare?.toFixed(1) || '0.0'}%</Text>
                     </View>
                   </View>
+
+                  {/* Pool share mini-bar with your share marker */}
+                  <View style={styles.poolShareMini}>
+                    <View style={styles.poolTrack}>
+                      <View
+                        style={[styles.poolFill, { width: `${Math.min(100, Math.max(0, asset.poolShare || 0))}%` }]}
+                      />
+                      {asset.isUserAsset && (
+                        <View
+                          style={[styles.poolMarker, {
+                            left: `${Math.min(100, Math.max(0, (userPosition?.userPoolShare || 0)))}%`,
+                          }]}
+                        />
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Crowd sentiment + voting */}
+                  {(() => {
+                    const s = getCrowdSentiment(asset.symbol)
+                    const userVote = userVotes.get(asset.symbol)
+                    return (
+                      <View style={styles.votingContainer}>
+                        <View style={styles.votingButtons}>
+                          <TouchableOpacity
+                            onPress={() => handleVote(asset.symbol, 'up')}
+                            style={[styles.voteButton, userVote === 'up' && styles.voteButtonActive]}
+                            accessibilityLabel={`Upvote ${asset.symbol}`}
+                            accessibilityRole="button"
+                          >
+                            <MaterialCommunityIcons name="thumb-up-outline" size={12} color="#00FF88" />
+                            <Text style={styles.voteCount}>{s.upPercent}%</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleVote(asset.symbol, 'down')}
+                            style={[styles.voteButton, userVote === 'down' && styles.voteButtonActiveRed]}
+                            accessibilityLabel={`Downvote ${asset.symbol}`}
+                            accessibilityRole="button"
+                          >
+                            <MaterialCommunityIcons name="thumb-down-outline" size={12} color="#FF4444" />
+                            <Text style={styles.voteCount}>{s.downPercent}%</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <View style={styles.sentimentBar}>
+                          <View style={[styles.sentimentFill, { width: `${s.upPercent}%`, backgroundColor: '#00FF88' }]} />
+                        </View>
+                        <Text style={styles.sentimentText}>{s.total} votes</Text>
+                      </View>
+                    )
+                  })()}
               </LinearGradient>
               </Animated.View>
             )
@@ -2664,6 +2715,37 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Inter-SemiBold',
     marginTop: 1,
+  },
+
+  poolShareMini: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    marginTop: 6,
+  },
+  poolTrack: {
+    flex: 1,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 2,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  poolFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#14F195',
+    borderRadius: 2,
+  },
+  poolMarker: {
+    position: 'absolute',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFD700',
+    marginLeft: -3,
   },
 
   liveIndicator: {
