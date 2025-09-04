@@ -165,21 +165,19 @@ function _EnhancedCommitPhase({
   const cancelRef = React.useRef<any>(null)
   const confirmRef = React.useRef<any>(null)
 
-  const {
-    race,
-    userBets,
-    isLoading,
-    error,
-    fetchCommitPhaseData,
-    fetchUserBets,
-    priceUpdates,
-    liveRaceData,
-    connectWebSocket,
-    subscribeToRace,
-    isConnected,
-    forceReconnectWebSocket,
-    fetchCurrentRace,
-  } = useRaceStore()
+  const race = useRaceStore((s) => s.race)
+  const userBets = useRaceStore((s) => s.userBets)
+  const isLoading = useRaceStore((s) => s.isLoading)
+  const error = useRaceStore((s) => s.error)
+  const fetchCommitPhaseData = useRaceStore((s) => s.fetchCommitPhaseData)
+  const fetchUserBets = useRaceStore((s) => s.fetchUserBets)
+  const priceUpdates = useRaceStore((s) => s.priceUpdates)
+  const liveRaceData = useRaceStore((s) => s.liveRaceData)
+  const connectWebSocket = useRaceStore((s) => s.connectWebSocket)
+  const subscribeToRace = useRaceStore((s) => s.subscribeToRace)
+  const isConnected = useRaceStore((s) => s.isConnected)
+  const forceReconnectWebSocket = useRaceStore((s) => s.forceReconnectWebSocket)
+  const playerAddress = account?.publicKey?.toBase58 ? account.publicKey.toBase58() : account?.publicKey?.toString?.()
 
   const placeBetMutation = usePlaceBet()
   const isPlacingBet = placeBetMutation.isPending
@@ -373,19 +371,19 @@ function _EnhancedCommitPhase({
   }, [race?.raceId, forceReconnectWebSocket, subscribeToRace])
 
   useEffect(() => {
-    if (account?.publicKey) {
-      fetchCommitPhaseData(undefined, account.publicKey.toBase58(), false)
+    if (playerAddress) {
+      fetchCommitPhaseData(undefined, playerAddress, false)
     } else {
       fetchCommitPhaseData(undefined, undefined, false)
     }
-  }, [account?.publicKey, fetchCommitPhaseData])
+  }, [playerAddress, fetchCommitPhaseData])
 
   useEffect(() => {
-    if (!isConnected && race?.raceId && isAppActive) {
+    if (!race?.raceId || !isAppActive) return
+    if (!isConnected) {
       connectWebSocket()
         .then(() => {
           subscribeToRace(race.raceId)
-
           const { wsService } = useRaceStore.getState()
           wsService.subscribeToPrice()
           console.log('✅ WebSocket connected for commit phase')
@@ -393,21 +391,20 @@ function _EnhancedCommitPhase({
         .catch((error) => {
           console.error('❌ Failed to connect to WebSocket:', error)
         })
-    } else if (isConnected && race?.raceId && isAppActive) {
+    } else {
       subscribeToRace(race.raceId)
-
       const { wsService } = useRaceStore.getState()
       wsService.subscribeToPrice()
     }
   }, [race?.raceId, isConnected, connectWebSocket, subscribeToRace, isAppActive])
 
   useEffect(() => {
-    if (account?.publicKey && !userBalance && !isLoadingBalance) {
+    if (playerAddress && userBalance === null && !isLoadingBalance) {
       setIsLoadingBalance(true)
 
       const { apiService } = useRaceStore.getState()
       apiService
-        .getUserBalance(account.publicKey.toBase58())
+        .getUserBalance(playerAddress)
         .then((response) => {
           if (response.success && response.data) {
             setUserBalance(response.data.usdcBalance)
@@ -425,7 +422,7 @@ function _EnhancedCommitPhase({
           setIsLoadingBalance(false)
         })
     }
-  }, [account?.publicKey, userBalance, isLoadingBalance])
+  }, [playerAddress, userBalance, isLoadingBalance])
 
   useEffect(() => {
     if (userBet) {
@@ -535,7 +532,7 @@ function _EnhancedCommitPhase({
   const livePrices = useMemo(() => {
     const priceMap = new Map<string, { price: number; confidence: number; changePercent: number }>()
 
-    priceUpdates.forEach((priceData, symbol) => {
+    priceUpdates.forEach((priceData: any, symbol: string) => {
       if (priceData && typeof priceData.price === 'number') {
         priceMap.set(symbol, {
           price: priceData.price,
@@ -568,7 +565,7 @@ function _EnhancedCommitPhase({
       const currentPrice = livePrice?.price || asset.currentPrice || asset.startPrice || 100
 
       let performance = 0
-      const backendLeaderboard = liveRaceData?.leaderboard
+      const backendLeaderboard = (liveRaceData as any)?.leaderboard ?? (race as any)?.leaderboard
       if (backendLeaderboard) {
         const backendAsset = backendLeaderboard.find((item: any) => item.index === index)
         if (backendAsset && typeof backendAsset.performance === 'number') {
@@ -580,10 +577,6 @@ function _EnhancedCommitPhase({
         const startPrice = asset.startPrice
         if (typeof startPrice === 'number' && typeof currentPrice === 'number' && startPrice > 0) {
           performance = ((currentPrice - startPrice) / startPrice) * 100
-
-          if (Math.abs(performance) > 50) {
-            performance = Math.sign(performance) * Math.min(Math.abs(performance), 50)
-          }
         }
       }
 
@@ -778,11 +771,11 @@ function _EnhancedCommitPhase({
   }
 
   useEffect(() => {
-    if (placeBetMutation.isSuccess && account?.publicKey) {
-      fetchUserBets(account.publicKey.toBase58(), false)
+    if (placeBetMutation.isSuccess && playerAddress) {
+      fetchUserBets(playerAddress, false)
       console.log('✅ Refreshing user bets after successful bet placement')
     }
-  }, [placeBetMutation.isSuccess, account?.publicKey, fetchUserBets])
+  }, [placeBetMutation.isSuccess, playerAddress, fetchUserBets])
 
   useEffect(() => {
     if (account?.publicKey && !userBalance && !isLoadingBalance) {

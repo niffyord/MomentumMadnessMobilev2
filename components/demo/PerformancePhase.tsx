@@ -123,26 +123,13 @@ function _EnhancedPerformancePhase({
   error = null,
   account
 }: PerformancePhaseProps) {
-  const {
-    odds,
-    previousOdds,
-    priceUpdates,
-    isConnected,
-    liveRaceData,
-    userBets,
-  } = useRaceStore(
-    useCallback(
-      (s) => ({
-        odds: s.odds,
-        previousOdds: s.previousOdds,
-        priceUpdates: s.priceUpdates,
-        isConnected: s.isConnected,
-        liveRaceData: s.liveRaceData,
-        userBets: s.userBets,
-      }),
-      []
-    )
-  )
+  const playerAddress = account?.publicKey?.toBase58 ? account.publicKey.toBase58() : account?.publicKey?.toString?.()
+  const odds = useRaceStore((s) => s.odds)
+  const previousOdds = useRaceStore((s) => s.previousOdds)
+  const priceUpdates = useRaceStore((s) => s.priceUpdates)
+  const isConnected = useRaceStore((s) => s.isConnected)
+  const liveRaceData = useRaceStore((s) => s.liveRaceData)
+  const userBets = useRaceStore((s) => s.userBets)
 
   // Stable refs for store actions to avoid effect dependency churn
   const connectWebSocketRef = useRef(useRaceStore.getState().connectWebSocket)
@@ -240,7 +227,7 @@ function _EnhancedPerformancePhase({
   const livePrices = useMemo(() => {
     const priceMap = new Map<string, LivePriceData>()
     
-    priceUpdates.forEach((priceData, symbol) => {
+    priceUpdates.forEach((priceData: any, symbol: string) => {
       if (priceData && typeof priceData.price === 'number') {
         const currentPrevious = previousPrices.current.get(symbol)
         // Initialize previous price if missing; subsequent updates handled in priceUpdates effect
@@ -280,7 +267,7 @@ function _EnhancedPerformancePhase({
     const updatedAssets = new Set<string>()
     let significantUpdate = false
     
-    priceUpdates.forEach((priceData, symbol) => {
+    priceUpdates.forEach((priceData: any, symbol: string) => {
       if (priceData && typeof priceData.price === 'number') {
         const previous = previousPrices.current.get(symbol)
         if (previous && previous.price !== priceData.price) {
@@ -335,7 +322,7 @@ function _EnhancedPerformancePhase({
     }
 
     // After processing, advance previous prices to current snapshot
-    priceUpdates.forEach((priceData, symbol) => {
+    priceUpdates.forEach((priceData: any, symbol: string) => {
       if (priceData && typeof priceData.price === 'number') {
         previousPrices.current.set(symbol, {
           price: priceData.price,
@@ -518,7 +505,8 @@ function _EnhancedPerformancePhase({
       const currentPrice = livePrice?.price || asset.currentPrice || asset.startPrice || 100
       
       let performance = 0
-      const backendLeaderboard = liveRaceData?.leaderboard
+      // Prefer live leaderboard; fall back to race payload leaderboard if present
+      const backendLeaderboard = (liveRaceData as any)?.leaderboard ?? (race as any)?.leaderboard
       if (backendLeaderboard) {
         const backendAsset = backendLeaderboard.find((item: any) => item.index === index)
         if (backendAsset && typeof backendAsset.performance === 'number') {
@@ -526,13 +514,12 @@ function _EnhancedPerformancePhase({
         }
       }
       
+      // If backend did not provide performance, compute from known start/current prices
       if (performance === 0 && asset.startPrice && currentPrice) {
         const startPrice = asset.startPrice
         if (typeof startPrice === 'number' && typeof currentPrice === 'number' && startPrice > 0) {
           performance = ((currentPrice - startPrice) / startPrice) * 100
-          if (Math.abs(performance) > 50) {
-            performance = Math.sign(performance) * Math.min(Math.abs(performance), 50)
-          }
+          // Do not clamp to an arbitrary bound; trust computed value
         }
       }
       
@@ -1014,10 +1001,10 @@ function _EnhancedPerformancePhase({
   useEffect(() => {
     let pollInterval: ReturnType<typeof setInterval> | null = null;
     const fetchAll = async () => {
-      if (account?.publicKey) {
+      if (playerAddress) {
         try {
           await Promise.all([
-            useRaceStore.getState().fetchUserBets(account.publicKey.toBase58(), false),
+            useRaceStore.getState().fetchUserBets(playerAddress, false),
             useRaceStore.getState().fetchCurrentRace(false),
           ]);
         } catch (e) {
@@ -1029,7 +1016,7 @@ function _EnhancedPerformancePhase({
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [race?.raceId, account?.publicKey]);
+  }, [race?.raceId, playerAddress]);
 
 
 

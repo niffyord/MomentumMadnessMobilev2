@@ -27,6 +27,7 @@ import {
   captureScreen,
 } from 'react-native-view-shot'
 
+import { useNotification } from '@/components/ui/NotificationProvider'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 
 import { useRaceStore } from '../../store/useRaceStore'
@@ -179,24 +180,32 @@ function _EnhancedSettledPhase({
   error = null,
 }: SettledPhaseProps) {
   const claimPayoutMutation = useClaimPayout()
-  const { userBets, fetchSettledPhaseData, connectWebSocket, subscribeToRace, isConnected } = useRaceStore()
+  const { showSuccess, showError } = useNotification()
+  // Use granular selectors to avoid snapshot churn
+  const userBets = useRaceStore((s) => s.userBets)
+  const fetchSettledPhaseData = useRaceStore((s) => s.fetchSettledPhaseData)
+  const connectWebSocket = useRaceStore((s) => s.connectWebSocket)
+  const subscribeToRace = useRaceStore((s) => s.subscribeToRace)
+  const isConnected = useRaceStore((s) => s.isConnected)
+  const playerAddress = account?.publicKey?.toBase58 ? account.publicKey.toBase58() : account?.publicKey?.toString?.()
 
   React.useEffect(() => {
-    if (account?.publicKey) {
-      fetchSettledPhaseData(race?.raceId, account.publicKey.toBase58())
+    if (playerAddress) {
+      fetchSettledPhaseData(race?.raceId, playerAddress)
     }
-  }, [race?.raceId, account?.publicKey])
+  }, [race?.raceId, playerAddress, fetchSettledPhaseData])
 
   // Connect to websocket for real-time settled phase updates
   React.useEffect(() => {
-    if (race?.raceId && !isConnected) {
+    if (!race?.raceId) return
+    if (!isConnected) {
       connectWebSocket().then(() => {
         if (race.raceId) {
           subscribeToRace(race.raceId)
           console.log(`🔌 Connected to websocket for settled phase updates on race ${race.raceId}`)
         }
       })
-    } else if (race?.raceId && isConnected) {
+    } else {
       subscribeToRace(race.raceId)
     }
   }, [race?.raceId, isConnected, connectWebSocket, subscribeToRace])
@@ -263,6 +272,51 @@ function _EnhancedSettledPhase({
       }
     } catch (error) {}
   }, [])
+
+  // Poll for final settlement while cron finalizes results, then stop automatically
+  const settlePollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    if (!race?.raceId) return
+
+    const hasFinalizedPrices = Array.isArray(race?.assets)
+      ? race.assets.every((a: any) => typeof a?.endPrice === 'number')
+      : false
+    const fullySettled = race?.state === 'Settled' && hasFinalizedPrices
+
+    if (fullySettled) {
+      if (settlePollRef.current) {
+        clearInterval(settlePollRef.current as any)
+        settlePollRef.current = null
+      }
+      return
+    }
+
+    if (settlePollRef.current) return
+
+    const fetchLatest = async () => {
+      try {
+        await useRaceStore.getState().fetchSettledPhaseData(race.raceId, playerAddress, false)
+      } catch (_) {}
+    }
+
+    fetchLatest()
+    settlePollRef.current = setInterval(fetchLatest, 2000)
+
+    const stopTimer = setTimeout(() => {
+      if (settlePollRef.current) {
+        clearInterval(settlePollRef.current as any)
+        settlePollRef.current = null
+      }
+    }, 120000) // hard stop after 2 minutes
+
+    return () => {
+      if (settlePollRef.current) {
+        clearInterval(settlePollRef.current as any)
+        settlePollRef.current = null
+      }
+      clearTimeout(stopTimer as any)
+    }
+  }, [race?.raceId, race?.state, Array.isArray(race?.assets) ? race.assets.length : 0, playerAddress])
 
   useEffect(() => {
     const checkReduceMotion = async () => {
@@ -340,11 +394,17 @@ function _EnhancedSettledPhase({
     return rawAssetData
       .map(({ asset, index }: { asset: any; index: number }) => {
         const startPrice = asset.startPrice || 100
-        const endPrice = asset.endPrice || asset.currentPrice || startPrice
+        // Prefer endPrice when present; otherwise fallback to leaderboard/current
+        const endPrice =
+          typeof asset.endPrice === 'number'
+            ? asset.endPrice
+            : typeof asset.currentPrice === 'number'
+              ? asset.currentPrice
+              : startPrice
 
         // Optimized performance calculation
-        const performance = (startPrice > 0 && typeof startPrice === 'number' && typeof endPrice === 'number') 
-          ? ((endPrice - startPrice) / startPrice) * 100 
+        const performance = (startPrice > 0 && typeof startPrice === 'number' && typeof endPrice === 'number')
+          ? ((endPrice - startPrice) / startPrice) * 100
           : 0
 
         const assetPool = poolData.assetPools[index] || 0
@@ -634,6 +694,8 @@ function _EnhancedSettledPhase({
 
       // Mark as claimed only after successful tx
       setLocalClaimUpdate(true)
+      // UX toast
+      showSuccess(`Payout claimed: $${userPosition.claimableAmount.toFixed(2)}`, 'Reward Claimed')
 
       setTimeout(() => triggerHaptic('success'), 200)
       setTimeout(() => triggerHaptic('light'), 400)
@@ -643,9 +705,10 @@ function _EnhancedSettledPhase({
       // Revert optimistic update on error
       setLocalClaimUpdate(false)
       triggerHaptic('error')
+      showError('Failed to claim payout. You can try again.', 'Claim Failed')
       console.error('Failed to claim payout:', error)
     }
-  }, [userPosition, claimPayoutMutation, account, race, claimed, triggerHaptic])
+  }, [userPosition, claimPayoutMutation, account, race, claimed, triggerHaptic, showSuccess, showError])
 
   const handleShare = useCallback(async () => {
     triggerHaptic('light')

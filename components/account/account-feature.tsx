@@ -24,12 +24,12 @@ import {
   View,
 } from 'react-native'
 
+import { useNotification } from '@/components/ui/NotificationProvider'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 
 import { useRaceStore } from '../../store/useRaceStore'
 import { useConnection } from '../solana/solana-provider'
 import { useWalletUi } from '../solana/use-wallet-ui'
-import { useNotification } from '@/components/ui/NotificationProvider'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 const isTablet = screenWidth >= 768
@@ -736,13 +736,13 @@ export function AccountFeature() {
   const { account, signAndSendTransaction } = useWalletUi()
   const { showSuccess, showError } = useNotification()
   const connection = useConnection()
-  const { 
-    userBets, 
-    fetchUserBets, 
-    claimPayout, 
-    isLoading, 
-    error 
-  } = useRaceStore()
+  // Use granular selectors to avoid re-renders on unrelated store updates
+  const userBets = useRaceStore((s) => s.userBets)
+  const fetchUserBets = useRaceStore((s) => s.fetchUserBets)
+  const claimPayout = useRaceStore((s) => s.claimPayout)
+  const isLoading = useRaceStore((s) => s.isLoading)
+  const error = useRaceStore((s) => s.error)
+  const playerAddress = account?.publicKey?.toBase58 ? account.publicKey.toBase58() : account?.publicKey?.toString?.()
   const [activeTab, setActiveTab] = useState<'active' | 'history' | 'unclaimed'>('active')
   const [refreshing, setRefreshing] = useState(false)
   const [localClaimedRaces, setLocalClaimedRaces] = useState<Set<number>>(new Set())
@@ -897,24 +897,27 @@ export function AccountFeature() {
     }
   }, [userPositions])
   useEffect(() => {
-    if (account?.publicKey) {
-      fetchUserBets(account.publicKey.toString())
+    if (playerAddress) {
+      fetchUserBets(playerAddress, false)
     }
-  }, [account?.publicKey, fetchUserBets])
+  }, [playerAddress, fetchUserBets])
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start()
+    const fade = Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    })
+    const slide = Animated.spring(slideAnim, {
+      toValue: 0,
+      tension: 100,
+      friction: 8,
+      useNativeDriver: true,
+    })
+    Animated.parallel([fade, slide]).start()
+    return () => {
+      fade.stop()
+      slide.stop()
+    }
   }, [])
   useEffect(() => {
     if (isInitialLoad.current) {
@@ -924,12 +927,12 @@ export function AccountFeature() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
   }, [activeTab])
   const handleClaim = useCallback(async (raceId: number) => {
-    if (!account?.publicKey || !connection || !signAndSendTransaction) return
+    if (!playerAddress || !connection || !signAndSendTransaction) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
     try {
       const success = await claimPayout(
-        account.publicKey.toString(),
+        playerAddress,
         raceId,
         connection,
         signAndSendTransaction,
@@ -940,7 +943,7 @@ export function AccountFeature() {
         showSuccess('Reward claimed successfully')
         setLocalClaimedRaces(prev => new Set(prev).add(raceId))
         // Immediate refresh to reflect the claimed state
-        fetchUserBets(account.publicKey.toString(), false)
+        fetchUserBets(playerAddress, false)
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
         showError('Unable to claim reward')
@@ -949,23 +952,23 @@ export function AccountFeature() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
       showError('Something went wrong while claiming')
     }
-  }, [account, connection, signAndSendTransaction, claimPayout, fetchUserBets, showSuccess, showError])
+  }, [playerAddress, connection, signAndSendTransaction, claimPayout, fetchUserBets, showSuccess, showError])
   const handleViewRace = useCallback((raceId: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
   }, [])
   const handleRefresh = useCallback(async () => {
-    if (!account?.publicKey) return
+    if (!playerAddress) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     setRefreshing(true)
     try {
-      await fetchUserBets(account.publicKey.toString(), false)
+      await fetchUserBets(playerAddress, false)
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
     } finally {
     setRefreshing(false)
     }
-  }, [account, fetchUserBets])
+  }, [playerAddress, fetchUserBets])
   const renderPosition = useCallback(({ item }: { item: UserPosition }) => (
     <PositionCard
       position={item}

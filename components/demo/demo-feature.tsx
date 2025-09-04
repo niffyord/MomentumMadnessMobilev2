@@ -164,19 +164,17 @@ export function DemoFeature() {
   const { account, signAndSendTransaction } = useWalletUi()
   const connection = useConnection()
 
-  const {
-    race,
-    userBets,
-    assetInfo,
-    isLoading,
-    error,
-    fetchCommitPhaseData,
-    fetchPerformancePhaseData,
-    fetchSettledPhaseData,
-    connectWebSocket,
-    subscribeToRace,
-    isConnected,
-  } = useRaceStore()
+  const race = useRaceStore((s) => s.race)
+  const userBets = useRaceStore((s) => s.userBets)
+  const assetInfo = useRaceStore((s) => s.assetInfo)
+  const isLoading = useRaceStore((s) => s.isLoading)
+  const error = useRaceStore((s) => s.error)
+  const fetchCommitPhaseData = useRaceStore((s) => s.fetchCommitPhaseData)
+  const fetchPerformancePhaseData = useRaceStore((s) => s.fetchPerformancePhaseData)
+  const fetchSettledPhaseData = useRaceStore((s) => s.fetchSettledPhaseData)
+  const connectWebSocket = useRaceStore((s) => s.connectWebSocket)
+  const subscribeToRace = useRaceStore((s) => s.subscribeToRace)
+  const isConnected = useRaceStore((s) => s.isConnected)
 
   const [currentTime, setCurrentTime] = useState(Date.now() / 1000)
   const [selectedAssetIdx, setSelectedAssetIdx] = useState(0)
@@ -186,6 +184,8 @@ export function DemoFeature() {
   const animationRefs = useRef<Animated.CompositeAnimation[]>([])
   const intervalRefs = useRef<number[]>([])
   const [reduceMotion, setReduceMotion] = useState(ANIMATION_REDUCE_MOTION)
+  const playerAddress = account?.publicKey?.toBase58 ? account.publicKey.toBase58() : account?.publicKey?.toString?.()
+  const lastSubscribedRaceIdRef = useRef<number | null>(null)
 
   const safeToFixed = useCallback((value: number | undefined | null, decimals: number = 2): string => {
     if (typeof value !== 'number' || isNaN(value)) return '0.00'
@@ -194,8 +194,9 @@ export function DemoFeature() {
 
   const currentPhase = useMemo((): RacePhase => {
     if (!race) return 'commit'
+    // Re-evaluate each second so the phase flips exactly at lock/settle timestamps
     return getCurrentPhase(race)
-  }, [race])
+  }, [race, currentTime])
 
   const userBet = useMemo(() => {
     if (!userBets || !race?.raceId) return undefined
@@ -310,8 +311,6 @@ export function DemoFeature() {
   }, [])
 
   useEffect(() => {
-    const playerAddress = account?.publicKey?.toString()
-
     if (currentPhase === 'commit') {
       fetchCommitPhaseData(undefined, playerAddress)
     } else if (currentPhase === 'performance') {
@@ -325,21 +324,46 @@ export function DemoFeature() {
       }
     } else if (currentPhase === 'settled') {
       fetchSettledPhaseData(undefined, playerAddress)
+      // In settled phase, briefly poll to catch backend cron finalization
+      const stopAfterMs = 120000
+      const start = Date.now()
+      const poll = setInterval(() => {
+        const elapsed = Date.now() - start
+        if (elapsed > stopAfterMs) {
+          clearInterval(poll)
+          return
+        }
+        fetchSettledPhaseData(undefined, playerAddress, false)
+      }, 2000)
+      return () => clearInterval(poll)
     }
-  }, [currentPhase, account?.publicKey])
+  }, [currentPhase, playerAddress])
 
   useEffect(() => {
-    const playerAddress = account?.publicKey?.toString()
     if (!race && !isLoading) {
       fetchCommitPhaseData(undefined, playerAddress)
     }
-  }, [race, isLoading, account?.publicKey])
+  }, [race, isLoading, playerAddress])
+
+  // Force-refresh current race at phase boundaries to avoid stale phase transitions
+  useEffect(() => {
+    if (!race) return
+    const now = Math.floor(currentTime)
+    const secondsToLock = race.lockTs - now
+    const secondsToSettle = race.settleTs - now
+    // When approaching a boundary, refetch aggressively
+    if ((secondsToLock >= -2 && secondsToLock <= 2) || (secondsToSettle >= -2 && secondsToSettle <= 2)) {
+      useRaceStore.getState().fetchCurrentRace(false)
+    }
+  }, [race?.raceId, currentTime])
 
   useEffect(() => {
-    if (race?.raceId && isConnected && currentPhase === 'performance') {
+    if (!race?.raceId || !isConnected) return
+    if (lastSubscribedRaceIdRef.current !== race.raceId) {
       subscribeToRace(race.raceId)
+      lastSubscribedRaceIdRef.current = race.raceId
     }
-  }, [race?.raceId, isConnected, currentPhase])
+  }, [race?.raceId, isConnected])
 
   const timeCalculations = useMemo(() => {
     if (!race) return { progress: 0, secondsLeft: 0, urgency: 'normal' }

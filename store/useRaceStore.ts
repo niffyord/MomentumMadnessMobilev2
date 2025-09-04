@@ -11,6 +11,7 @@ import {
   AssetInfo,
   BetDetails,
   EnhancedRaceDetails,
+  RaceState,
   UserBetSummary,
 } from '../services/backendTypes'
 import { OnChainService } from '../services/onchainService'
@@ -290,6 +291,8 @@ export const useRaceStore = create<RaceStore>()(
     subscribeToRace: (raceId: number) => {
       const { wsService, isConnected, lastSubscribedRaceId } = get()
       if (!isConnected) return
+      // Avoid redundant subscriptions and state updates
+      if (lastSubscribedRaceId === raceId) return
 
       // Unsubscribe from the previously subscribed race to avoid receiving duplicate updates
       if (lastSubscribedRaceId && lastSubscribedRaceId !== raceId) {
@@ -615,8 +618,9 @@ export const useRaceStore = create<RaceStore>()(
           await Promise.all(promises)
 
           // After connection is ready, subscribe to live updates
-          if (get().race?.raceId && get().isConnected) {
-            get().subscribeToRace(get().race.raceId)
+          const current = get().race
+          if (current && typeof current.raceId === 'number' && get().isConnected) {
+            get().subscribeToRace(current.raceId)
           }
           
           set({ lastFetchTime: Date.now() })
@@ -854,6 +858,21 @@ export const derivePhaseFromTimestamps = (
 
 // Helper function to determine current phase from race
 export const getCurrentPhase = (race: EnhancedRaceDetails): Phase => {
+  // Prefer authoritative backend state to avoid client clock drift flicker
+  if (race?.state) {
+    switch (race.state) {
+      case RaceState.Betting:
+        return 'commit'
+      case RaceState.Running:
+        return 'performance'
+      case RaceState.SettlementReady:
+      case RaceState.Settled:
+        return 'settled'
+      default:
+        break
+    }
+  }
+  // Fallback to timestamps if state is unavailable
   const now = Math.floor(Date.now() / 1000)
   return derivePhaseFromTimestamps(now, race.startTs, race.lockTs, race.settleTs)
 }

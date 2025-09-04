@@ -1,7 +1,6 @@
-import Snackbar from 'react-native-snackbar'
-
 import { useConnection } from '@/components/solana/solana-provider'
 import { useMobileWallet } from '@/components/solana/use-mobile-wallet'
+import { useNotification } from '@/components/ui/NotificationProvider'
 import { PublicKey } from '@solana/web3.js'
 import { useMutation } from '@tanstack/react-query'
 
@@ -49,6 +48,7 @@ export function usePlaceBet() {
   const connection = useConnection()
   const { signAndSendTransaction } = useMobileWallet()
   const { fetchCommitPhaseData, fetchUserBets } = useRaceStore()
+  const notify = useNotification()
 
   return useMutation({
     mutationFn: async (input: PlaceBetInput) => {
@@ -245,19 +245,7 @@ export function usePlaceBet() {
         const assetNames = ['BTC', 'ETH', 'SOL'] 
         const assetName = assetNames[data.assetIdx] || `Asset ${data.assetIdx + 1}`
 
-        Snackbar.show({
-          text: `🎯 BET LOCKED IN! 🏁\n💰 $${data.amount} USDC on ${assetName}\n🚀 May the best prediction win!`,
-          duration: Snackbar.LENGTH_LONG, 
-          backgroundColor: '#9945FF', 
-          textColor: '#FFFFFF',
-          action: {
-            text: 'LET\'S GO! 🏎️',
-            textColor: '#FFD700',
-            onPress: () => {
-              console.log('🎯 User excited about their bet!')
-            },
-          },
-        })
+        notify.showSuccess(`$${data.amount} USDC on ${assetName}`, 'Bet placed')
       } catch (snackbarError) {
         
         try {
@@ -353,26 +341,11 @@ export function usePlaceBet() {
 
       
       try {
-        
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-          navigator.vibrate([80]) 
+          navigator.vibrate([80])
         }
-
-        Snackbar.show({
-          text: `${errorTitle}\n${errorMessage}`,
-          duration: Snackbar.LENGTH_LONG,
-          backgroundColor: backgroundColor,
-          textColor: '#FFFFFF',
-          action: {
-            text: actionText,
-            textColor: '#FFFFFF',
-            onPress: () => {
-              console.log(`User acknowledged betting error: ${errorTitle}`)
-            },
-          },
-        })
+        notify.showError(errorMessage, errorTitle)
       } catch (snackbarError) {
-        
         console.error(`${errorTitle}: ${errorMessage}`)
       }
     },

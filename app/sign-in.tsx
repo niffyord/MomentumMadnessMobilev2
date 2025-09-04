@@ -82,6 +82,19 @@ export default function SignIn() {
     checkScreenReader();
   }, []);
 
+  // Respect system reduced motion settings to avoid heavy animations on sensitive devices
+  useEffect(() => {
+    const checkReduceMotion = async () => {
+      if (Platform.OS === 'ios') {
+        try {
+          const isReduceMotionEnabled = await AccessibilityInfo.isReduceMotionEnabled();
+          setReducedMotion(isReduceMotionEnabled);
+        } catch (_) {}
+      }
+    };
+    checkReduceMotion();
+  }, []);
+
   
   useEffect(() => {
     const createEntranceSequence = () => {
@@ -177,9 +190,9 @@ export default function SignIn() {
   
   useEffect(() => {
     if (!reducedMotion) {
-      
+      let mysteryPulseLoop: Animated.CompositeAnimation | null = null;
       const timer = setTimeout(() => {
-        const mysteryPulseLoop = Animated.loop(
+        mysteryPulseLoop = Animated.loop(
           Animated.sequence([
             Animated.timing(mysteryPulseAnim, {
               toValue: 1.08,
@@ -194,10 +207,11 @@ export default function SignIn() {
           ])
         );
         mysteryPulseLoop.start();
-        return () => mysteryPulseLoop.stop();
-      }, 3000); 
-      
-      return () => clearTimeout(timer);
+      }, 3000);
+      return () => {
+        clearTimeout(timer);
+        if (mysteryPulseLoop) mysteryPulseLoop.stop();
+      };
     }
   }, [reducedMotion]);
 
@@ -224,11 +238,11 @@ export default function SignIn() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Short, bounded delays to ensure UI responsiveness
+      await new Promise(resolve => setTimeout(resolve, 250));
       setLoadingState('authorizing');
       
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200));
       setLoadingState('finalizing');
       
       await signIn();
@@ -248,7 +262,7 @@ export default function SignIn() {
       
       let errorDetails: ConnectionError;
       
-      if (error.message?.includes('Wallet authentication required') || 
+      if (error?.message?.includes('Wallet authentication required') || 
           error.message?.includes('authorization request declined')) {
         errorDetails = {
           type: 'permission',
