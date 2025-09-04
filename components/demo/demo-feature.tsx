@@ -11,6 +11,7 @@ import {
   AccessibilityInfo,
   ActivityIndicator,
   Animated,
+  Easing,
   Dimensions,
   Platform,
   ScrollView,
@@ -35,7 +36,6 @@ import {
 import { EnhancedCommitPhase } from './CommitPhase'
 import { EnhancedPerformancePhase } from './PerformancePhase'
 import { EnhancedSettledPhase } from './SettledPhase'
-import { PhaseTracker } from '@/components/ui/PhaseTracker'
 import { CircularCountdown } from '@/components/ui/CircularCountdown'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
@@ -434,6 +434,16 @@ export function DemoFeature() {
   const loadingSpinnerAnim = useRef(new Animated.Value(0)).current
   const loadingTrackAnim = useRef(new Animated.Value(0)).current
 
+  // Header stats micro-animations
+  const statusPulse = useRef(new Animated.Value(1)).current
+  const poolPulse = useRef(new Animated.Value(1)).current
+  const racersPulse = useRef(new Animated.Value(1)).current
+  const liveDot = useRef(new Animated.Value(0)).current
+  const shimmer = useRef(new Animated.Value(0)).current
+  const prevPhaseLabel = useRef<string | undefined>()
+  const prevPool = useRef<number | undefined>()
+  const prevRacers = useRef<number | undefined>()
+
   useEffect(() => {
     const createParticleEffect = () => {
       Animated.loop(
@@ -454,6 +464,68 @@ export function DemoFeature() {
 
     createParticleEffect()
   }, [])
+
+  // Subtle shimmer across stat cards
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(shimmer, {
+        toValue: 1,
+        duration: 2800,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start()
+  }, [])
+
+  // Blinking live dot for active phases
+  useEffect(() => {
+    if (currentPhase !== 'settled') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(liveDot, { toValue: 1, duration: 600, useNativeDriver: true }),
+          Animated.timing(liveDot, { toValue: 0.25, duration: 600, useNativeDriver: true }),
+        ]),
+      ).start()
+    } else {
+      liveDot.stopAnimation()
+      liveDot.setValue(0.25)
+    }
+  }, [currentPhase])
+
+  // Pulse status when label changes
+  useEffect(() => {
+    if (prevPhaseLabel.current && prevPhaseLabel.current !== phaseConfig.label) {
+      Animated.sequence([
+        Animated.spring(statusPulse, { toValue: 1.1, useNativeDriver: true, speed: 12, bounciness: 6 }),
+        Animated.spring(statusPulse, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 6 }),
+      ]).start()
+    }
+    prevPhaseLabel.current = phaseConfig.label
+  }, [phaseConfig.label])
+
+  // Pulse pool on change (stronger if increasing)
+  useEffect(() => {
+    if (typeof prevPool.current === 'number' && typeof race?.totalPool === 'number') {
+      const bigger = race.totalPool > prevPool.current
+      Animated.sequence([
+        Animated.spring(poolPulse, { toValue: bigger ? 1.08 : 1.04, useNativeDriver: true, speed: 14, bounciness: 6 }),
+        Animated.spring(poolPulse, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 6 }),
+      ]).start()
+    }
+    if (typeof race?.totalPool === 'number') prevPool.current = race.totalPool
+  }, [race?.totalPool])
+
+  // Pulse racers on change
+  useEffect(() => {
+    if (typeof prevRacers.current === 'number' && typeof race?.participantCount === 'number') {
+      const bigger = race.participantCount > prevRacers.current
+      Animated.sequence([
+        Animated.spring(racersPulse, { toValue: bigger ? 1.08 : 1.04, useNativeDriver: true, speed: 14, bounciness: 6 }),
+        Animated.spring(racersPulse, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 6 }),
+      ]).start()
+    }
+    if (typeof race?.participantCount === 'number') prevRacers.current = race.participantCount
+  }, [race?.participantCount])
 
   useEffect(() => {
     if (timeCalculations.urgency === 'critical') {
@@ -902,22 +974,46 @@ export function DemoFeature() {
 
           {race && (
             <View style={styles.statsContainer}>
-              <LinearGradient colors={['rgba(153, 69, 255, 0.2)', 'rgba(153, 69, 255, 0.05)']} style={styles.statCard}>
+              {/* Status */}
+              <LinearGradient colors={['rgba(153, 69, 255, 0.25)', 'rgba(153, 69, 255, 0.08)']} style={styles.statCard}>
+                <Animated.View
+                  style={[styles.statShimmer, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-120, 220] }) }] }]}
+                  pointerEvents="none"
+                />
                 <MaterialCommunityIcons name="trophy" size={20} color="#9945FF" />
-                <Text style={styles.statLabel}>RACE STATUS</Text>
-                <Text style={[styles.statValue, { color: phaseConfig.color }]}>{phaseConfig.label}</Text>
+                <View style={styles.statLabelRow}>
+                  <Animated.View style={[styles.liveDot, { opacity: liveDot, backgroundColor: currentPhase !== 'settled' ? '#FF4444' : 'rgba(255,255,255,0.3)' }]} />
+                  <Text style={styles.statLabel}>RACE STATUS</Text>
+                </View>
+                <Animated.View style={{ transform: [{ scale: statusPulse }] }}>
+                  <Text style={[styles.statValue, { color: phaseConfig.color }]}>{phaseConfig.label}</Text>
+                </Animated.View>
               </LinearGradient>
 
-              <LinearGradient colors={['rgba(20, 241, 149, 0.2)', 'rgba(20, 241, 149, 0.05)']} style={styles.statCard}>
+              {/* Total pool */}
+              <LinearGradient colors={['rgba(20, 241, 149, 0.25)', 'rgba(20, 241, 149, 0.08)']} style={styles.statCard}>
+                <Animated.View
+                  style={[styles.statShimmer, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-120, 220] }) }] }]}
+                  pointerEvents="none"
+                />
                 <MaterialCommunityIcons name="wallet" size={20} color="#14F195" />
                 <Text style={styles.statLabel}>TOTAL POOL</Text>
-                <Text style={styles.statValue}>{formatValue(race.totalPool)}</Text>
+                <Animated.View style={{ transform: [{ scale: poolPulse }] }}>
+                  <Text style={styles.statValue}>{formatValue(race.totalPool)}</Text>
+                </Animated.View>
               </LinearGradient>
 
-              <LinearGradient colors={['rgba(255, 215, 0, 0.2)', 'rgba(255, 215, 0, 0.05)']} style={styles.statCard}>
+              {/* Racers */}
+              <LinearGradient colors={['rgba(255, 215, 0, 0.25)', 'rgba(255, 215, 0, 0.08)']} style={styles.statCard}>
+                <Animated.View
+                  style={[styles.statShimmer, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-120, 220] }) }] }]}
+                  pointerEvents="none"
+                />
                 <MaterialCommunityIcons name="account-group" size={20} color="#FFD700" />
                 <Text style={styles.statLabel}>RACERS</Text>
-                <Text style={styles.statValue}>{race.participantCount || 0}</Text>
+                <Animated.View style={{ transform: [{ scale: racersPulse }] }}>
+                  <Text style={styles.statValue}>{race.participantCount || 0}</Text>
+                </Animated.View>
               </LinearGradient>
             </View>
           )}
@@ -934,13 +1030,6 @@ export function DemoFeature() {
             </LinearGradient>
           )}
         </View>
-
-        {/* Phase tracker */}
-        {race && (
-          <View style={{ paddingHorizontal: isTablet ? SPACING.xxl : SPACING.xl, marginBottom: SPACING.md }}>
-            <PhaseTracker currentPhase={currentPhase} />
-          </View>
-        )}
 
         {/* Countdown ring */}
         {currentPhase !== 'settled' && race && (
@@ -1109,9 +1198,27 @@ const styles = StyleSheet.create({
     padding: isTablet ? SPACING.lg : SPACING.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     minHeight: isTablet ? 100 : 80,
+    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: 'rgba(0,0,0,0.8)',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 6,
   },
+  statShimmer: {
+    position: 'absolute',
+    top: -10,
+    bottom: -10,
+    left: 0,
+    width: 60,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    transform: [{ translateX: -120 }],
+    borderRadius: 20,
+  },
+  statLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, marginBottom: 2 },
+  liveDot: { width: 6, height: 6, borderRadius: 3 },
   statLabel: {
     ...TYPOGRAPHY.small,
     color: COLORS.text.tertiary,

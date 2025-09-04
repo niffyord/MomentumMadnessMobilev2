@@ -151,6 +151,9 @@ function _EnhancedPerformancePhase({
   const liveIndicatorAnim = useRef(new Animated.Value(0)).current
   const momentumBarAnim = useRef(new Animated.Value(0)).current
   const rankChangeAnim = useRef(new Animated.Value(0)).current
+  // User card upgrades
+  const userCardShimmer = useRef(new Animated.Value(0)).current
+  const winProbAnim = useRef(new Animated.Value(0)).current
   
   const animationRefs = useRef<Animated.CompositeAnimation[]>([])
   const intervalRefs = useRef<Array<ReturnType<typeof setTimeout>>>([])
@@ -439,6 +442,31 @@ function _EnhancedPerformancePhase({
     }
     checkReduceMotion()
   }, [])
+
+  // Animate user card shimmer sweep
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(userCardShimmer, {
+        toValue: 1,
+        duration: 2800,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start()
+  }, [])
+
+  // Animate win probability fill when it changes
+  useEffect(() => {
+    const pct = typeof userPosition?.winProbability === 'number' && !isNaN(userPosition.winProbability)
+      ? Math.max(0, Math.min(100, userPosition.winProbability))
+      : 0
+    Animated.timing(winProbAnim, {
+      toValue: pct / 100,
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start()
+  }, [userPosition?.winProbability])
 
   useEffect(() => {
     return () => {
@@ -1023,122 +1051,7 @@ function _EnhancedPerformancePhase({
   return (
     <View style={styles.performanceContainer}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-      <View style={[styles.racingHeader, { marginHorizontal: 20 }]}>
-        <LinearGradient
-          colors={
-            raceProgress > 0.9 ? ['rgba(255, 68, 68, 0.6)', 'rgba(255, 215, 0, 0.4)', 'rgba(0, 0, 0, 0.8)'] :
-            raceIntensity === 'extreme' ? ['rgba(255, 68, 68, 0.4)', 'rgba(255, 215, 0, 0.3)', 'rgba(0, 0, 0, 0.8)'] :
-            raceIntensity === 'high' ? ['rgba(0, 255, 136, 0.3)', 'rgba(255, 215, 0, 0.2)', 'rgba(0, 0, 0, 0.8)'] :
-            ['rgba(0, 255, 136, 0.2)', 'rgba(20, 241, 149, 0.1)', 'rgba(0, 0, 0, 0.8)']
-          }
-          style={styles.racingHeaderGradient}
-        >
-          <Animated.View
-            style={[
-              styles.racingHeaderContent,
-              {
-                transform: [{ scale: intensityPulseAnim }],
-              },
-            ]}
-          >
-            <View style={styles.headerLiveIndicator}>
-              <Animated.View
-                style={[
-                  styles.liveDot,
-                  {
-                    backgroundColor: raceProgress > 0.9 ? '#FF4444' :
-                                   raceIntensity === 'extreme' ? '#FF4444' : 
-                                   raceIntensity === 'high' ? '#FFD700' : '#FF4444',
-                    opacity: pulseAnim.interpolate({
-                      inputRange: [1, 1.08],
-                      outputRange: [0.7, 1],
-                    }),
-                    transform: [{
-                      scale: liveIndicatorAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [1, 1.2],
-                      }),
-                    }],
-                  },
-                ]}
-              />
-              <Text style={styles.headerLiveText}>
-                {raceProgress > 0.9 ? 'FINAL MOMENTS!' : 'LIVE RACE'}
-              </Text>
-            </View>
-            
-            <Animated.View
-              style={[
-                styles.raceIntensityIndicator,
-                {
-                  transform: [{ scale: intensityPulseAnim }],
-                },
-              ]}
-            >
-              <MaterialCommunityIcons 
-                name={raceProgress > 0.9 ? "timer" : raceIntensity === 'extreme' ? "fire" : "flash"} 
-                size={16} 
-                color={
-                  raceProgress > 0.9 ? '#FF4444' :
-                  raceIntensity === 'extreme' ? '#FF4444' : 
-                  raceIntensity === 'high' ? '#FFD700' : 
-                  raceIntensity === 'medium' ? '#FFD700' : '#00FF88'
-                } 
-              />
-              <Text style={[
-                styles.intensityText,
-                {
-                  color: raceProgress > 0.9 ? '#FF4444' :
-                         raceIntensity === 'extreme' ? '#FF4444' : 
-                         raceIntensity === 'high' ? '#FFD700' : 
-                         raceIntensity === 'medium' ? '#FFD700' : '#00FF88'
-                }
-              ]}>
-                {raceProgress > 0.9 ? 'ENDING SOON!' : `${raceIntensity.toUpperCase()} INTENSITY`}
-              </Text>
-            </Animated.View>
-          </Animated.View>
-          
-          <View style={styles.raceProgressContainer}>
-            <View style={styles.raceProgressBar}>
-              <Animated.View
-                style={[
-                  styles.raceProgressFill,
-                  {
-                    width: `${raceProgress * 100}%`,
-                    backgroundColor: raceProgress > 0.8 ? '#FF4444' : 
-                                   raceProgress > 0.6 ? '#FFD700' : '#00FF88',
-                  }
-                ]}
-              />
-            </View>
-            <Text style={styles.raceProgressText}>
-              Race Progress: {(raceProgress * 100).toFixed(1)}%
-            </Text>
-          </View>
-          
-          <View style={styles.trackLinesContainer}>
-            {[...Array(6)].map((_, i) => (
-              <Animated.View
-                key={i}
-                style={[
-                  styles.trackLine,
-                  {
-                    opacity: raceIntensity === 'extreme' ? 0.8 : 0.6,
-                    backgroundColor: raceIntensity === 'extreme' ? '#FF4444' : 'rgba(255, 255, 255, 0.2)',
-                    transform: [{
-                      translateX: raceTrackAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [-80, screenWidth + 80],
-                      }),
-                    }],
-                  },
-                ]}
-              />
-            ))}
-          </View>
-        </LinearGradient>
-      </View>
+      {/* Live racing header removed per request */}
 
       {userPosition && (
         <Animated.View 
@@ -1170,6 +1083,26 @@ function _EnhancedPerformancePhase({
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
+            {/* Card shimmer sweep */}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.userCardShine,
+                {
+                  transform: [
+                    {
+                      translateX: userCardShimmer.interpolate({ inputRange: [0, 1], outputRange: [-160, 240] }),
+                    },
+                    { rotate: '-18deg' },
+                  ],
+                },
+              ]}
+            />
+
+            {/* Winning/Trailing ribbon */}
+            <View style={[styles.cornerRibbon, userPosition.isCurrentlyWinning ? styles.ribbonWin : styles.ribbonLose]}>
+              <Text style={styles.ribbonText}>{userPosition.isCurrentlyWinning ? 'WINNING' : 'TRAILING'}</Text>
+            </View>
             {/* Position Badge */}
             <Animated.View style={[
               styles.compactUserPositionBadge,
@@ -1232,6 +1165,7 @@ function _EnhancedPerformancePhase({
               {/* Left: Asset & Position Info */}
               <View style={styles.ultraThinLeftSection}>
                 <View style={styles.assetInfoRow}>
+                  <Animated.View style={[styles.assetDotRing, { transform: [{ scale: pulseAnim }] }]} />
                   <View style={[styles.assetDotSmall, { backgroundColor: userPosition.asset.color }]} />
                   <Text style={styles.compactAssetSymbol}>{userPosition.asset.symbol}</Text>
                   <MaterialCommunityIcons 
@@ -1262,6 +1196,13 @@ function _EnhancedPerformancePhase({
                   {userPosition.profitLossPercent >= 0 ? '+' : ''}{(typeof userPosition.profitLossPercent === 'number' && !isNaN(userPosition.profitLossPercent)) ? userPosition.profitLossPercent.toFixed(1) : '0.0'}%
                 </Animated.Text>
                 <Text style={styles.compactPerformanceLabel}>P&L</Text>
+                {/* Win probability micro-bar */}
+                <View style={styles.winProbBar}>
+                  <Animated.View style={[styles.winProbFill, {
+                    width: winProbAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+                    backgroundColor: userPosition.isCurrentlyWinning ? '#00FF88' : '#FFD700',
+                  }]} />
+                </View>
               </View>
 
               {/* Right: Bet Values */}
@@ -1295,19 +1236,26 @@ function _EnhancedPerformancePhase({
 
               {/* Far Right: Status */}
               <View style={styles.ultraThinStatusSection}>
-                <Animated.Text
-                  style={[
-                    styles.compactStatusText,
-                    {
-                      color: userPosition.isCurrentlyWinning ? '#00FF88' : '#FF4444',
-                      transform: [{
-                        scale: userPosition.isCurrentlyWinning ? pulseAnim : 1,
-                      }],
-                    },
-                  ]}
+                <LinearGradient
+                  colors={userPosition.isCurrentlyWinning ? ['#00FF88', '#14F195'] : ['#FFD700', '#FFA500']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.statusPill}
                 >
-                  {userPosition.isCurrentlyWinning ? 'WIN' : 'LOSE'}
-                </Animated.Text>
+                  <MaterialCommunityIcons
+                    name={userPosition.isCurrentlyWinning ? 'trophy' : 'progress-clock'}
+                    size={10}
+                    color="#0B0B0B"
+                  />
+                  <Animated.Text
+                    style={[
+                      styles.statusPillText,
+                      { transform: [{ scale: userPosition.isCurrentlyWinning ? pulseAnim : 1 }] },
+                    ]}
+                  >
+                    {userPosition.isCurrentlyWinning ? 'Winning' : 'Trailing'}
+                  </Animated.Text>
+                </LinearGradient>
                 <Text style={styles.compactWinChance}>
                   {(typeof userPosition.winProbability === 'number' && !isNaN(userPosition.winProbability)) ? userPosition.winProbability.toFixed(0) : '0'}%
                 </Text>
@@ -1725,6 +1673,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    paddingTop: SPACING.md,
     paddingBottom: 20,
   },
   
@@ -1789,8 +1738,9 @@ const styles = StyleSheet.create({
   
   // Ultra-thin user position card (similar to leaderboard design)
   ultraThinUserPositionCard: {
+    marginTop: SPACING.sm,
     marginBottom: SPACING.sm,
-    marginHorizontal: isTablet ? SPACING.lg : SPACING.md,
+    marginHorizontal: isTablet ? SPACING.xxl : SPACING.xl,
     borderRadius: isTablet ? 16 : 12,
     overflow: 'hidden',
     borderWidth: 1,
@@ -2400,7 +2350,7 @@ const styles = StyleSheet.create({
 
   ultraThinRaceCard: {
     marginBottom: SPACING.sm,
-    marginHorizontal: isTablet ? SPACING.lg : SPACING.md,
+    marginHorizontal: isTablet ? SPACING.xxl : SPACING.xl,
     borderRadius: isTablet ? 16 : 12,
     overflow: 'hidden',
     borderWidth: 1,
