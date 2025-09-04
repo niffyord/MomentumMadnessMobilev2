@@ -1364,21 +1364,21 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.title,
     fontWeight: '800',
     color: COLORS.warning,
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-Bold',
   },
   winnerAssetName: {
     ...TYPOGRAPHY.display,
     fontWeight: '900',
     color: COLORS.text.primary,
     marginBottom: SPACING.sm,
-    fontFamily: 'Orbitron-Black',
-    letterSpacing: isTablet ? 3 : 2,
+    fontFamily: 'Sora-ExtraBold',
+    letterSpacing: isTablet ? 1.2 : 0.8,
   },
   winnerPerformance: {
     fontSize: 16,
     color: '#00FF88',
     marginBottom: 20,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   winnerStatsGrid: {
     flexDirection: 'row',
@@ -1395,13 +1395,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   winnerStatLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
     marginTop: 4,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   userResultSection: {
@@ -1434,13 +1434,13 @@ const styles = StyleSheet.create({
   userResultTitle: {
     ...TYPOGRAPHY.subtitle,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   userResultSubtitle: {
     ...TYPOGRAPHY.body,
     color: COLORS.text.secondary,
     marginTop: SPACING.xs,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   betSummarySection: {
@@ -1455,7 +1455,7 @@ const styles = StyleSheet.create({
   betSummaryLabel: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   betSummaryLabelWithIcon: {
     flexDirection: 'row',
@@ -1470,7 +1470,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   assetDotSmall: {
     width: 8,
@@ -1503,7 +1503,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#000',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
 
   claimedContainer: {
@@ -1553,13 +1553,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#FFD700',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
     letterSpacing: 0.5,
   },
   claimedSubtitle: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     marginTop: 2,
     lineHeight: 16,
   },
@@ -1580,9 +1580,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
     color: '#000',
-    fontFamily: 'Orbitron-Black',
+    fontFamily: 'Sora-Bold',
     marginLeft: 4,
-    letterSpacing: 1,
+    letterSpacing: 0.4,
   },
   detailsButton: {
     flexDirection: 'row',
@@ -1599,7 +1599,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9945FF',
     marginRight: 8,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   fullResultsSection: {
@@ -1618,7 +1618,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 16,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   resultRow: {
     flexDirection: 'row',
@@ -1633,7 +1633,7 @@ const styles = StyleSheet.create({
   resultRankText: {
     fontSize: 14,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   resultAssetInfo: {
     flex: 1,
@@ -1644,12 +1644,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   resultPerformance: {
     fontSize: 14,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   nextRaceSection: {
@@ -1672,13 +1672,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginLeft: 12,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   nextRaceSubtitle: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
     marginLeft: 12,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   nextRaceStats: {
     marginBottom: 16,
@@ -1688,14 +1688,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#9945FF',
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   nextRacePool: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
     marginTop: 4,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   intensityBadge: {
@@ -1713,7 +1713,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     marginLeft: 4,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
 
   winnerBadge: {
@@ -1729,7 +1729,7 @@ const styles = StyleSheet.create({
   winnerBadgeText: {
     fontSize: 10,
     fontWeight: '800',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
     color: '#000',
   },
   positionSummary: {
@@ -1742,7 +1742,7 @@ const styles = StyleSheet.create({
   positionSummaryText: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.8)',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   toggleButtonsRow: {
@@ -1765,7 +1765,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     marginLeft: 8,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   spectatorCard: {
@@ -1788,7 +1788,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 12,
     marginBottom: 8,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   spectatorDescription: {
     fontSize: 14,
@@ -1796,7 +1796,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 20,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   spectatorStats: {
     alignItems: 'center',
@@ -1810,7 +1810,7 @@ const styles = StyleSheet.create({
   spectatorStatsText: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.8)',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   assetTextInfo: {
@@ -1819,7 +1819,7 @@ const styles = StyleSheet.create({
   resultAssetName: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.6)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   resultStats: {
     alignItems: 'flex-end',
@@ -1828,7 +1828,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: 'rgba(255,255,255,0.6)',
     marginTop: 2,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   analyticsSection: {
@@ -1847,7 +1847,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 16,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   analyticsGrid: {
     flexDirection: 'row',
@@ -1865,13 +1865,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 8,
     marginBottom: 4,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   analyticsLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   winnerShareButton: {
@@ -1898,7 +1898,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFD700',
     marginLeft: 8,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   spectatorShareButton: {
@@ -1918,7 +1918,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#9945FF',
     marginLeft: 8,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   errorContainer: {
@@ -1934,14 +1934,14 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     marginTop: 10,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   errorMessage: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.7)',
     marginTop: 5,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   loadingContainer: {
@@ -1956,7 +1956,7 @@ const styles = StyleSheet.create({
     color: '#9945FF',
     marginTop: 10,
     textAlign: 'center',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   emptyContainer: {
@@ -1972,14 +1972,14 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     marginTop: 10,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   emptyMessage: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.7)',
     marginTop: 5,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   confettiOverlay: {

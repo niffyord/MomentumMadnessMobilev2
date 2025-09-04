@@ -308,13 +308,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '800',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
     marginBottom: 4,
   },
   message: {
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     lineHeight: 18,
   },
   actionButton: {
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 12,
     fontWeight: '800',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-Bold',
   },
   dismissButton: {
     position: 'absolute',

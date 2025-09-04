@@ -21,7 +21,6 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import AnimatedSpaceBackground from '@/components/AnimatedSpaceBackground'
 import { useAuth } from '@/components/auth/auth-provider'
 import NeonText from '@/components/NeonText'
 import {
@@ -29,7 +28,9 @@ import {
   useOnboarding,
 } from '@/components/OnboardingTutorial'
 import RocketHero from '@/components/RocketHero'
+import CosmicBackground from '@/components/CosmicBackground'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
+import { useCluster } from '@/components/cluster/cluster-provider'
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -45,6 +46,7 @@ type LoadingState = 'idle' | 'connecting' | 'authorizing' | 'finalizing';
 
 export default function SignIn() {
   const {signIn, isLoading} = useAuth();
+  const { selectedCluster } = useCluster();
 
   
   const {
@@ -60,6 +62,7 @@ export default function SignIn() {
   const [retryCount, setRetryCount] = useState(0);
   const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const isAccessibleMode = isScreenReaderEnabled || reducedMotion;
 
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -98,25 +101,21 @@ export default function SignIn() {
   
   useEffect(() => {
     const createEntranceSequence = () => {
-      if (reducedMotion) {
-        
+      if (isAccessibleMode) {
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 300,
+          duration: 250,
           useNativeDriver: true,
         }).start();
         return;
       }
 
-      
       Animated.sequence([
-        
         Animated.timing(heroAnim, {
           toValue: 1,
           duration: 800,
           useNativeDriver: true,
         }),
-        
         Animated.timing(speedLinesAnim, {
           toValue: 1,
           duration: 600,
@@ -124,7 +123,6 @@ export default function SignIn() {
         }),
       ]).start();
 
-      
       Animated.stagger(150, [
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -154,7 +152,6 @@ export default function SignIn() {
         }),
       ]).start();
 
-      
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 1200,
@@ -163,11 +160,11 @@ export default function SignIn() {
     };
 
     createEntranceSequence();
-  }, [reducedMotion]);
+  }, [isAccessibleMode]);
 
   
   useEffect(() => {
-    if (!reducedMotion) {
+    if (!isAccessibleMode) {
       const pulseLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -185,11 +182,11 @@ export default function SignIn() {
       pulseLoop.start();
       return () => pulseLoop.stop();
     }
-  }, [reducedMotion]);
+  }, [isAccessibleMode]);
 
   
   useEffect(() => {
-    if (!reducedMotion) {
+    if (!isAccessibleMode) {
       let mysteryPulseLoop: Animated.CompositeAnimation | null = null;
       const timer = setTimeout(() => {
         mysteryPulseLoop = Animated.loop(
@@ -213,98 +210,108 @@ export default function SignIn() {
         if (mysteryPulseLoop) mysteryPulseLoop.stop();
       };
     }
-  }, [reducedMotion]);
+  }, [isAccessibleMode]);
 
   
   useEffect(() => {
     if (!onboardingLoading && shouldShowOnboarding) {
       const timer = setTimeout(() => {
         setShowOnboarding(true);
-        if (!reducedMotion) {
+        if (!isAccessibleMode) {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
       }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [shouldShowOnboarding, onboardingLoading, reducedMotion]);
+  }, [shouldShowOnboarding, onboardingLoading, isAccessibleMode]);
 
   
   const handleConnectWallet = async () => {
-    try {
-      setLoadingState('connecting');
-      setConnectionError(null);
-      
-      if (!reducedMotion) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
+    setConnectionError(null);
+    setLoadingState('connecting');
 
-      // Short, bounded delays to ensure UI responsiveness
-      await new Promise(resolve => setTimeout(resolve, 250));
-      setLoadingState('authorizing');
-      
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setLoadingState('finalizing');
-      
+    if (!isAccessibleMode) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
+    let resolved = false;
+    const timeouts: Array<ReturnType<typeof setTimeout>> = [];
+
+    // Progressive status updates without artificial delay if sign-in is fast
+    timeouts.push(
+      setTimeout(() => {
+        if (!resolved) setLoadingState('authorizing');
+      }, 350),
+    );
+    timeouts.push(
+      setTimeout(() => {
+        if (!resolved) setLoadingState('finalizing');
+      }, 800),
+    );
+
+    try {
       await signIn();
-      
-      if (!reducedMotion) {
+      resolved = true;
+
+      if (!isAccessibleMode) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      
       router.replace('/');
     } catch (error: any) {
+      resolved = true;
       console.error('Failed to connect wallet:', error);
-      
-      if (!reducedMotion) {
+
+      if (!isAccessibleMode) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
 
-      
       let errorDetails: ConnectionError;
-      
-      if (error?.message?.includes('Wallet authentication required') || 
-          error.message?.includes('authorization request declined')) {
+
+      if (error?.message?.includes('Wallet authentication required') ||
+          error?.message?.includes('authorization request declined')) {
         errorDetails = {
           type: 'permission',
           message: 'Mock MWA Wallet needs authentication. Open the wallet app and press "Authenticate" button, then complete biometric verification.',
-          retry: true
+          retry: true,
         };
-      } else if (error.message?.includes('timeout')) {
+      } else if (error?.message?.includes('timeout')) {
         errorDetails = {
           type: 'timeout',
           message: 'Connection timed out. Ensure Mock MWA Wallet is running and authenticated.',
-          retry: true
+          retry: true,
         };
-      } else if (error.message?.includes('network')) {
+      } else if (error?.message?.includes('network')) {
         errorDetails = {
           type: 'network',
           message: 'Network error. Please check your connection.',
-          retry: true
+          retry: true,
         };
-      } else if (error.message?.includes('wallet') || error.message?.includes('Mobile Wallet Adapter')) {
+      } else if (error?.message?.includes('wallet') || error?.message?.includes('Mobile Wallet Adapter')) {
         errorDetails = {
           type: 'wallet',
           message: 'Mock MWA Wallet connection failed. Ensure the wallet app is installed and authenticated.',
-          retry: true
+          retry: true,
         };
       } else {
         errorDetails = {
           type: 'unknown',
-          message: error.message || 'Something went wrong. Please try again.',
-          retry: true
+          message: error?.message || 'Something went wrong. Please try again.',
+          retry: true,
         };
       }
-      
+
       setConnectionError(errorDetails);
-      setRetryCount(prev => prev + 1);
+      setRetryCount((prev) => prev + 1);
     } finally {
+      // Clear any pending timeouts
+      timeouts.forEach(clearTimeout);
       setLoadingState('idle');
     }
   };
 
   
   const handleRetry = () => {
-    if (!reducedMotion) {
+    if (!isAccessibleMode) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     handleConnectWallet();
@@ -320,32 +327,23 @@ export default function SignIn() {
     }
   };
 
+  const getEnvLabel = () => {
+    const network = selectedCluster?.network?.toString()?.toUpperCase?.() || 'UNKNOWN';
+    if (network.includes('DEV')) return 'DEVNET RACING';
+    if (network.includes('TEST')) return 'TESTNET RACING';
+    if (network.includes('MAIN')) return 'MAINNET RACING';
+    return `${selectedCluster?.name?.toUpperCase?.() || 'CUSTOM'} RACING`;
+  };
+
   return (
-    <AnimatedSpaceBackground>
+    <CosmicBackground>
       <StatusBar
         barStyle="light-content"
         backgroundColor="transparent"
         translucent
       />
 
-      <Animated.View 
-        style={[
-          styles.speedLinesContainer,
-          {
-            opacity: speedLinesAnim,
-            transform: [{
-              translateX: speedLinesAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [-screenWidth, screenWidth * 2],
-              })
-            }]
-          }
-        ]}
-      >
-        {[...Array(6)].map((_, i) => (
-          <View key={i} style={[styles.speedLine, {top: 100 + i * 120}]} />
-        ))}
-      </Animated.View>
+      {/* Speed lines removed for calmer, slow-drift aesthetic */}
 
       <SafeAreaView style={styles.safeArea}>
         <Animated.ScrollView
@@ -357,26 +355,32 @@ export default function SignIn() {
             },
           ]}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
+          bounces={false}
           accessibilityLabel="Momentum Madness sign in screen"
         >
-          <Animated.View 
+          <Animated.View
             style={[
               styles.heroSection,
-              {
-                opacity: heroAnim,
-                transform: [
-                  {
-                    scale: heroAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.8, 1],
-                    })
+              isAccessibleMode
+                ? undefined
+                : {
+                    opacity: heroAnim,
+                    transform: [
+                      {
+                        scale: heroAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.8, 1],
+                        }),
+                      },
+                      {
+                        translateY: slideAnim,
+                      },
+                    ],
                   },
-                  {
-                    translateY: slideAnim
-                  }
-                ],
-              }
             ]}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
           >
             <RocketHero />
             
@@ -389,7 +393,7 @@ export default function SignIn() {
               ]}
             >
               <MaterialCommunityIcons name="speedometer" size={16} color="#000" />
-              <Text style={styles.environmentText}>DEVNET RACING</Text>
+              <Text style={styles.environmentText}>{getEnvLabel()}</Text>
               <MaterialCommunityIcons name="flash" size={16} color="#000" />
             </Animated.View>
           </Animated.View>
@@ -528,7 +532,12 @@ export default function SignIn() {
               onPress={handleConnectWallet}
               disabled={loadingState !== 'idle'}
               accessibilityRole="button"
-              accessibilityLabel={getLoadingMessage()}
+              accessibilityLabel={`Connect wallet. ${getLoadingMessage()}`}
+              accessibilityHint={
+                loadingState !== 'idle'
+                  ? 'Connecting to your wallet. Please complete the action in your wallet app.'
+                  : 'Connect your wallet to start racing.'
+              }
             >
               <LinearGradient
                 colors={loadingState !== 'idle' 
@@ -622,11 +631,15 @@ export default function SignIn() {
           hideOnboarding();
         }}
       />
-    </AnimatedSpaceBackground>
+    </CosmicBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  screenBg: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
   safeArea: {
     flex: 1,
   },
@@ -636,12 +649,13 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 20,
-    paddingBottom: 40,
+    paddingTop: 0,
+    paddingBottom: 0,
     alignItems: 'center',
     justifyContent: 'flex-start',
     backgroundColor: 'transparent',
-    minHeight: screenHeight,
+    // Avoid forcing extra height that causes scrolling
+    // minHeight intentionally omitted
   },
 
   
@@ -660,13 +674,13 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     fontWeight: '700',
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     letterSpacing: 1,
   },
   racingLoadingSubtext: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     textAlign: 'center',
   },
 
@@ -692,7 +706,7 @@ const styles = StyleSheet.create({
   
   heroSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
     width: '100%',
     position: 'relative',
   },
@@ -712,17 +726,17 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   environmentText: {
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Inter-Bold',
     fontSize: 12,
     fontWeight: '800',
     color: '#000',
-    letterSpacing: 1.2,
+    letterSpacing: 0.4,
   },
 
   
   titleSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
     width: '100%',
   },
   titleContainer: {
@@ -742,27 +756,27 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   titlePre: {
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Sora-SemiBold',
     fontSize: 16,
     color: '#FFFFFF',
-    letterSpacing: 2,
+    letterSpacing: 0.8,
     marginBottom: 8,
     textAlign: 'center',
   },
   titleMain: {
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
     fontSize: 36,
     fontWeight: '900',
     textAlign: 'center',
-    letterSpacing: 3,
+    letterSpacing: 1.2,
     marginBottom: 8,
   },
   titlePost: {
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
     fontSize: 24,
     color: '#9945FF',
     fontWeight: '700',
-    letterSpacing: 2,
+    letterSpacing: 0.8,
     textAlign: 'center',
   },
   racingStripe: {
@@ -792,19 +806,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rewardText: {
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     fontSize: 18,
     color: '#FFD700',
     fontWeight: '700',
-    letterSpacing: 1.5,
+    letterSpacing: 0.6,
   },
 
   
   ctaSection: {
     width: '100%',
     maxWidth: 380,
-    marginBottom: 32,
-    gap: 20,
+    marginBottom: 8,
+    gap: 12,
   },
   raceProgressContainer: {
     alignItems: 'center',
@@ -831,9 +845,9 @@ const styles = StyleSheet.create({
   raceProgressText: {
     fontSize: 16,
     color: '#FFD700',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     textAlign: 'center',
-    letterSpacing: 1,
+    letterSpacing: 0.4,
   },
   raceButton: {
     borderRadius: 32,
@@ -858,11 +872,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   raceButtonText: {
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-Bold',
     fontSize: 18,
     color: '#000',
     fontWeight: '800',
-    letterSpacing: 1.5,
+    letterSpacing: 0.8,
     textAlign: 'center',
   },
 
@@ -887,7 +901,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FF6B6B',
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
     letterSpacing: 1,
   },
   errorText: {
@@ -895,7 +909,7 @@ const styles = StyleSheet.create({
     color: '#FF9999',
     fontWeight: '500',
     lineHeight: 20,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   retryButton: {
     flexDirection: 'row',
@@ -914,7 +928,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#14F195',
     fontWeight: '600',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     letterSpacing: 0.5,
   },
 
@@ -922,7 +936,8 @@ const styles = StyleSheet.create({
   featuresSection: {
     width: '100%',
     maxWidth: 420,
-    gap: 24,
+    gap: 12,
+    marginTop: 8,
   },
   mysteryButton: {
     borderRadius: 32,
@@ -932,7 +947,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 20,
     elevation: 15,
-    marginBottom: 20,
+    marginBottom: 0,
   },
   mysteryButtonGradient: {
     paddingVertical: 20,
@@ -953,11 +968,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   mysteryText: {
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-Bold',
     fontSize: 18,
     color: '#000',
     fontWeight: '800',
-    letterSpacing: 1.2,
+    letterSpacing: 0.6,
     textAlign: 'center',
     flex: 1,
   },

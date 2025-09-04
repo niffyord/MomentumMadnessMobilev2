@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-query'
 
 import { ClusterProvider } from './cluster/cluster-provider'
+import GlobalTypography from '@/components/GlobalTypography'
 
 const queryClient = new QueryClient()
 
@@ -21,6 +22,7 @@ export function AppProviders({ children }: PropsWithChildren) {
           <SolanaProvider>
             <AuthProvider>
               <NotificationProvider>
+                <GlobalTypography />
                 {children}
               </NotificationProvider>
             </AuthProvider>

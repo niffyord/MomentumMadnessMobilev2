@@ -3,6 +3,17 @@ import 'react-native-reanimated'
 import { useCallback } from 'react'
 
 import { useFonts } from 'expo-font'
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter'
+import {
+  Sora_600SemiBold,
+  Sora_700Bold,
+  Sora_800ExtraBold,
+} from '@expo-google-fonts/sora'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
@@ -23,7 +34,24 @@ export default function RootLayout() {
     console.log(`Track ${pathname}`, { params })
   })
   const [loaded] = useFonts({
+    // Legacy fonts still loaded for screens not migrated yet
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    'Orbitron-Regular': require('../assets/fonts/Orbitron-Regular.ttf'),
+    'Orbitron-Medium': require('../assets/fonts/Orbitron-Medium.ttf'),
+    'Orbitron-SemiBold': require('../assets/fonts/Orbitron-SemiBold.ttf'),
+    'Orbitron-Bold': require('../assets/fonts/Orbitron-Bold.ttf'),
+    'Orbitron-ExtraBold': require('../assets/fonts/Orbitron-ExtraBold.ttf'),
+    'Orbitron-Black': require('../assets/fonts/Orbitron-Black.ttf'),
+
+    // New top-tier fonts
+    'Inter-Regular': Inter_400Regular,
+    'Inter-Medium': Inter_500Medium,
+    'Inter-SemiBold': Inter_600SemiBold,
+    'Inter-Bold': Inter_700Bold,
+
+    'Sora-SemiBold': Sora_600SemiBold,
+    'Sora-Bold': Sora_700Bold,
+    'Sora-ExtraBold': Sora_800ExtraBold,
   })
 
   const onLayoutRootView = useCallback(async () => {

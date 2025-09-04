@@ -1814,7 +1814,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     fontWeight: '700',
     color: COLORS.error,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   raceIntensityIndicator: {
     flexDirection: 'row',
@@ -1824,7 +1824,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 4,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   trackLinesContainer: {
     position: 'absolute',
@@ -1904,13 +1904,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#9945FF',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
 
   ultraThinPositionText: {
     fontSize: 9,
     color: 'rgba(255,255,255,0.6)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   ultraThinCenterSection: {
@@ -1921,14 +1921,14 @@ const styles = StyleSheet.create({
   compactPerformanceValue: {
     fontSize: 16,
     fontWeight: '800',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
     textAlign: 'center',
   },
 
   compactPerformanceLabel: {
     fontSize: 8,
     color: 'rgba(255,255,255,0.6)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     textAlign: 'center',
   },
 
@@ -1947,14 +1947,14 @@ const styles = StyleSheet.create({
   compactValueLabel: {
     fontSize: 9,
     color: 'rgba(255,255,255,0.6)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   compactValueAmount: {
     fontSize: 11,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   ultraThinStatusSection: {
@@ -1965,14 +1965,14 @@ const styles = StyleSheet.create({
   compactStatusText: {
     fontSize: 10,
     fontWeight: '800',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
     textAlign: 'center',
   },
 
   compactWinChance: {
     fontSize: 8,
     color: 'rgba(255,255,255,0.6)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     textAlign: 'center',
   },
 
@@ -1988,7 +1988,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#9945FF',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   betSummarySection: {
     marginTop: 20,
@@ -2013,7 +2013,7 @@ const styles = StyleSheet.create({
   betSummaryLabel: {
     fontSize: 11,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     marginBottom: 8,
   },
   betSummaryValueContainer: {
@@ -2025,7 +2025,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   potentialWinCard: {
     backgroundColor: 'rgba(255, 215, 0, 0.1)',
@@ -2044,13 +2044,14 @@ const styles = StyleSheet.create({
   potentialWinLabel: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.8)',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   potentialWinValue: {
     fontSize: 20,
     fontWeight: '800',
     color: '#FFD700',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
+    letterSpacing: 0.2,
   },
   
   profitLossHeroSection: {
@@ -2074,12 +2075,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   profitLossValue: {
     fontSize: 28,
     fontWeight: '800',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
+    letterSpacing: 0.4,
   },
   
   raceStatsGrid: {
@@ -2110,14 +2112,14 @@ const styles = StyleSheet.create({
   raceStatLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     marginBottom: 6,
   },
   raceStatValue: {
     fontSize: 13,
     fontWeight: '700',
     color: '#14F195',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     textAlign: 'center',
   },
   trendValueContainer: {
@@ -2155,7 +2157,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginLeft: 8,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
+    letterSpacing: 0.3,
   },
   connectionStatus: {
     flexDirection: 'row',
@@ -2171,7 +2174,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#9945FF',
     marginLeft: 4,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   
   assetLeaderboard: {
@@ -2208,7 +2211,7 @@ const styles = StyleSheet.create({
   rankText: {
     fontSize: 12,
     fontWeight: '800',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
   },
   sparkleEffect: {
     position: 'absolute',
@@ -2248,12 +2251,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
+    letterSpacing: 0.3,
   },
   assetRaceName: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   assetRaceStats: {
     flexDirection: 'row',
@@ -2263,7 +2267,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginRight: 4,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   
   priceMovement: {
@@ -2284,13 +2288,13 @@ const styles = StyleSheet.create({
   oldPriceLabel: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   oldPriceValue: {
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   
    momentumSection: {
@@ -2300,7 +2304,7 @@ const styles = StyleSheet.create({
   oldMomentumLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   momentumBarContainer: {
     flexDirection: 'row',
@@ -2323,7 +2327,7 @@ const styles = StyleSheet.create({
   momentumText: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.8)',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     minWidth: 40,
   },
   
@@ -2337,13 +2341,13 @@ const styles = StyleSheet.create({
   poolShareLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   poolShareValue: {
     fontSize: 12,
     fontWeight: '600',
     color: '#14F195',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   
      intensityBadge: {
@@ -2357,7 +2361,7 @@ const styles = StyleSheet.create({
   intensityBadgeText: {
     fontSize: 8,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   leaderboardControls: {
     flexDirection: 'row',
@@ -2377,7 +2381,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#9945FF',
     marginLeft: 4,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   hotEffect: {
     position: 'absolute',
@@ -2409,7 +2413,7 @@ const styles = StyleSheet.create({
      fontSize: 9,
      color: '#FFFFFF',
      fontWeight: '700',
-     fontFamily: 'Orbitron-Bold',
+     fontFamily: 'Inter-SemiBold',
      marginLeft: 4,
    },
   assetSymbolRow: {
@@ -2427,7 +2431,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#00FF88',
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   momentumHeader: {
@@ -2439,7 +2443,7 @@ const styles = StyleSheet.create({
   momentumValue: {
     fontSize: 12,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   ultraThinRaceCard: {
@@ -2526,7 +2530,7 @@ const styles = StyleSheet.create({
   positionNumber: {
     fontSize: 12,
     fontWeight: '900',
-    fontFamily: 'Orbitron-Black',
+    fontFamily: 'Sora-ExtraBold',
     color: '#FFFFFF',
     textAlign: 'center',
   },
@@ -2573,7 +2577,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#000',
     fontWeight: '800',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     marginLeft: 2,
   },
 
@@ -2606,7 +2610,7 @@ const styles = StyleSheet.create({
   assetName: {
     fontSize: 10,
     color: 'rgba(255, 255, 255, 0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     marginTop: 1,
   },
 
@@ -2618,7 +2622,7 @@ const styles = StyleSheet.create({
   performanceText: {
     fontSize: 16,
     fontWeight: '800',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     marginRight: 4,
   },
 
@@ -2674,14 +2678,14 @@ const styles = StyleSheet.create({
   poolLabel: {
     fontSize: 8,
     color: 'rgba(255, 255, 255, 0.6)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   poolValue: {
     fontSize: 11,
     color: '#FFD700',
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     marginTop: 1,
   },
 
@@ -2697,13 +2701,13 @@ const styles = StyleSheet.create({
     fontSize: 7,
     color: '#FFFFFF',
     fontWeight: '800',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   momentumLabel: {
     fontSize: 8,
     color: 'rgba(255, 255, 255, 0.8)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     marginLeft: 4,
   },
 
@@ -2720,14 +2724,14 @@ const styles = StyleSheet.create({
   priceLabel: {
     fontSize: 8,
     color: 'rgba(255, 255, 255, 0.6)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   priceValue: {
     fontSize: 11,
     color: '#14F195',
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     marginTop: 1,
   },
 
@@ -2745,13 +2749,13 @@ const styles = StyleSheet.create({
   marketStatLabel: {
     fontSize: 8,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   marketStatValue: {
     fontSize: 10,
     fontWeight: '600',
     color: '#14F195',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   
   oddsSection: {
@@ -2779,12 +2783,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginLeft: 8,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   oddsSubtitle: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   oddsScrollView: {
     paddingHorizontal: 20,
@@ -2816,7 +2820,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   trendIndicator: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -2829,7 +2833,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '600',
     marginLeft: 2,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   oddsValueSection: {
     alignItems: 'center',
@@ -2838,12 +2842,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: '#fff',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
+    letterSpacing: 0.2,
   },
   poolShareOdds: {
     fontSize: 8,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     marginTop: 4,
   },
   userBetOddsIndicator: {
@@ -2859,7 +2864,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#9945FF',
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   
   poolSummary: {
@@ -2882,13 +2887,13 @@ const styles = StyleSheet.create({
   poolSummaryLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   poolSummaryValue: {
     fontSize: 14,
     fontWeight: '700',
     color: '#FFD700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   
   raceStatsSection: {
@@ -2909,7 +2914,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   marketIndicators: {
     flexDirection: 'row',
@@ -2925,7 +2930,8 @@ const styles = StyleSheet.create({
   marketIndicatorText: {
     fontSize: 8,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: 0.2,
   },
   originalRaceStatsGrid: {
     flexDirection: 'row',
@@ -2943,13 +2949,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 8,
     marginBottom: 4,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   statLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   
   advancedAnalytics: {
@@ -2964,7 +2970,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 12,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   analyticsGrid: {
     flexDirection: 'row',
@@ -2976,13 +2982,13 @@ const styles = StyleSheet.create({
   analyticsLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   analyticsValue: {
     fontSize: 12,
     fontWeight: '700',
     color: '#14F195',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   
   noBetCard: {
@@ -3005,7 +3011,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 12,
     marginBottom: 8,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   noBetDescription: {
     fontSize: 14,
@@ -3013,7 +3019,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 20,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   noBetStats: {
     alignItems: 'center',
@@ -3022,7 +3028,7 @@ const styles = StyleSheet.create({
   noBetStatsText: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.8)',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     marginLeft: 4,
   },
   noBetStatsRow: {
@@ -3044,14 +3050,14 @@ const styles = StyleSheet.create({
     color: COLORS.warning,
     marginTop: SPACING.md,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   errorMessage: {
     ...TYPOGRAPHY.body,
     color: COLORS.text.secondary,
     marginTop: SPACING.xs,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   loadingContainer: {
@@ -3066,7 +3072,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginTop: SPACING.md,
     textAlign: 'center',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   emptyContainer: {
@@ -3082,14 +3088,14 @@ const styles = StyleSheet.create({
     color: COLORS.warning,
     marginTop: SPACING.md,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   emptyMessage: {
     ...TYPOGRAPHY.body,
     color: COLORS.text.secondary,
     marginTop: SPACING.xs,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   raceProgressContainer: {
@@ -3112,13 +3118,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#fff',
     marginLeft: 8,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   crowdSentimentLabel: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   votingContainer: {
     flexDirection: 'row',
@@ -3153,7 +3159,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#fff',
     marginLeft: 2,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   sentimentBar: {
     width: 100,
@@ -3170,7 +3176,7 @@ const styles = StyleSheet.create({
   sentimentText: {
     fontSize: 8,
     color: 'rgba(255,255,255,0.8)',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     marginLeft: 4,
   },
   trendIconContainer: {

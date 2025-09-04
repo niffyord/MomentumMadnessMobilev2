@@ -1972,13 +1972,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
+    letterSpacing: 0.3,
   },
   welcomeDescription: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.7)',
     marginTop: 8,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   howItWorksSteps: {
     flexDirection: 'row',
@@ -2002,13 +2003,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#fff',
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   stepText: {
     fontSize: 12,
     color: '#fff',
     textAlign: 'center',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   connectWalletMainButton: {
     borderRadius: 12,
@@ -2027,7 +2028,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#000',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   learnMoreButton: {
     flexDirection: 'row',
@@ -2040,7 +2041,7 @@ const styles = StyleSheet.create({
     color: '#9945FF',
     fontWeight: '600',
     marginRight: 4,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   successSection: {
@@ -2082,13 +2083,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   successSubtitle: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.7)',
     marginBottom: 16,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   raceInfoMini: {
     flexDirection: 'row',
@@ -2106,13 +2107,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: 'rgba(255,255,255,0.6)',
     marginTop: 4,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   raceInfoValue: {
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   raceInfoWarning: {
     flexDirection: 'row',
@@ -2129,7 +2130,7 @@ const styles = StyleSheet.create({
   raceInfoWarningText: {
     fontSize: 10,
     color: '#FFD700',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     flex: 1,
   },
   raceInfoDivider: {
@@ -2162,13 +2163,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#FFD700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   raceNumber: {
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   raceStatsGrid: {
     flexDirection: 'row',
@@ -2182,13 +2183,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   raceStatLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.6)',
     marginTop: 4,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   assetSelectionSection: {
@@ -2256,13 +2257,14 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.subtitle,
     fontWeight: '700',
     color: COLORS.text.primary,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
+    letterSpacing: 0.3,
     marginBottom: SPACING.xs / 2,
   },
   assetNameEnhanced: {
     ...TYPOGRAPHY.caption,
     color: COLORS.text.secondary,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     lineHeight: isTablet ? 16 : 14,
   },
   selectedIndicator: {
@@ -2288,7 +2290,7 @@ const styles = StyleSheet.create({
   performanceLabel: {
     ...TYPOGRAPHY.small,
     color: COLORS.text.tertiary,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   performanceValueContainer: {
     flexDirection: 'row',
@@ -2298,7 +2300,7 @@ const styles = StyleSheet.create({
   performanceValueEnhanced: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   momentumVisualization: {
     marginTop: SPACING.sm,
@@ -2319,7 +2321,7 @@ const styles = StyleSheet.create({
   momentumIndicatorText: {
     ...TYPOGRAPHY.small,
     color: COLORS.text.secondary,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   assetMetrics: {
     flexDirection: 'row',
@@ -2337,14 +2339,14 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.small,
     color: COLORS.text.tertiary,
     marginTop: SPACING.xs,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     textAlign: 'center',
   },
   metricValue: {
     ...TYPOGRAPHY.body,
     fontWeight: '700',
     color: COLORS.text.primary,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     textAlign: 'center',
   },
   metricDivider: {
@@ -2368,7 +2370,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.warning,
     marginLeft: SPACING.sm,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     fontWeight: '600',
   },
 
@@ -2398,7 +2400,7 @@ const styles = StyleSheet.create({
   betInputLabelEnhanced: {
     ...TYPOGRAPHY.subtitle,
     color: COLORS.text.primary,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
     fontWeight: '700',
     marginBottom: SPACING.xs,
   },
@@ -2422,7 +2424,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.secondary,
     marginLeft: SPACING.xs,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
   },
   betInputWrapperEnhanced: {
@@ -2449,13 +2451,13 @@ const styles = StyleSheet.create({
   currencySymbolEnhanced: {
     ...TYPOGRAPHY.title,
     color: COLORS.secondary,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
     fontWeight: '800',
   },
   currencyLabel: {
     ...TYPOGRAPHY.small,
     color: COLORS.text.tertiary,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     marginTop: -2,
   },
   betInputEnhanced: {
@@ -2463,7 +2465,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.title,
     color: COLORS.text.primary,
     paddingVertical: isTablet ? SPACING.lg : SPACING.md,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -2501,7 +2503,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.text.primary,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     textAlign: 'center',
     zIndex: 2,
   },
@@ -2549,7 +2551,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#9945FF',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
+    letterSpacing: 0.2,
   },
   betPreviewDetails: {
     gap: 8,
@@ -2561,13 +2564,13 @@ const styles = StyleSheet.create({
   previewLabel: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   previewValue: {
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   previewWin: {
     color: '#14F195',
@@ -2596,19 +2599,19 @@ const styles = StyleSheet.create({
   riskWarningText: {
     fontSize: 10,
     color: '#FFD700',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     flex: 1,
   },
   previewLabelTotal: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   previewValueTotal: {
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   errorContainerEnhanced: {
     flexDirection: 'row',
@@ -2625,7 +2628,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#FF4444',
     marginLeft: 8,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   placeBetSection: {
     marginTop: 16,
@@ -2657,7 +2660,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#000',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   trustSignals: {
     flexDirection: 'row',
@@ -2676,7 +2679,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#14F195',
     marginLeft: 4,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   trustDivider: {
     width: 1,
@@ -2709,14 +2712,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 8,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   confirmationSubtitle: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.7)',
     marginTop: 4,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   confirmationDetails: {
     gap: 12,
@@ -2729,13 +2732,13 @@ const styles = StyleSheet.create({
   confirmationLabel: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   confirmationValue: {
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   confirmationWin: {
     color: '#14F195',
@@ -2755,7 +2758,7 @@ const styles = StyleSheet.create({
   confirmationRiskText: {
     fontSize: 11,
     color: '#FFD700',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     flex: 1,
     lineHeight: 16,
   },
@@ -2788,7 +2791,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     textAlign: 'center',
     letterSpacing: 0.5,
   },
@@ -2815,7 +2818,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#000',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
     textAlign: 'center',
     letterSpacing: 0.5,
     flexShrink: 1,
@@ -2843,12 +2846,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   sectionSubtitleEnhanced: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   helpIconButton: {
     width: 32,
@@ -2879,13 +2882,13 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '800',
     marginLeft: SPACING.xs,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   assetSymbolIconEnhanced: {
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   quickBetLabelContainer: {
     flexDirection: 'row',
@@ -2896,7 +2899,7 @@ const styles = StyleSheet.create({
   quickBetLabelEnhanced: {
     ...TYPOGRAPHY.subtitle,
     color: COLORS.text.primary,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
     fontWeight: '700',
   },
   maxButtonEnhanced: {
@@ -2919,7 +2922,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.secondary,
     fontWeight: '800',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     letterSpacing: 1,
   },
 
@@ -2938,14 +2941,14 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     marginTop: SPACING.md,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   errorMessageCommit: {
     ...TYPOGRAPHY.body,
     color: COLORS.text.secondary,
     marginTop: SPACING.xs,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   retryButton: {
     backgroundColor: COLORS.primary,
@@ -2959,7 +2962,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000',
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
 
   loadingContainerCommit: {
@@ -2976,7 +2979,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginTop: SPACING.md,
     textAlign: 'center',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   loadingProgressContainer: {
     marginTop: SPACING.md,
@@ -2986,7 +2989,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.text.tertiary,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
 
   increaseBetButton: {
@@ -3006,7 +3009,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#000',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   increaseBetPanel: {
     borderRadius: 16,
@@ -3028,13 +3031,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   increaseBetSubtitle: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.7)',
     marginBottom: 16,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   increaseBetCloseButton: {
     width: 32,
@@ -3059,7 +3062,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(255,255,255,0.7)',
     marginBottom: 8,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   balanceIndicatorSmall: {
     flexDirection: 'row',
@@ -3081,7 +3084,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.secondary,
     marginLeft: SPACING.xs,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
   },
   additionalBetInputWrapper: {
@@ -3104,7 +3107,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.title,
     color: COLORS.text.primary,
     paddingVertical: isTablet ? SPACING.lg : SPACING.md,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -3139,7 +3142,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.text.primary,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     textAlign: 'center',
     zIndex: 2,
   },
@@ -3178,7 +3181,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#000',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   newTotalPreview: {
     marginTop: 16,
@@ -3203,7 +3206,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.secondary,
     fontWeight: '800',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
     letterSpacing: 1,
   },
 })

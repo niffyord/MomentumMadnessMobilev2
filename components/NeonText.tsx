@@ -39,5 +39,6 @@ const styles = StyleSheet.create({
     textShadowOffset: {width: 0, height: 0},
     textShadowRadius: 10,
     fontWeight: '700',
+    fontFamily: 'Sora-ExtraBold',
   },
 }); 

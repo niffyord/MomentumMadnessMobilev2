@@ -1067,7 +1067,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9945FF',
     marginLeft: SPACING.xs,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   statusIndicator: {
     flexDirection: 'row',
@@ -1083,7 +1083,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#FFD700',
     marginLeft: SPACING.xs,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   helpButton: {
     flexDirection: 'row',
@@ -1100,7 +1100,7 @@ const styles = StyleSheet.create({
     color: '#00ffe7',
     fontWeight: '500',
     marginLeft: 4,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   statsContainer: {
     flexDirection: isLandscape && isTablet ? 'row' : 'row',
@@ -1124,7 +1124,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: SPACING.xs,
     marginTop: SPACING.xs,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   statValue: {
     ...TYPOGRAPHY.caption,
@@ -1132,7 +1132,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.3,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   raceInfoBanner: {
     borderRadius: 12,
@@ -1150,13 +1150,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   raceDescription: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   raceInfoRight: {
     marginLeft: 16,
@@ -1184,12 +1184,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: '#fff',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
+    letterSpacing: 0.6,
   },
   countdownSubLabel: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.6)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   phaseIndicator: {
     flexDirection: 'row',
@@ -1204,13 +1205,13 @@ const styles = StyleSheet.create({
   phaseLabel: {
     fontSize: 14,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
-    letterSpacing: 1,
+    fontFamily: 'Sora-Bold',
+    letterSpacing: 0.4,
   },
   phaseDescription: {
     fontSize: 11,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   progressBarContainer: {
     height: 8,
@@ -1242,7 +1243,7 @@ const styles = StyleSheet.create({
     top: -16,
     fontSize: 10,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   scrollContent: {
     flex: 1,
@@ -1371,15 +1372,15 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#000',
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
-    letterSpacing: 2,
+    fontFamily: 'Sora-Bold',
+    letterSpacing: 0.8,
   },
   enhancedLoadingSubtitle: {
     fontSize: isTablet ? 18 : 16,
     color: 'rgba(255,255,255,0.8)',
     textAlign: 'center',
     marginTop: SPACING.sm,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   loadingDotsContainer: {
     flexDirection: 'row',
@@ -1417,7 +1418,7 @@ const styles = StyleSheet.create({
     fontSize: isTablet ? 16 : 14,
     fontWeight: '700',
     color: '#000',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   connectionStatusContainer: {
     flexDirection: 'row',
@@ -1440,7 +1441,7 @@ const styles = StyleSheet.create({
   connectionStatusText: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   racingTrackContainer: {
     ...StyleSheet.absoluteFillObject,

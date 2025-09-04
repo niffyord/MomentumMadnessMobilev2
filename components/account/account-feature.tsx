@@ -1149,7 +1149,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.title,
     fontWeight: '800',
     color: COLORS.text.primary,
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
   },
   refreshButton: {
     padding: SPACING.sm,
@@ -1206,13 +1206,13 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.subtitle,
     fontWeight: '700',
     color: COLORS.text.primary,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
     marginBottom: 2,
   },
   statsSubtitle: {
     ...TYPOGRAPHY.caption,
     color: COLORS.text.secondary,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   performanceIndicator: {
     width: 32,
@@ -1234,14 +1234,14 @@ const styles = StyleSheet.create({
     color: COLORS.text.primary,
     marginTop: SPACING.md,
     marginBottom: SPACING.sm,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   emptyStatsText: {
     ...TYPOGRAPHY.body,
     color: COLORS.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -1277,13 +1277,13 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.subtitle,
     fontWeight: '800',
     color: COLORS.text.primary,
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
     marginBottom: SPACING.xs,
   },
   statLabel: {
     ...TYPOGRAPHY.caption,
     color: COLORS.text.tertiary,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     textAlign: 'center',
   },
   additionalStats: {
@@ -1304,7 +1304,7 @@ const styles = StyleSheet.create({
   additionalStatText: {
     ...TYPOGRAPHY.caption,
     color: COLORS.text.secondary,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: isTablet ? 12 : 10,
   },
   activeIndicator: {
@@ -1330,7 +1330,7 @@ const styles = StyleSheet.create({
   activeText: {
     ...TYPOGRAPHY.caption,
     color: COLORS.secondary,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     fontWeight: '600',
     flex: 1,
   },
@@ -1384,8 +1384,8 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.text.secondary,
     fontWeight: '600',
-    fontFamily: 'Orbitron-SemiBold',
-    fontSize: isTablet ? 14 : 12, 
+    fontFamily: 'Inter-SemiBold',
+    fontSize: isTablet ? 14 : 12,
   },
   activeTabText: {
     color: COLORS.text.primary,
@@ -1402,8 +1402,8 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.small,
     color: '#fff',
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
-    fontSize: isTablet ? 10 : 8, 
+    fontFamily: 'Sora-Bold',
+    fontSize: isTablet ? 10 : 8,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -1460,7 +1460,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.text.secondary,
     fontWeight: '600',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   selectedSortOptionText: {
     color: COLORS.text.primary,
@@ -1495,12 +1495,12 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.text.primary,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   historyGroupCount: {
     ...TYPOGRAPHY.caption,
     color: COLORS.text.tertiary,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   historyGroupStats: {
     flexDirection: 'row',
@@ -1510,7 +1510,7 @@ const styles = StyleSheet.create({
   historyGroupResult: {
     ...TYPOGRAPHY.body,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   historyGroupContent: {
     padding: SPACING.lg,
@@ -1545,18 +1545,18 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.subtitle,
     fontWeight: '700',
     color: COLORS.text.primary,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   unclaimedSummaryValue: {
     ...TYPOGRAPHY.title,
     fontWeight: '800',
     color: COLORS.warning,
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
   },
   unclaimedSummarySubtext: {
     ...TYPOGRAPHY.caption,
     color: COLORS.text.secondary,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   positionsContainer: {
     paddingHorizontal: SPACING.xl,
@@ -1600,7 +1600,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text.primary,
     marginLeft: SPACING.sm,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   assetContainer: {
     flexDirection: 'row',
@@ -1616,12 +1616,12 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.primary,
     fontWeight: '600',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   performanceText: {
     ...TYPOGRAPHY.caption,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   statusBadge: {
     flexDirection: 'row',
@@ -1635,7 +1635,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.small,
     color: '#000',
     fontWeight: '800',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
   },
   cardContent: {
     marginBottom: SPACING.md,
@@ -1651,14 +1651,14 @@ const styles = StyleSheet.create({
   betDetailLabel: {
     ...TYPOGRAPHY.caption,
     color: COLORS.text.tertiary,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     marginBottom: SPACING.xs,
   },
   betDetailValue: {
     ...TYPOGRAPHY.body,
     fontWeight: '700',
     color: COLORS.text.primary,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   profitLossContainer: {
     alignItems: 'center',
@@ -1672,13 +1672,13 @@ const styles = StyleSheet.create({
   profitLossLabel: {
     ...TYPOGRAPHY.caption,
     color: COLORS.text.tertiary,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     marginBottom: SPACING.xs,
   },
   profitLossValue: {
     ...TYPOGRAPHY.subtitle,
     fontWeight: '800',
-    fontFamily: 'Orbitron-ExtraBold',
+    fontFamily: 'Sora-ExtraBold',
   },
   historyProfitLoss: {
     marginTop: SPACING.md,
@@ -1720,7 +1720,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     fontWeight: '700',
     color: '#000',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   viewButton: {
     backgroundColor: 'rgba(153, 69, 255, 0.2)',
@@ -1731,7 +1731,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.primary,
     fontWeight: '600',
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   secondaryAction: {
     opacity: 0.8,
@@ -1758,7 +1758,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.text.tertiary,
     fontWeight: '500',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   emptyContainer: {
     alignItems: 'center',
@@ -1772,14 +1772,14 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
     marginBottom: SPACING.md,
     textAlign: 'center',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   emptyText: {
     ...TYPOGRAPHY.body,
     color: COLORS.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   loadingContainer: {
     alignItems: 'center',
@@ -1789,7 +1789,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.text.secondary,
     marginTop: SPACING.md,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   errorContainer: {
     alignItems: 'center',
@@ -1802,14 +1802,14 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     marginTop: SPACING.md,
     marginBottom: SPACING.sm,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   errorText: {
     ...TYPOGRAPHY.body,
     color: COLORS.text.secondary,
     textAlign: 'center',
     marginBottom: SPACING.lg,
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
   },
   retryButton: {
     backgroundColor: COLORS.primary,
@@ -1822,6 +1822,6 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: '#000',
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
 }) 

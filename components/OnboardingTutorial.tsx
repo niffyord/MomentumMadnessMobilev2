@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   stepCounter: {
-    fontFamily: 'Orbitron-Medium',
+    fontFamily: 'Inter-Medium',
     fontSize: 11,
     color: 'rgba(255, 255, 255, 0.7)',
     fontWeight: '500',
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   skipText: {
-    fontFamily: 'Orbitron-Medium',
+    fontFamily: 'Inter-Medium',
     fontSize: 13,
     color: '#FFFFFF',
     fontWeight: '500',
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 28,
     letterSpacing: 0.5,
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: {width: 0, height: 1},
     textShadowRadius: 2,
@@ -493,6 +493,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     letterSpacing: 0.3,
     fontWeight: '400',
+    fontFamily: 'Inter-Regular',
     paddingHorizontal: 8,
   },
   highlightContainer: {
@@ -513,6 +514,7 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 18,
     letterSpacing: 0.2,
+    fontFamily: 'Inter-SemiBold',
   },
   navigation: {
     flexDirection: 'row',
@@ -553,7 +555,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   navButtonText: {
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
     fontSize: 14,
     color: '#FFFFFF',
     fontWeight: '600',
@@ -574,7 +576,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
     marginBottom: 16,
-    fontFamily: 'Orbitron-Medium',
+    fontFamily: 'Inter-Medium',
   },
   phaseItem: {
     flexDirection: 'row',
@@ -600,7 +602,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
   },
   phaseContent: {
     flex: 1,
@@ -615,18 +617,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     marginLeft: 8,
-    fontFamily: 'Orbitron-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   phaseDescription: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 4,
-    fontFamily: 'Orbitron-Medium',
+    fontFamily: 'Inter-Regular',
   },
   phaseTime: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.5)',
-    fontFamily: 'Orbitron-Medium',
+    fontFamily: 'Inter-Medium',
   },
 });
 

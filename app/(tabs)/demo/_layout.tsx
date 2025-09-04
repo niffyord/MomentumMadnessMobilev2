@@ -82,14 +82,16 @@ function DemoHeader() {
             fontSize: 18,
             fontWeight: '700',
             color: '#fff',
-            fontFamily: 'Orbitron-Bold',
+            fontFamily: 'Sora-Bold',
+            letterSpacing: 0.5,
           }}>
             Momentum Madness
           </Text>
           <Text style={{
             fontSize: 12,
             color: 'rgba(255,255,255,0.7)',
-            fontFamily: 'Orbitron-Regular',
+            fontFamily: 'Inter-Medium',
+            letterSpacing: 0.2,
           }}>
             DEVNET
           </Text>
@@ -124,14 +126,14 @@ function DemoHeader() {
                 fontSize: 12,
                 color: '#9945FF',
                 fontWeight: '600',
-                fontFamily: 'Orbitron-SemiBold',
+                fontFamily: 'Inter-SemiBold',
               }}>
                 {ellipsify(account.publicKey.toString(), 4)}
               </Text>
               <Text style={{
                 fontSize: 10,
                 color: 'rgba(255,255,255,0.7)',
-                fontFamily: 'Orbitron-Regular',
+                fontFamily: 'Inter-Regular',
               }}>
                 Connected
               </Text>
@@ -169,7 +171,7 @@ function DemoHeader() {
               fontSize: 12,
               color: '#14F195',
               fontWeight: '600',
-              fontFamily: 'Orbitron-SemiBold',
+              fontFamily: 'Inter-SemiBold',
             }}>
               Connect Wallet
             </Text>
@@ -209,7 +211,7 @@ function DemoHeader() {
                 fontSize: 18,
                 fontWeight: '700',
                 color: '#fff',
-                fontFamily: 'Orbitron-Bold',
+                fontFamily: 'Sora-Bold',
                 marginTop: 8,
               }}>
                 Wallet Options
@@ -217,7 +219,7 @@ function DemoHeader() {
               <Text style={{
                 fontSize: 12,
                 color: 'rgba(255,255,255,0.7)',
-                fontFamily: 'Orbitron-Regular',
+                fontFamily: 'Inter-Regular',
                 textAlign: 'center',
                 marginTop: 4,
               }}>
@@ -245,14 +247,14 @@ function DemoHeader() {
                   fontSize: 14,
                   fontWeight: '600',
                   color: '#14F195',
-                  fontFamily: 'Orbitron-SemiBold',
+                  fontFamily: 'Inter-SemiBold',
                 }}>
                   Copy Address
                 </Text>
                 <Text style={{
                   fontSize: 11,
                   color: 'rgba(255,255,255,0.6)',
-                  fontFamily: 'Orbitron-Regular',
+                  fontFamily: 'Inter-Regular',
                 }}>
                   Copy wallet address to clipboard
                 </Text>
@@ -278,14 +280,14 @@ function DemoHeader() {
                   fontSize: 14,
                   fontWeight: '600',
                   color: '#FFC107',
-                  fontFamily: 'Orbitron-SemiBold',
+                  fontFamily: 'Inter-SemiBold',
                 }}>
                   View on Explorer
                 </Text>
                 <Text style={{
                   fontSize: 11,
                   color: 'rgba(255,255,255,0.6)',
-                  fontFamily: 'Orbitron-Regular',
+                  fontFamily: 'Inter-Regular',
                 }}>
                   Open wallet in Solana Explorer
                 </Text>
@@ -311,14 +313,14 @@ function DemoHeader() {
                   fontSize: 14,
                   fontWeight: '600',
                   color: '#F44336',
-                  fontFamily: 'Orbitron-SemiBold',
+                  fontFamily: 'Inter-SemiBold',
                 }}>
                   Disconnect Wallet
                 </Text>
                 <Text style={{
                   fontSize: 11,
                   color: 'rgba(255,255,255,0.6)',
-                  fontFamily: 'Orbitron-Regular',
+                  fontFamily: 'Inter-Regular',
                 }}>
                   Sign out from this wallet
                 </Text>
@@ -341,7 +343,7 @@ function DemoHeader() {
               <Text style={{
                 fontSize: 14,
                 color: 'rgba(255,255,255,0.8)',
-                fontFamily: 'Orbitron-Regular',
+                fontFamily: 'Inter-Regular',
               }}>
                 Cancel
               </Text>

@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   title: {
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
     fontSize: 18,
     fontWeight: '800',
     color: '#ffffff',
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   loadingText: {
-    fontFamily: 'Orbitron-Medium',
+    fontFamily: 'Inter-Medium',
     fontSize: 16,
     fontWeight: '600',
     color: '#ffffff',

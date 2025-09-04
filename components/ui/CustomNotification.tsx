@@ -282,14 +282,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 13,
     fontWeight: '700',
-    fontFamily: 'Orbitron-Bold',
+    fontFamily: 'Sora-Bold',
     marginBottom: 2,
     letterSpacing: 0.3,
   },
   message: {
     fontSize: 12,
     fontWeight: '500',
-    fontFamily: 'Orbitron-Regular',
+    fontFamily: 'Inter-Regular',
     lineHeight: 16,
     letterSpacing: 0.2,
   },

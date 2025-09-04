@@ -21,8 +21,8 @@ import {
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 export default function RocketHero() {
-  const {width} = useWindowDimensions();
-  const size = Math.min(width * 0.7, 360); // Slightly larger for more impact
+  const {width, height} = useWindowDimensions();
+  const size = Math.min(width * 0.6, height * 0.28, 320);
 
   // Animation refs
   const entrance = useRef(new Animated.Value(0)).current;
@@ -271,7 +271,8 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 32,
+    marginTop: 0,
+    marginBottom: 12,
     position: 'relative',
     minHeight: 200,
   },

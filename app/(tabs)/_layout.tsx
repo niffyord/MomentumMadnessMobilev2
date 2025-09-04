@@ -38,9 +38,10 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#FFD700',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.6)',
         tabBarLabelStyle: {
-          fontFamily: 'Orbitron-SemiBold',
+          fontFamily: 'Inter-SemiBold',
           fontSize: 11,
           fontWeight: '600',
+          letterSpacing: 0.2,
           marginTop: 4,
         },
         tabBarItemStyle: {
