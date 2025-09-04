@@ -9,10 +9,12 @@ import React, {
 
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
+import ConfettiCannon from 'react-native-confetti-cannon'
 import * as Sharing from 'expo-sharing'
 import {
   AccessibilityInfo,
   Animated,
+  Easing,
   Dimensions,
   Platform,
   ScrollView,
@@ -71,93 +73,135 @@ const TYPOGRAPHY = {
 } as const
 
 const WinnerAnnouncement = React.memo(
-  ({
-    winnerAsset,
-    raceResults,
-    race,
-    formatValue,
-    handleShare,
-  }: {
+  ({ winnerAsset, raceResults, race, formatValue, handleShare }: {
     winnerAsset: any
     raceResults: any
     race: any
     formatValue: (value: number) => string
     handleShare: () => void
-  }) => (
-    <View style={styles.winnerSection}>
-      <LinearGradient
-        colors={
-          raceResults?.raceIntensity === 'extreme'
-            ? ['rgba(255, 68, 68, 0.4)', 'rgba(255, 215, 0, 0.3)', 'rgba(0, 0, 0, 0.8)']
-            : ['rgba(255, 215, 0, 0.4)', 'rgba(255, 165, 0, 0.2)', 'rgba(0, 0, 0, 0.8)']
-        }
-        style={styles.winnerCard}
-      >
-        <TouchableOpacity
-          style={[styles.winnerShareButton, { minHeight: MIN_TOUCH_TARGET, minWidth: MIN_TOUCH_TARGET }]}
-          onPress={handleShare}
-          accessibilityLabel={`Share race results. ${winnerAsset?.symbol} won with ${typeof winnerAsset?.performance === 'number' && !isNaN(winnerAsset.performance) ? winnerAsset.performance.toFixed(1) : '0.0'}% performance`}
-          accessibilityRole="button"
-          accessibilityHint="Opens sharing options to tell others about this race result"
+  }) => {
+    const shine = useRef(new Animated.Value(0)).current
+    const pulse = useRef(new Animated.Value(1)).current
+    const [confetti, setConfetti] = useState(true)
+
+    useEffect(() => {
+      Animated.loop(
+        Animated.timing(shine, { toValue: 1, duration: 2600, useNativeDriver: true }),
+      ).start()
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, { toValue: 1.05, duration: 900, useNativeDriver: true }),
+          Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+        ]),
+      ).start()
+
+      const timer = setTimeout(() => setConfetti(false), 2500)
+      return () => clearTimeout(timer)
+    }, [])
+
+    return (
+      <View style={styles.winnerSection}>
+        <LinearGradient
+          colors={
+            raceResults?.raceIntensity === 'extreme'
+              ? ['rgba(255, 68, 68, 0.45)', 'rgba(255, 215, 0, 0.35)', 'rgba(0, 0, 0, 0.85)']
+              : ['rgba(255, 215, 0, 0.45)', 'rgba(20, 241, 149, 0.25)', 'rgba(0, 0, 0, 0.85)']
+          }
+          style={styles.winnerCard}
         >
-          <MaterialCommunityIcons name="share-variant" size={18} color="#FFD700" />
-          <Text style={styles.winnerShareButtonText}>Share</Text>
-        </TouchableOpacity>
-
-        <View style={styles.winnerContent}>
-          <MaterialCommunityIcons
-            name="trophy"
-            size={48}
-            color={raceResults?.raceIntensity === 'extreme' ? '#FF4444' : '#FFD700'}
+          {/* Shimmer sweep */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.winnerCardShine,
+              { transform: [{ translateX: shine.interpolate({ inputRange: [0, 1], outputRange: [-180, 260] }) }, { rotate: '-18deg' }] },
+            ]}
           />
-          <View style={styles.winnerTitleContainer}>
-            <MaterialCommunityIcons name="flag-checkered" size={20} color={COLORS.warning} />
-            <Text style={styles.winnerTitle}>Race Complete!</Text>
-          </View>
-          <Text style={styles.winnerAssetName}>{winnerAsset?.symbol} WINS!</Text>
-          <Text style={styles.winnerPerformance}>
-            Final Performance: {winnerAsset?.performance >= 0 ? '+' : ''}
-            {typeof winnerAsset?.performance === 'number' && !isNaN(winnerAsset.performance)
-              ? winnerAsset.performance.toFixed(2)
-              : '0.00'}
-            %
-          </Text>
 
-          <View style={styles.winnerStatsGrid}>
-            <View style={styles.winnerStatItem}>
-              <Text style={styles.winnerStatValue}>{race?.participantCount || 0}</Text>
-              <Text style={styles.winnerStatLabel}>Total Racers</Text>
+          {/* Share pill */}
+          <TouchableOpacity
+            style={[styles.winnerShareButton, { minHeight: MIN_TOUCH_TARGET, minWidth: MIN_TOUCH_TARGET }]}
+            onPress={handleShare}
+            accessibilityLabel={`Share race results. ${winnerAsset?.symbol} won with ${typeof winnerAsset?.performance === 'number' && !isNaN(winnerAsset.performance) ? winnerAsset.performance.toFixed(1) : '0.0'}% performance`}
+            accessibilityRole="button"
+          >
+            <LinearGradient colors={['#FFD700', '#FFA500']} style={styles.winnerShareGradient}>
+              <MaterialCommunityIcons name="share-variant" size={18} color="#000" />
+              <Text style={styles.winnerShareButtonText}>Share</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <View style={styles.winnerContent}>
+            {/* Race pill */}
+            <View style={styles.racePill}>
+              <MaterialCommunityIcons name="flag-checkered" size={12} color="#0B0B0B" />
+              <Text style={styles.racePillText}>RACE #{race?.raceId}</Text>
             </View>
-            <View style={styles.winnerStatItem}>
-              <Text style={styles.winnerStatValue}>{formatValue(race?.totalPool || 0)}</Text>
-              <Text style={styles.winnerStatLabel}>Prize Pool</Text>
+
+            {/* Trophy + halo */}
+            <View style={styles.trophyWrap}>
+              <View style={styles.trophyHalo} />
+              <Animated.View style={{ transform: [{ scale: pulse }] }}>
+                <MaterialCommunityIcons
+                  name="trophy"
+                  size={56}
+                  color={raceResults?.raceIntensity === 'extreme' ? '#FF4444' : '#FFD700'}
+                />
+              </Animated.View>
             </View>
-            <View style={styles.winnerStatItem}>
-              <Text style={styles.winnerStatValue}>
-                {Math.floor((raceResults?.raceDuration || 0) / 60)}:
-                {String(Math.floor((raceResults?.raceDuration || 0) % 60)).padStart(2, '0')}
-              </Text>
-              <Text style={styles.winnerStatLabel}>Race Time</Text>
+
+            <View style={styles.winnerTitleContainer}>
+              <MaterialCommunityIcons name="star-four-points" size={20} color={COLORS.warning} />
+              <Text style={styles.winnerTitle}>Race Complete!</Text>
             </View>
-            <View style={styles.winnerStatItem}>
-              <Text
-                style={[
-                  styles.winnerStatValue,
-                  { color: raceResults?.raceIntensity === 'extreme' ? '#FF4444' : '#00FF88' },
-                ]}
-              >
-                {typeof raceResults?.performanceSpread === 'number' && !isNaN(raceResults.performanceSpread)
-                  ? raceResults.performanceSpread.toFixed(1)
-                  : '0.0'}
-                %
-              </Text>
-              <Text style={styles.winnerStatLabel}>Spread</Text>
+            <Text style={styles.winnerAssetName}>{winnerAsset?.symbol} WINS!</Text>
+            <Text style={styles.winnerPerformance}>
+              Final Performance: {winnerAsset?.performance >= 0 ? '+' : ''}
+              {typeof winnerAsset?.performance === 'number' && !isNaN(winnerAsset.performance)
+                ? winnerAsset.performance.toFixed(2)
+                : '0.00'}
+              %
+            </Text>
+
+            <View style={styles.winnerStatsGrid}>
+              <View style={styles.winnerStatItem}>
+                <Text style={styles.winnerStatValue}>{race?.participantCount || 0}</Text>
+                <Text style={styles.winnerStatLabel}>Total Racers</Text>
+              </View>
+              <View style={styles.winnerStatItem}>
+                <Text style={styles.winnerStatValue}>{formatValue(race?.totalPool || 0)}</Text>
+                <Text style={styles.winnerStatLabel}>Prize Pool</Text>
+              </View>
+              <View style={styles.winnerStatItem}>
+                <Text style={styles.winnerStatValue}>
+                  {Math.floor((raceResults?.raceDuration || 0) / 60)}:{String(Math.floor((raceResults?.raceDuration || 0) % 60)).padStart(2, '0')}
+                </Text>
+                <Text style={styles.winnerStatLabel}>Race Time</Text>
+              </View>
+              <View style={styles.winnerStatItem}>
+                <Text style={[styles.winnerStatValue, { color: raceResults?.raceIntensity === 'extreme' ? '#FF4444' : '#00FF88' }]}>
+                  {typeof raceResults?.performanceSpread === 'number' && !isNaN(raceResults.performanceSpread)
+                    ? raceResults.performanceSpread.toFixed(1)
+                    : '0.0'}%
+                </Text>
+                <Text style={styles.winnerStatLabel}>Spread</Text>
+              </View>
             </View>
           </View>
-        </View>
-      </LinearGradient>
-    </View>
-  ),
+
+          {confetti && (
+            <ConfettiCannon
+              count={60}
+              origin={{ x: screenWidth / 2, y: -10 }}
+              fadeOut
+              fallSpeed={2800}
+              explosionSpeed={350}
+            />
+          )}
+        </LinearGradient>
+      </View>
+    )
+  },
 )
 
 interface SettledPhaseProps {
@@ -231,6 +275,9 @@ function _EnhancedSettledPhase({
   const resultRowStaggerAnim = useRef(new Animated.Value(0)).current
   const confettiAnim = useRef(new Animated.Value(0)).current
   const sparkleAnim = useRef(new Animated.Value(0)).current
+  // Congrats card animations
+  const congratsShimmer = useRef(new Animated.Value(0)).current
+  const payoutPulse = useRef(new Animated.Value(1)).current
 
   const animationRefs = useRef<Animated.CompositeAnimation[]>([])
 
@@ -334,6 +381,32 @@ function _EnhancedSettledPhase({
         animation.stop()
       })
       animationRefs.current = []
+    }
+  }, [])
+
+  // Loop shimmer and payout pulse for the shareable congrats card
+  useEffect(() => {
+    const shimmer = Animated.loop(
+      Animated.timing(congratsShimmer, {
+        toValue: 1,
+        duration: 2600,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    )
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(payoutPulse, { toValue: 1.04, duration: 900, useNativeDriver: true }),
+        Animated.timing(payoutPulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+      ]),
+    )
+    shimmer.start()
+    pulse.start()
+    return () => {
+      shimmer.stop()
+      pulse.stop()
+      congratsShimmer.setValue(0)
+      payoutPulse.setValue(1)
     }
   }, [])
 
@@ -815,6 +888,25 @@ function _EnhancedSettledPhase({
               }
               style={styles.userResultCard}
             >
+              {/* Shimmer overlay for share appeal */}
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.userCardShine,
+                  {
+                    transform: [
+                      { translateX: congratsShimmer.interpolate({ inputRange: [0, 1], outputRange: [-220, 320] }) },
+                      { rotate: '-18deg' },
+                    ],
+                  },
+                ]}
+              />
+
+              {/* Congrats/Settled ribbon */}
+              <View style={[styles.congratsRibbon, isWinner ? styles.congratsRibbonWin : styles.congratsRibbonLose]}>
+                <MaterialCommunityIcons name={isWinner ? 'party-popper' : 'flag-checkered'} size={12} color="#0B0B0B" />
+                <Text style={styles.congratsRibbonText}>{isWinner ? 'CONGRATS' : 'SETTLED'}</Text>
+              </View>
               <View style={styles.userResultHeader}>
                 <Animated.View
                   style={[
@@ -885,6 +977,32 @@ function _EnhancedSettledPhase({
                     {isWinner ? 'You picked the winner!' : 'Better luck next race!'}
                   </Text>
                 </View>
+                {/* Asset badge for sharing */}
+                <View style={styles.assetBadgeLarge}>
+                  <View style={styles.assetRingLarge} />
+                  <View style={[styles.assetDotLarge, { backgroundColor: userPosition?.asset.color }]} />
+                  <Text style={styles.assetBadgeText}>{userPosition?.asset.symbol}</Text>
+                </View>
+              </View>
+              {/* Payout hero row */}
+              <View style={styles.payoutHero}>
+                <Animated.Text style={[styles.payoutAmount, { transform: [{ scale: payoutPulse }] }]}>
+                  {isWinner ? `$${userPosition?.claimableAmount.toFixed(2)}` : '$0.00'}
+                </Animated.Text>
+                <Text style={styles.payoutLabel}>{isWinner ? 'Claimable' : 'No Payout'}</Text>
+                {isWinner && (
+                  <View style={styles.roiPill}>
+                    <MaterialCommunityIcons name="trending-up" size={12} color="#0B0B0B" />
+                    <Text style={styles.roiText}>
+                      {(() => {
+                        const orig = userPosition?.originalAmount || 0
+                        const claim = userPosition?.claimableAmount || 0
+                        const mult = orig > 0 ? claim / orig : 0
+                        return `${mult.toFixed(2)}x`
+                      })()}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               <View style={styles.betSummarySection}>
@@ -1349,6 +1467,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'rgba(255, 215, 0, 0.5)',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  winnerCardShine: {
+    position: 'absolute',
+    top: -80,
+    left: -180,
+    width: 200,
+    height: 280,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 24,
+  },
+  trophyWrap: { marginTop: 8, marginBottom: 6, alignItems: 'center', justifyContent: 'center' },
+  trophyHalo: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255,215,0,0.12)',
+    shadowColor: '#FFD700',
+    shadowOpacity: 0.6,
+    shadowRadius: 18,
   },
   winnerContent: {
     alignItems: 'center',
@@ -1380,6 +1520,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontFamily: 'Inter-SemiBold',
   },
+  racePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.15)',
+  },
+  racePillText: { fontSize: 10, color: '#0B0B0B', fontFamily: 'Inter-SemiBold' },
   winnerStatsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -1414,6 +1566,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
     backgroundColor: '#000000',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  userCardShine: {
+    position: 'absolute',
+    top: -120,
+    left: -240,
+    width: 260,
+    height: 360,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 24,
   },
   userResultHeader: {
     flexDirection: 'row',
@@ -1446,6 +1609,96 @@ const styles = StyleSheet.create({
   betSummarySection: {
     marginBottom: 16,
     gap: 8,
+  },
+  congratsRibbon: {
+    position: 'absolute',
+    top: 12,
+    left: -8,
+    transform: [{ rotate: '-12deg' }],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  congratsRibbonWin: {
+    backgroundColor: 'rgba(0, 255, 136, 0.2)',
+    borderColor: 'rgba(0, 255, 136, 0.5)',
+  },
+  congratsRibbonLose: {
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    borderColor: 'rgba(255, 215, 0, 0.45)',
+  },
+  congratsRibbonText: {
+    fontSize: 10,
+    color: '#0B0B0B',
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: 0.5,
+  },
+  assetBadgeLarge: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    marginLeft: 8,
+  },
+  assetRingLarge: {
+    position: 'absolute',
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  assetDotLarge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  assetBadgeText: {
+    position: 'absolute',
+    bottom: -14,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.85)',
+    fontFamily: 'Inter-SemiBold',
+  },
+  payoutHero: {
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  payoutAmount: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFD700',
+    fontFamily: 'Sora-ExtraBold',
+    letterSpacing: 0.4,
+  },
+  payoutLabel: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.7)',
+    fontFamily: 'Inter-Regular',
+    marginTop: 2,
+  },
+  roiPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFD700',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    marginTop: 8,
+  },
+  roiText: {
+    fontSize: 12,
+    color: '#0B0B0B',
+    fontFamily: 'Inter-SemiBold',
   },
   betSummaryRow: {
     flexDirection: 'row',
@@ -1878,25 +2131,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     right: 20,
+    zIndex: 10,
+  },
+  winnerShareGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: 12,
+    gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.6)',
-    zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    borderRadius: 12,
   },
   winnerShareButtonText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#FFD700',
+    color: '#000',
     marginLeft: 8,
     fontFamily: 'Inter-SemiBold',
   },
