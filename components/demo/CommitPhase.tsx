@@ -1534,7 +1534,21 @@ function _EnhancedCommitPhase({
           {!assetsOpen && enhancedAssets[selectedAssetIdx] && (
             <View style={styles.collapsibleSummary}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={[styles.assetDot, { backgroundColor: enhancedAssets[selectedAssetIdx]?.color || '#FFD700' }]} />
+                {enhancedAssets[selectedAssetIdx]?.symbol === 'BTC' ? (
+                  <View style={styles.assetIconCircleBtc}>
+                    <MaterialCommunityIcons name="currency-btc" size={16} color="#0B0B0B" />
+                  </View>
+                ) : enhancedAssets[selectedAssetIdx]?.symbol === 'ETH' ? (
+                  <View style={styles.assetIconCircleEth}>
+                    <MaterialCommunityIcons name="ethereum" size={16} color="#FFFFFF" />
+                  </View>
+                ) : enhancedAssets[selectedAssetIdx]?.symbol === 'SOL' ? (
+                  <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.assetIconCircleSol}>
+                    <MaterialCommunityIcons name="alpha-s" size={14} color="#0B0B0B" />
+                  </LinearGradient>
+                ) : (
+                  <View style={[styles.assetDot, { backgroundColor: enhancedAssets[selectedAssetIdx]?.color || '#FFD700' }]} />
+                )}
                 <Text style={{ fontFamily: 'Sora-Bold', color: '#fff' }}>
                   {enhancedAssets[selectedAssetIdx]?.symbol}
                 </Text>
@@ -1611,12 +1625,32 @@ function _EnhancedCommitPhase({
                       )}
 
                       <View style={styles.assetHeaderEnhanced}>
-                        <View style={[styles.assetIconEnhanced, { backgroundColor: asset.color }]}>
-                          <Text style={styles.assetSymbolIconEnhanced}>{asset.symbol[0]}</Text>
-                        </View>
+                        {asset.symbol === 'BTC' ? (
+                          <View style={styles.assetIconCircleBtc}>
+                            <MaterialCommunityIcons name="currency-btc" size={16} color="#0B0B0B" />
+                          </View>
+                        ) : asset.symbol === 'ETH' ? (
+                          <View style={styles.assetIconCircleEth}>
+                            <MaterialCommunityIcons name="ethereum" size={16} color="#FFFFFF" />
+                          </View>
+                        ) : asset.symbol === 'SOL' ? (
+                          <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.assetIconCircleSol}>
+                            <MaterialCommunityIcons name="alpha-s" size={14} color="#0B0B0B" />
+                          </LinearGradient>
+                        ) : (
+                          <View style={[styles.assetIconEnhanced, { backgroundColor: asset.color }]}>
+                            <Text style={styles.assetSymbolIconEnhanced}>{asset.symbol[0]}</Text>
+                          </View>
+                        )}
                         <View style={styles.assetInfoEnhanced}>
                           <Text style={styles.assetSymbolEnhanced}>{asset.symbol}</Text>
                           <Text style={styles.assetNameEnhanced}>{asset.name}</Text>
+                        </View>
+                        <View style={styles.assetChipsRow}>
+                          <View style={styles.assetChip}> 
+                            <MaterialCommunityIcons name="account-group" size={10} color="#FFD700" />
+                            <Text style={styles.assetChipText}>{poolShare}%</Text>
+                          </View>
                         </View>
                         {isSelected && (
                           <Animated.View
@@ -2592,6 +2626,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: SPACING.sm,
   },
+  assetIconCircleBtc: {
+    width: isTablet ? 40 : 32,
+    height: isTablet ? 40 : 32,
+    borderRadius: isTablet ? 20 : 16,
+    backgroundColor: '#F7931A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)'
+  },
+  assetIconCircleEth: {
+    width: isTablet ? 40 : 32,
+    height: isTablet ? 40 : 32,
+    borderRadius: isTablet ? 20 : 16,
+    backgroundColor: '#627EEA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)'
+  },
+  assetIconCircleSol: {
+    width: isTablet ? 40 : 32,
+    height: isTablet ? 40 : 32,
+    borderRadius: isTablet ? 20 : 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)'
+  },
   assetInfoEnhanced: {
     flex: 1,
     justifyContent: 'center',
@@ -2609,6 +2675,27 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
     fontFamily: 'Inter-Regular',
     lineHeight: isTablet ? 16 : 14,
+  },
+  assetChipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  assetChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.4)',
+    backgroundColor: 'rgba(255,215,0,0.12)'
+  },
+  assetChipText: {
+    fontSize: 10,
+    color: '#FFD700',
+    fontFamily: 'Inter-SemiBold'
   },
   selectedIndicator: {
     position: 'absolute',
