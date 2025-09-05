@@ -266,13 +266,11 @@ function _EnhancedSettledPhase({
 
   const celebrationAnim = useRef(new Animated.Value(0)).current
   const winnerGlowAnim = useRef(new Animated.Value(0)).current
-  const leaderboardAnim = useRef(new Animated.Value(0)).current
 
   const claimButtonScaleAnim = useRef(new Animated.Value(1)).current
   const shareButtonPulseAnim = useRef(new Animated.Value(1)).current
   // Ref to capture only the winner announcement card
   const shareCaptureRef = useRef<View>(null)
-  const resultRowStaggerAnim = useRef(new Animated.Value(0)).current
   const confettiAnim = useRef(new Animated.Value(0)).current
   const sparkleAnim = useRef(new Animated.Value(0)).current
   // Congrats card animations
@@ -281,8 +279,7 @@ function _EnhancedSettledPhase({
 
   const animationRefs = useRef<Animated.CompositeAnimation[]>([])
 
-  const [showFullResults, setShowFullResults] = useState(false)
-  const [showDetailedAnalytics, setShowDetailedAnalytics] = useState(false)
+  // Analytics section removed
   const [reduceMotion, setReduceMotion] = useState(ANIMATION_REDUCE_MOTION)
 
   const lastHapticTime = useRef(0)
@@ -658,34 +655,7 @@ function _EnhancedSettledPhase({
     }
   }, [userPosition, isWinner, reduceMotion])
 
-  useEffect(() => {
-    if (showFullResults) {
-      const leaderboardAnimation = Animated.spring(leaderboardAnim, {
-        toValue: 1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      })
-
-      const staggerAnimation = Animated.stagger(
-        100,
-        assetPerformances.map((_: any, index: number) =>
-          Animated.timing(resultRowStaggerAnim, {
-            toValue: 1,
-            duration: 400,
-            delay: index * 50,
-            useNativeDriver: true,
-          }),
-        ),
-      )
-
-      animationRefs.current.push(leaderboardAnimation, staggerAnimation)
-      Animated.parallel([leaderboardAnimation, staggerAnimation]).start()
-    } else {
-      leaderboardAnim.setValue(0)
-      resultRowStaggerAnim.setValue(0)
-    }
-  }, [showFullResults, assetPerformances])
+  // Removed: full results animations
 
   useEffect(() => {
     setLocalClaimUpdate(false)
@@ -845,15 +815,9 @@ function _EnhancedSettledPhase({
     }
   }, [userPosition, raceResults, winnerAsset, race, formatValue, triggerHaptic])
 
-  const handleToggleResults = useCallback(() => {
-    triggerHaptic('selection')
-    setShowFullResults(!showFullResults)
-  }, [showFullResults, triggerHaptic])
+  // Removed: show results toggle
 
-  const handleToggleAnalytics = useCallback(() => {
-    triggerHaptic('selection')
-    setShowDetailedAnalytics(!showDetailedAnalytics)
-  }, [showDetailedAnalytics, triggerHaptic])
+  // Removed: analytics toggle
 
   return (
     <View style={styles.settledContainer}>
@@ -982,7 +946,13 @@ function _EnhancedSettledPhase({
                 {/* Asset badge for sharing */}
                 <View style={styles.assetBadgeLarge}>
                   <View style={styles.assetRingLarge} />
-                  <View style={[styles.assetDotLarge, { backgroundColor: userPosition?.asset.color }]} />
+                  {userPosition?.asset?.symbol === 'BTC' ? (
+                    <View style={styles.assetIconCircle}>
+                      <MaterialCommunityIcons name="currency-btc" size={18} color="#000" />
+                    </View>
+                  ) : (
+                    <View style={[styles.assetDotLarge, { backgroundColor: userPosition?.asset.color }]} />
+                  )}
                   <Text style={styles.assetBadgeText}>{userPosition?.asset.symbol}</Text>
                 </View>
               </View>
@@ -1081,6 +1051,29 @@ function _EnhancedSettledPhase({
                 ) : (
                   <>
                     <View style={styles.betSummaryDivider} />
+                    {/* Winner recap pill */}
+                    <View style={styles.loserInsights}>
+                      <View style={styles.winnerPill}>
+                        <MaterialCommunityIcons name="trophy" size={12} color="#0B0B0B" />
+                        <Text style={styles.winnerPillText}>
+                          Winner: {raceResults?.winnerAsset?.symbol} ({raceResults?.winnerAsset?.performance >= 0 ? '+' : ''}{typeof raceResults?.winnerAsset?.performance === 'number' && !isNaN(raceResults.winnerAsset.performance) ? raceResults?.winnerAsset?.performance?.toFixed(2) : '0.00'}%)
+                        </Text>
+                      </View>
+                      {/* Behind bar */}
+                      <View style={styles.gapBarContainer}>
+                        <Text style={styles.gapBarLabel}>Behind by {(Math.abs(userPosition?.performanceVsWinner || 0)).toFixed(2)}%</Text>
+                        <View style={styles.gapTrack}>
+                          <View
+                            style={[
+                              styles.gapFill,
+                              {
+                                width: `${Math.min(100, Math.max(0, (Math.abs(userPosition?.performanceVsWinner || 0) / 5) * 100))}%`,
+                              },
+                            ]}
+                          />
+                        </View>
+                      </View>
+                    </View>
                     <View style={styles.betSummaryRow}>
                       <View style={styles.betSummaryLabelWithIcon}>
                         <MaterialCommunityIcons name="chart-line-variant" size={14} color="#FF4444" />
@@ -1176,7 +1169,7 @@ function _EnhancedSettledPhase({
                           </Animated.View>
                         )
                       })()
-                    : (() => {
+                  : (() => {
                         console.log(`❌ No action button rendered - isWinner: ${isWinner}, claimed: ${claimed}`)
                         return null
                       })()}
@@ -1210,47 +1203,32 @@ function _EnhancedSettledPhase({
                   </TouchableOpacity>
                 </Animated.View>
 
-                <View style={styles.toggleButtonsRow}>
-                  <TouchableOpacity
-                    style={[styles.detailsButton, { minHeight: MIN_TOUCH_TARGET }]}
-                    onPress={handleToggleResults}
-                    activeOpacity={0.8}
-                    accessibilityLabel={`${showFullResults ? 'Hide' : 'Show'} detailed race results and leaderboard`}
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: showFullResults }}
-                    accessibilityHint={`${showFullResults ? 'Collapses' : 'Expands'} the complete race results view`}
-                  >
-                    <Text style={styles.detailsButtonText}>{showFullResults ? 'Hide' : 'Show'} Results</Text>
-                    <MaterialCommunityIcons
-                      name={showFullResults ? 'chevron-up' : 'chevron-down'}
-                      size={16}
-                      color="#9945FF"
-                    />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.detailsButton} onPress={handleToggleAnalytics} activeOpacity={0.8}>
-                    <Text style={styles.detailsButtonText}>{showDetailedAnalytics ? 'Hide' : 'Show'} Analytics</Text>
-                    <MaterialCommunityIcons
-                      name={showDetailedAnalytics ? 'chart-line-variant' : 'chart-line'}
-                      size={16}
-                      color="#9945FF"
-                    />
-                  </TouchableOpacity>
-                </View>
+                {/* Removed show results toggle per request */}
               </View>
             </LinearGradient>
           </Animated.View>
         ) : (
           <View style={styles.spectatorCard}>
             <LinearGradient
-              colors={['rgba(255, 255, 255, 0.1)', 'rgba(255, 255, 255, 0.05)', 'rgba(0, 0, 0, 0.8)']}
+              colors={['rgba(153,69,255,0.25)', 'rgba(20,241,149,0.15)', 'rgba(0,0,0,0.9)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
               style={styles.spectatorGradient}
             >
+              {/* Spectator ribbon */}
+              <View style={styles.spectatorRibbon}>
+                <MaterialCommunityIcons name="eye-outline" size={12} color="#0B0B0B" />
+                <Text style={styles.spectatorRibbonText}>SPECTATOR</Text>
+              </View>
+
               <View style={styles.spectatorContent}>
-                <MaterialCommunityIcons name="podium-gold" size={32} color="rgba(255,255,255,0.7)" />
+                <View style={styles.spectatorHeroIcon}>
+                  <MaterialCommunityIcons name="podium-gold" size={32} color="#FFD700" />
+                  <View style={styles.spectatorHalo} />
+                </View>
                 <Text style={styles.spectatorTitle}>Race Spectator</Text>
                 <Text style={styles.spectatorDescription}>
-                  You watched this exciting {raceResults?.raceIntensity} race! Join the next one to compete for prizes.
+                  You watched this {raceResults?.raceIntensity} race. Next race starts soon — jump in!
                 </Text>
                 <View style={styles.spectatorStats}>
                   <View style={styles.spectatorStatRow}>
@@ -1266,166 +1244,22 @@ function _EnhancedSettledPhase({
                   <View style={styles.spectatorStatRow}>
                     <MaterialCommunityIcons name="chart-line" size={14} color="#9945FF" />
                     <Text style={styles.spectatorStatsText}>
-                      Performance Spread: {raceResults?.performanceSpread.toFixed(1)}%
+                      Spread: {raceResults?.performanceSpread.toFixed(1)}%
                     </Text>
                   </View>
                 </View>
 
-                <Animated.View
-                  style={{
-                    transform: [{ scale: shareButtonPulseAnim }],
-                  }}
-                >
-                  <TouchableOpacity
-                    style={styles.spectatorShareButton}
-                    onPress={handleShare}
-                    activeOpacity={0.8}
-                    accessibilityLabel="Share this exciting race"
-                    accessibilityRole="button"
-                  >
-                    <MaterialCommunityIcons name="share-variant" size={16} color="#9945FF" />
-                    <Text style={styles.spectatorShareButtonText}>Share This Epic Race</Text>
-                  </TouchableOpacity>
-                </Animated.View>
+                
+
+                
               </View>
             </LinearGradient>
           </View>
         )}
 
-        {showFullResults && (
-          <Animated.View
-            style={[
-              styles.fullResultsSection,
-              {
-                opacity: leaderboardAnim,
-                transform: [
-                  {
-                    translateY: leaderboardAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [20, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <LinearGradient
-              colors={['rgba(0, 0, 0, 0.9)', 'rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.8)']}
-              style={styles.fullResultsCard}
-            >
-              <Text style={styles.fullResultsTitle}>Complete Race Results</Text>
+        
 
-              {assetPerformances.map((asset: any, position: number) => {
-                const rank = position + 1
-                const isWinnerAsset = raceResults?.winnerAssets.some((w: any) => w.index === asset.index)
-
-                return (
-                  <Animated.View
-                    key={asset.index}
-                    style={[
-                      styles.resultRow,
-                      {
-                        opacity: resultRowStaggerAnim,
-                        transform: [
-                          {
-                            translateX: resultRowStaggerAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [50, 0],
-                            }),
-                          },
-                        ],
-                      },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.resultRank,
-                        {
-                          backgroundColor:
-                            rank === 1
-                              ? '#FFD700'
-                              : rank === 2
-                                ? '#C0C0C0'
-                                : rank === 3
-                                  ? '#CD7F32'
-                                  : 'rgba(255,255,255,0.2)',
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.resultRankText, { color: rank <= 3 ? '#000' : '#fff' }]}>#{rank}</Text>
-                    </View>
-
-                    <View style={styles.resultAssetInfo}>
-                      <View style={[styles.assetDotSmall, { backgroundColor: asset.color }]} />
-                      <View style={styles.assetTextInfo}>
-                        <Text style={styles.resultAssetSymbol}>{asset.symbol}</Text>
-                        <Text style={styles.resultAssetName}>{asset.name}</Text>
-                      </View>
-                      {isWinnerAsset && <MaterialCommunityIcons name="crown" size={14} color="#FFD700" />}
-                    </View>
-
-                    <View style={styles.resultStats}>
-                      <Text
-                        style={[styles.resultPerformance, { color: asset.performance >= 0 ? '#00FF88' : '#FF4444' }]}
-                      >
-                        {asset.performance >= 0 ? '+' : ''}
-                        {typeof asset.performance === 'number' && !isNaN(asset.performance)
-                          ? asset.performance.toFixed(2)
-                          : '0.00'}
-                        %
-                      </Text>
-                      <Text style={styles.resultPoolShare}>{asset.poolShare.toFixed(1)}% pool</Text>
-                    </View>
-                  </Animated.View>
-                )
-              })}
-            </LinearGradient>
-          </Animated.View>
-        )}
-
-        {showDetailedAnalytics && (
-          <View style={styles.analyticsSection}>
-            <LinearGradient
-              colors={['rgba(0, 0, 0, 0.9)', 'rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.9)']}
-              style={styles.analyticsCard}
-            >
-              <Text style={styles.analyticsTitle}>Race Analytics</Text>
-
-              <View style={styles.analyticsGrid}>
-                <View style={styles.analyticsItem}>
-                  <MaterialCommunityIcons name="chart-line" size={20} color="#14F195" />
-                  <Text style={styles.analyticsValue}>{raceResults?.performanceSpread.toFixed(1)}%</Text>
-                  <Text style={styles.analyticsLabel}>Performance Spread</Text>
-                </View>
-
-                <View style={styles.analyticsItem}>
-                  <MaterialCommunityIcons name="trending-up" size={20} color="#FFD700" />
-                  <Text style={styles.analyticsValue}>{raceResults?.avgPerformance.toFixed(2)}%</Text>
-                  <Text style={styles.analyticsLabel}>Average Performance</Text>
-                </View>
-
-                <View style={styles.analyticsItem}>
-                  <MaterialCommunityIcons name="fire" size={20} color="#FF6B6B" />
-                  <Text
-                    style={[
-                      styles.analyticsValue,
-                      { color: raceResults?.raceIntensity === 'extreme' ? '#FF4444' : '#00FF88' },
-                    ]}
-                  >
-                    {raceResults?.raceIntensity.toUpperCase()}
-                  </Text>
-                  <Text style={styles.analyticsLabel}>Race Intensity</Text>
-                </View>
-
-                <View style={styles.analyticsItem}>
-                  <MaterialCommunityIcons name="account-group" size={20} color="#9945FF" />
-                  <Text style={styles.analyticsValue}>{race?.participantCount || 0}</Text>
-                  <Text style={styles.analyticsLabel}>Total Racers</Text>
-                </View>
-              </View>
-            </LinearGradient>
-          </View>
-        )}
+        
 
         <View style={styles.nextRaceSection}>
           <LinearGradient
@@ -1631,6 +1465,44 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 8,
   },
+  loserInsights: { gap: 8 },
+  winnerPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.15)',
+  },
+  winnerPillText: {
+    fontSize: 10,
+    color: '#0B0B0B',
+    fontFamily: 'Inter-SemiBold',
+  },
+  gapBarContainer: {
+    marginTop: 4,
+  },
+  gapBarLabel: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 4,
+    fontFamily: 'Inter-Regular',
+  },
+  gapTrack: {
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  gapFill: {
+    height: '100%',
+    backgroundColor: '#FF4444',
+    borderRadius: 3,
+  },
   congratsRibbon: {
     position: 'absolute',
     top: 12,
@@ -1679,6 +1551,16 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
+  },
+  assetIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F7931A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)',
   },
   assetBadgeText: {
     position: 'absolute',
@@ -1876,56 +1758,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
     fontFamily: 'Inter-SemiBold',
   },
+  
 
-  fullResultsSection: {
-    marginBottom: 20,
-    marginHorizontal: 20,
-  },
-  fullResultsCard: {
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  fullResultsTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 16,
-    textAlign: 'center',
-    fontFamily: 'Sora-Bold',
-  },
-  resultRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-  },
-  resultRank: {
-    width: 40,
-  },
-  resultRankText: {
-    fontSize: 14,
-    fontWeight: '700',
-    fontFamily: 'Sora-Bold',
-  },
-  resultAssetInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  resultAssetSymbol: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    fontFamily: 'Inter-SemiBold',
-  },
-  resultPerformance: {
-    fontSize: 14,
-    fontWeight: '700',
-    fontFamily: 'Inter-SemiBold',
-  },
+  
 
   nextRaceSection: {
     marginBottom: 20,
@@ -2020,10 +1855,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
   },
 
-  toggleButtonsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  
 
   shareResultsButton: {
     flexDirection: 'row',
@@ -2054,8 +1886,35 @@ const styles = StyleSheet.create({
   spectatorGradient: {
     padding: 20,
   },
+  spectatorRibbon: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFD700',
+    borderRadius: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.15)'
+  },
+  spectatorRibbonText: {
+    fontSize: 10,
+    color: '#0B0B0B',
+    fontFamily: 'Inter-SemiBold'
+  },
   spectatorContent: {
     alignItems: 'center',
+  },
+  spectatorHeroIcon: { position: 'relative', alignItems: 'center', justifyContent: 'center' },
+  spectatorHalo: {
+    position: 'absolute',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(255,215,0,0.12)'
   },
   spectatorTitle: {
     fontSize: 18,
@@ -2091,63 +1950,8 @@ const styles = StyleSheet.create({
   assetTextInfo: {
     marginLeft: 8,
   },
-  resultAssetName: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.6)',
-    fontFamily: 'Inter-Regular',
-  },
-  resultStats: {
-    alignItems: 'flex-end',
-  },
-  resultPoolShare: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.6)',
-    marginTop: 2,
-    fontFamily: 'Inter-Regular',
-  },
 
-  analyticsSection: {
-    marginBottom: 20,
-    marginHorizontal: 20,
-  },
-  analyticsCard: {
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  analyticsTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 16,
-    textAlign: 'center',
-    fontFamily: 'Sora-Bold',
-  },
-  analyticsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    gap: 16,
-  },
-  analyticsItem: {
-    alignItems: 'center',
-    minWidth: '40%',
-  },
-  analyticsValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    marginTop: 8,
-    marginBottom: 4,
-    fontFamily: 'Inter-SemiBold',
-  },
-  analyticsLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.7)',
-    textAlign: 'center',
-    fontFamily: 'Inter-Regular',
-  },
+  
 
   winnerShareButton: {
     position: 'absolute',
