@@ -947,9 +947,17 @@ function _EnhancedSettledPhase({
                 <View style={styles.assetBadgeLarge}>
                   <View style={styles.assetRingLarge} />
                   {userPosition?.asset?.symbol === 'BTC' ? (
-                    <View style={styles.assetIconCircle}>
+                    <View style={styles.assetIconCircleBtc}>
                       <MaterialCommunityIcons name="currency-btc" size={18} color="#000" />
                     </View>
+                  ) : userPosition?.asset?.symbol === 'ETH' ? (
+                    <View style={styles.assetIconCircleEth}>
+                      <MaterialCommunityIcons name="ethereum" size={18} color="#fff" />
+                    </View>
+                  ) : userPosition?.asset?.symbol === 'SOL' ? (
+                    <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.assetIconCircleSol}>
+                      <MaterialCommunityIcons name="alpha-s" size={16} color="#0B0B0B" />
+                    </LinearGradient>
                   ) : (
                     <View style={[styles.assetDotLarge, { backgroundColor: userPosition?.asset.color }]} />
                   )}
@@ -1552,11 +1560,30 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
   },
-  assetIconCircle: {
+  assetIconCircleBtc: {
     width: 28,
     height: 28,
     borderRadius: 14,
     backgroundColor: '#F7931A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)',
+  },
+  assetIconCircleEth: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#627EEA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)',
+  },
+  assetIconCircleSol: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

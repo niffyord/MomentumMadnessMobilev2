@@ -1019,13 +1019,30 @@ export function DemoFeature() {
           )}
 
           {race && (
-            <LinearGradient colors={['rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.3)']} style={styles.raceInfoBanner}>
+            <LinearGradient colors={['rgba(0, 0, 0, 0.7)', 'rgba(0, 0, 0, 0.4)']} style={styles.raceInfoBanner}>
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.raceInfoShine,
+                  { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-160, 260] }) }, { rotate: '-18deg' }] },
+                ]}
+              />
               <View style={styles.raceInfoLeft}>
-                <Text style={styles.raceNumber}>RACE #{race.raceId}</Text>
+                <View style={styles.raceInfoTitleRow}>
+                  <Text style={styles.raceNumber}>RACE #{race.raceId}</Text>
+                  <View style={[styles.racePhaseChip, { borderColor: phaseConfig.color }]}> 
+                    <MaterialCommunityIcons name="timer-outline" size={12} color={phaseConfig.color} />
+                    <Text style={[styles.racePhaseChipText, { color: phaseConfig.color }]}>{phaseConfig.label}</Text>
+                  </View>
+                </View>
                 <Text style={styles.raceDescription}>Momentum Madness</Text>
               </View>
               <View style={styles.raceInfoRight}>
-                <MaterialCommunityIcons name="lightning-bolt" size={24} color={phaseConfig.accentColor} />
+                <LinearGradient colors={[phaseConfig.color, phaseConfig.accentColor]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.raceIconBadge}>
+                  <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                    <MaterialCommunityIcons name="lightning-bolt" size={20} color="#0B0B0B" />
+                  </Animated.View>
+                </LinearGradient>
               </View>
             </LinearGradient>
           )}
@@ -1237,16 +1254,32 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
   },
   raceInfoBanner: {
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  raceInfoShine: {
+    position: 'absolute',
+    top: -40,
+    left: -120,
+    width: 180,
+    height: 160,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 20,
   },
   raceInfoLeft: {
     flex: 1,
+  },
+  raceInfoTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   raceNumber: {
     fontSize: 16,
@@ -1260,8 +1293,31 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontFamily: 'Inter-Regular',
   },
+  racePhaseChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)'
+  },
+  racePhaseChipText: {
+    fontSize: 10,
+    fontFamily: 'Inter-SemiBold',
+  },
   raceInfoRight: {
     marginLeft: 16,
+  },
+  raceIconBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)'
   },
   countdownSection: {
     marginHorizontal: isTablet ? SPACING.xxl : SPACING.xl,

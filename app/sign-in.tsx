@@ -75,6 +75,7 @@ export default function SignIn() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const speedLinesAnim = useRef(new Animated.Value(0)).current;
   const mysteryPulseAnim = useRef(new Animated.Value(1)).current;
+  const buttonShineAnim = useRef(new Animated.Value(0)).current;
 
   
   useEffect(() => {
@@ -182,6 +183,20 @@ export default function SignIn() {
       pulseLoop.start();
       return () => pulseLoop.stop();
     }
+  }, [isAccessibleMode]);
+
+  // Button shine loop for the primary CTA
+  useEffect(() => {
+    if (isAccessibleMode) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(buttonShineAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+        Animated.timing(buttonShineAnim, { toValue: 0, duration: 0, useNativeDriver: true }),
+        Animated.delay(1200),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
   }, [isAccessibleMode]);
 
   
@@ -541,24 +556,40 @@ export default function SignIn() {
             >
               <LinearGradient
                 colors={loadingState !== 'idle' 
-                  ? ['#666', '#888', '#666']
-                  : ['#FFD700', '#FF6B00', '#9945FF', '#14F195']
+                  ? ['#3A3A3A', '#4A4A4A']
+                  : ['#F2C94C', '#DFA944']
                 }
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 0}}
                 style={styles.raceButtonGradient}
               >
+                {/* CTA shine sweep */}
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.ctaShine,
+                    {
+                      opacity: loadingState === 'idle' ? 1 : 0,
+                      transform: [
+                        {
+                          translateX: buttonShineAnim.interpolate({ inputRange: [0, 1], outputRange: [-120, 220] }),
+                        },
+                        { rotate: '-18deg' },
+                      ],
+                    },
+                  ]}
+                />
                 <View style={styles.raceButtonContent}>
                   {loadingState !== 'idle' ? (
                     <ActivityIndicator size="small" color="#FFD700" />
                   ) : (
-                    <MaterialCommunityIcons name="rocket-launch" size={24} color="#000" />
+                    <MaterialCommunityIcons name="rocket-launch" size={24} color="#0B0B0B" />
                   )}
                   <Text style={styles.raceButtonText}>
                     {getLoadingMessage()}
                   </Text>
                   {loadingState === 'idle' && (
-                    <MaterialCommunityIcons name="chevron-right" size={24} color="#000" />
+                    <MaterialCommunityIcons name="chevron-right" size={24} color="#0B0B0B" />
                   )}
                 </View>
               </LinearGradient>
@@ -597,18 +628,33 @@ export default function SignIn() {
               accessibilityRole="button"
             >
               <LinearGradient
-                colors={['#9945FF', '#14F195', '#FFD700', '#FF6B00']}
+                colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.03)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.mysteryButtonGradient}
               >
                 <View style={styles.mysteryButtonContent}>
                   <View style={styles.mysteryIconContainer}>
-                    <MaterialCommunityIcons name="eye-outline" size={24} color="#000" />
+                    <MaterialCommunityIcons name="eye-outline" size={24} color="#EAEAEA" />
                   </View>
                   <Text style={styles.mysteryText}>What's the secret?</Text>
                   <View style={styles.mysteryArrow}>
-                    <MaterialCommunityIcons name="arrow-right" size={24} color="#000" />
+                    <MaterialCommunityIcons name="arrow-right" size={24} color="#EAEAEA" />
+                  </View>
+                </View>
+                {/* feature chips */}
+                <View style={styles.featureChipsRow}>
+                  <View style={[styles.featureChip, { borderColor: 'rgba(153,69,255,0.5)', backgroundColor: 'rgba(153,69,255,0.15)' }]}>
+                    <MaterialCommunityIcons name="shield-check" size={12} color="#9945FF" />
+                    <Text style={styles.featureChipText}>Secure</Text>
+                  </View>
+                  <View style={[styles.featureChip, { borderColor: 'rgba(20,241,149,0.5)', backgroundColor: 'rgba(20,241,149,0.15)' }]}>
+                    <MaterialCommunityIcons name="lightning-bolt" size={12} color="#14F195" />
+                    <Text style={styles.featureChipText}>Fast</Text>
+                  </View>
+                  <View style={[styles.featureChip, { borderColor: 'rgba(255,215,0,0.5)', backgroundColor: 'rgba(255,215,0,0.15)' }]}>
+                    <MaterialCommunityIcons name="wallet" size={12} color="#FFD700" />
+                    <Text style={styles.featureChipText}>Wallet Ready</Text>
                   </View>
                 </View>
               </LinearGradient>
@@ -850,13 +896,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   raceButton: {
-    borderRadius: 32,
+    borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#FFD700',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 10,
   },
   raceButtonLoading: {
     shadowOpacity: 0.2,
@@ -864,6 +910,17 @@ const styles = StyleSheet.create({
   raceButtonGradient: {
     paddingVertical: 18,
     paddingHorizontal: 24,
+    overflow: 'hidden',
+    borderRadius: 16,
+  },
+  ctaShine: {
+    position: 'absolute',
+    top: -20,
+    left: -120,
+    width: 180,
+    height: 120,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 24,
   },
   raceButtonContent: {
     flexDirection: 'row',
@@ -939,19 +996,42 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 8,
   },
+  featureChipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  featureChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  featureChipText: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.9)',
+    fontFamily: 'Inter-SemiBold',
+  },
   mysteryButton: {
-    borderRadius: 32,
+    borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#9945FF',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
     marginBottom: 0,
   },
   mysteryButtonGradient: {
-    paddingVertical: 20,
-    paddingHorizontal: 28,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
   },
   mysteryButtonContent: {
     flexDirection: 'row',
@@ -960,27 +1040,31 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   mysteryIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   mysteryText: {
     fontFamily: 'Sora-Bold',
     fontSize: 18,
-    color: '#000',
+    color: '#FFFFFF',
     fontWeight: '800',
     letterSpacing: 0.6,
     textAlign: 'center',
     flex: 1,
   },
   mysteryArrow: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
