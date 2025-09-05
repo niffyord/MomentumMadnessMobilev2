@@ -955,9 +955,9 @@ function _EnhancedSettledPhase({
                       <MaterialCommunityIcons name="ethereum" size={18} color="#fff" />
                     </View>
                   ) : userPosition?.asset?.symbol === 'SOL' ? (
-                    <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.assetIconCircleSol}>
-                      <MaterialCommunityIcons name="alpha-s" size={16} color="#0B0B0B" />
-                    </LinearGradient>
+                    <View style={styles.assetIconCircleSol}>
+                      <SolanaLogo size={18} />
+                    </View>
                   ) : (
                     <View style={[styles.assetDotLarge, { backgroundColor: userPosition?.asset.color }]} />
                   )}

@@ -1581,9 +1581,9 @@ function _EnhancedCommitPhase({
                     <MaterialCommunityIcons name="ethereum" size={16} color="#FFFFFF" />
                   </View>
                 ) : enhancedAssets[selectedAssetIdx]?.symbol === 'SOL' ? (
-                  <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.assetIconCircleSol}>
-                    <MaterialCommunityIcons name="alpha-s" size={14} color="#0B0B0B" />
-                  </LinearGradient>
+                  <View style={styles.assetIconCircleSol}>
+                    <SolanaLogo size={16} />
+                  </View>
                 ) : (
                   <View style={[styles.assetDot, { backgroundColor: enhancedAssets[selectedAssetIdx]?.color || '#FFD700' }]} />
                 )}
@@ -1672,9 +1672,9 @@ function _EnhancedCommitPhase({
                             <MaterialCommunityIcons name="ethereum" size={16} color="#FFFFFF" />
                           </View>
                         ) : asset.symbol === 'SOL' ? (
-                          <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.assetIconCircleSol}>
-                            <MaterialCommunityIcons name="alpha-s" size={14} color="#0B0B0B" />
-                          </LinearGradient>
+                          <View style={styles.assetIconCircleSol}>
+                            <SolanaLogo size={isTablet ? 20 : 16} />
+                          </View>
                         ) : (
                           <View style={[styles.assetIconEnhanced, { backgroundColor: asset.color }]}>
                             <Text style={styles.assetSymbolIconEnhanced}>{asset.symbol[0]}</Text>

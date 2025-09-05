@@ -25,6 +25,7 @@ import {
 } from 'react-native'
 
 import { MaterialCommunityIcons } from '@expo/vector-icons'
+import SolanaLogo from '@/components/ui/SolanaLogo'
 
 import { useRaceStore } from '../../store/useRaceStore'
 
@@ -1166,18 +1167,32 @@ function _EnhancedPerformancePhase({
             <View style={styles.ultraThinUserContent}>
               {/* Left: Asset & Position Info */}
               <View style={styles.ultraThinLeftSection}>
-                <View style={styles.assetInfoRow}>
+              <View style={styles.assetInfoRow}>
+                {userPosition.asset.symbol === 'BTC' ? (
+                  <View style={[styles.assetIconCircleBtc, { width: 24, height: 24, borderRadius: 12 }]}>
+                    <MaterialCommunityIcons name="currency-btc" size={14} color="#0B0B0B" />
+                  </View>
+                ) : userPosition.asset.symbol === 'ETH' ? (
+                  <View style={[styles.assetIconCircleEth, { width: 24, height: 24, borderRadius: 12 }]}>
+                    <MaterialCommunityIcons name="ethereum" size={14} color="#FFFFFF" />
+                  </View>
+                ) : userPosition.asset.symbol === 'SOL' ? (
+                  <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.assetIconCircleSol, { width: 24, height: 24, borderRadius: 12 }]}>
+                    <MaterialCommunityIcons name="alpha-s" size={12} color="#0B0B0B" />
+                  </LinearGradient>
+                ) : (
                   <View style={styles.assetDotWrapper}>
                     <Animated.View style={[styles.assetDotRing, { transform: [{ scale: pulseAnim }] }]} />
                     <View style={[styles.assetDotSmall, { backgroundColor: userPosition.asset.color }]} />
                   </View>
-                  <Text style={styles.compactAssetSymbol}>{userPosition.asset.symbol}</Text>
-                  <MaterialCommunityIcons 
-                    name={userPosition.isCurrentlyWinning ? "trophy" : "account-star"} 
-                    size={12} 
-                    color={userPosition.profitLoss > 0 ? '#00FF88' : '#FF4444'} 
-                  />
-                </View>
+                )}
+                <Text style={styles.compactAssetSymbol}>{userPosition.asset.symbol}</Text>
+                <MaterialCommunityIcons 
+                  name={userPosition.isCurrentlyWinning ? "trophy" : "account-star"} 
+                  size={12} 
+                  color={userPosition.profitLoss > 0 ? '#00FF88' : '#FF4444'} 
+                />
+              </View>
                 <Text style={styles.ultraThinPositionText}>Your Position</Text>
               </View>
 
@@ -1429,7 +1444,21 @@ function _EnhancedPerformancePhase({
 
                   <View style={styles.mainInfoRow}>
                     <View style={styles.assetInfo}>
-                      <View style={[styles.assetDot, { backgroundColor: asset.color }]} />
+                      {asset.symbol === 'BTC' ? (
+                        <View style={[styles.assetIconCircleBtc, { width: 20, height: 20, borderRadius: 10 }]}>
+                          <MaterialCommunityIcons name="currency-btc" size={12} color="#0B0B0B" />
+                        </View>
+                      ) : asset.symbol === 'ETH' ? (
+                        <View style={[styles.assetIconCircleEth, { width: 20, height: 20, borderRadius: 10 }]}>
+                          <MaterialCommunityIcons name="ethereum" size={12} color="#FFFFFF" />
+                        </View>
+                      ) : asset.symbol === 'SOL' ? (
+                        <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.assetIconCircleSol, { width: 20, height: 20, borderRadius: 10 }]}>
+                          <MaterialCommunityIcons name="alpha-s" size={10} color="#0B0B0B" />
+                        </LinearGradient>
+                      ) : (
+                        <View style={[styles.assetDot, { backgroundColor: asset.color }]} />
+                      )}
                       <View style={styles.nameSection}>
                         <View style={styles.symbolRow}>
                           <Text style={styles.assetSymbol}>{asset.symbol}</Text>
@@ -2271,6 +2300,29 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     marginRight: 8,
+  },
+  assetIconCircleBtc: {
+    backgroundColor: '#F7931A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)'
+  },
+  assetIconCircleEth: {
+    backgroundColor: '#627EEA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)'
+  },
+  assetIconCircleSol: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)'
   },
   assetRaceSymbol: {
     fontSize: 16,
