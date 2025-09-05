@@ -1076,9 +1076,27 @@ function _EnhancedCommitPhase({
       {userBet && race && (
         <View style={styles.successSection}>
           <LinearGradient
-            colors={['rgba(0, 255, 136, 0.3)', 'rgba(255, 215, 0, 0.2)', 'rgba(0, 255, 136, 0.1)']}
+            colors={['rgba(10,10,10,0.9)', 'rgba(0,0,0,0.75)', 'rgba(10,10,10,0.9)']}
             style={styles.successCard}
           >
+            {/* subtle shimmer */}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.successShine,
+                {
+                  transform: [
+                    {
+                      translateX: successCelebrationAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-200, 240],
+                      }),
+                    },
+                    { rotate: '-18deg' },
+                  ],
+                },
+              ]}
+            />
             <Animated.View
               style={[
                 styles.successIconContainer,
@@ -1098,18 +1116,34 @@ function _EnhancedCommitPhase({
                 },
               ]}
             >
-              <LinearGradient colors={['#00FF88', '#FFD700']} style={styles.successIconGradient}>
-                <MaterialCommunityIcons name="check-bold" size={24} color="#000" />
+              <LinearGradient colors={['#F2C94C', '#DFA944']} style={styles.successIconGradient}>
+                <MaterialCommunityIcons name="trophy" size={28} color="#0B0B0B" />
               </LinearGradient>
             </Animated.View>
 
             <View style={styles.successTitleContainer}>
-              <MaterialCommunityIcons name="target" size={20} color="#00FF88" />
+              <MaterialCommunityIcons name="target" size={20} color="#F2C94C" />
               <Text style={styles.successTitle}>You're In The Race!</Text>
             </View>
-            <Text style={styles.successSubtitle}>
-              ${(userBet.amount / 1_000_000).toFixed(2)} bet placed on {race.assets[userBet.assetIdx]?.symbol}
-            </Text>
+            <View style={styles.successBadgesRow}>
+              {race.assets[userBet.assetIdx]?.symbol === 'BTC' ? (
+                <View style={styles.assetIconCircleBtc}><MaterialCommunityIcons name="currency-btc" size={14} color="#0B0B0B" /></View>
+              ) : race.assets[userBet.assetIdx]?.symbol === 'ETH' ? (
+                <View style={styles.assetIconCircleEth}><MaterialCommunityIcons name="ethereum" size={14} color="#FFFFFF" /></View>
+              ) : race.assets[userBet.assetIdx]?.symbol === 'SOL' ? (
+                <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.assetIconCircleSol}>
+                  <MaterialCommunityIcons name="alpha-s" size={12} color="#0B0B0B" />
+                </LinearGradient>
+              ) : null}
+              <View style={[styles.successChip, { borderColor: 'rgba(242,201,76,0.5)', backgroundColor: 'rgba(242,201,76,0.15)' }]}>
+                <MaterialCommunityIcons name="check-decagram" size={12} color="#F2C94C" />
+                <Text style={styles.successChipText}>Bet Placed</Text>
+              </View>
+              <View style={[styles.successChip, { borderColor: 'rgba(20,241,149,0.5)', backgroundColor: 'rgba(20,241,149,0.12)' }]}>
+                <MaterialCommunityIcons name="cash" size={12} color="#14F195" />
+                <Text style={styles.successChipText}>${(userBet.amount / 1_000_000).toFixed(2)} USDC</Text>
+              </View>
+            </View>
 
             <Animated.View
               style={[
@@ -1155,9 +1189,10 @@ function _EnhancedCommitPhase({
                 accessibilityHint="Opens interface to add more money to your existing bet"
               >
                 <LinearGradient
-                  colors={['rgba(153, 69, 255, 0.3)', 'rgba(20, 241, 149, 0.2)']}
+                  colors={['#9945FF', '#14F195']}
                   style={styles.increaseBetGradient}
                 >
+                  <View pointerEvents="none" style={styles.increaseBetShine} />
                   <MaterialCommunityIcons name="plus-circle" size={18} color="#9945FF" />
                   <Text style={styles.increaseBetText}>Increase Your Bet</Text>
                   <MaterialCommunityIcons name="trending-up" size={16} color="#14F195" />
@@ -1446,11 +1481,14 @@ function _EnhancedCommitPhase({
                             Math.max(0, MAX_BET - (userBet ? userBet.amount / 1_000_000 : 0)),
                           )) &&
                       !isPlacingBet
-                        ? ['#9945FF', '#14F195']
-                        : ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']
+                        ? ['#F2C94C', '#DFA944']
+                        : ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.03)']
                     }
                     style={styles.confirmAdditionalBetGradient}
                   >
+                    {!(isPlacingBet) && (
+                      <View pointerEvents="none" style={styles.confirmBetShine} />
+                    )}
                     {isPlacingBet ? (
                       <View style={styles.loadingContainerEnhanced}>
                         <ActivityIndicator size="small" color="#000" />
@@ -1458,7 +1496,7 @@ function _EnhancedCommitPhase({
                       </View>
                     ) : (
                       <View style={styles.betButtonContentEnhanced}>
-                        <MaterialCommunityIcons name="plus-circle" size={18} color="#000" />
+                        <MaterialCommunityIcons name="plus-circle" size={18} color="#0B0B0B" />
                         <Text style={styles.confirmAdditionalBetText}>ADD ${additionalBetAmount || '0.00'} TO BET</Text>
                       </View>
                     )}
@@ -2350,27 +2388,38 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 136, 0.3)',
-    shadowColor: 'rgba(0, 255, 136, 0.3)',
-    shadowOpacity: 0.6,
+    borderColor: 'rgba(255,255,255,0.12)',
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
     shadowRadius: 12,
-    elevation: 8,
+    elevation: 10,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  successShine: {
+    position: 'absolute',
+    top: -40,
+    left: -160,
+    width: 220,
+    height: 160,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 24,
   },
   successIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   successIconGradient: {
-    width: 64,
-    height: 64,
+    width: 72,
+    height: 72,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 32,
+    borderRadius: 36,
   },
   successTitleContainer: {
     flexDirection: 'row',
@@ -2389,6 +2438,26 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     marginBottom: 16,
     fontFamily: 'Inter-Regular',
+  },
+  successBadgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  successChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  successChipText: {
+    fontSize: 10,
+    color: '#FFFFFF',
+    fontFamily: 'Inter-SemiBold',
   },
   raceInfoMini: {
     flexDirection: 'row',
@@ -3486,12 +3555,23 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 30,
     gap: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   increaseBetText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#000',
     fontFamily: 'Sora-Bold',
+  },
+  increaseBetShine: {
+    position: 'absolute',
+    top: -12,
+    left: -120,
+    width: 180,
+    height: 90,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 24,
   },
   increaseBetPanel: {
     borderRadius: 16,
@@ -3658,6 +3738,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 56,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  confirmBetShine: {
+    position: 'absolute',
+    top: -16,
+    left: -120,
+    width: 180,
+    height: 100,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 24,
   },
   confirmAdditionalBetText: {
     fontSize: 16,
