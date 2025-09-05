@@ -1858,7 +1858,9 @@ function _EnhancedCommitPhase({
                 ]}
               >
                 <View style={styles.currencyContainer}>
-                  <Text style={styles.currencySymbolEnhanced}>$</Text>
+                  <View style={styles.currencyIconCircle}>
+                    <MaterialCommunityIcons name="currency-usd" size={16} color="#0B0B0B" />
+                  </View>
                   <Text style={styles.currencyLabel}>USDC</Text>
                 </View>
                 <TextInput
@@ -2172,11 +2174,15 @@ function _EnhancedCommitPhase({
                     <LinearGradient
                       colors={
                         canPlaceBet && !isPlacingBet
-                          ? ['#9945FF', '#14F195']
-                          : ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']
+                          ? ['#F2C94C', '#DFA944']
+                          : ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.03)']
                       }
                       style={styles.placeBetGradientEnhanced}
                     >
+                      {/* Shine overlay */}
+                      {canPlaceBet && !isPlacingBet && (
+                        <View pointerEvents="none" style={styles.placeBetShine} />
+                      )}
                       {isPlacingBet ? (
                         <View style={styles.loadingContainerEnhanced}>
                           <ActivityIndicator size="small" color="#000" />
@@ -2879,22 +2885,27 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH_TARGET + 8,
   },
   currencyContainer: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
     marginRight: isTablet ? SPACING.md : SPACING.sm,
     paddingVertical: SPACING.xs,
   },
-  currencySymbolEnhanced: {
-    ...TYPOGRAPHY.title,
-    color: COLORS.secondary,
-    fontFamily: 'Sora-Bold',
-    fontWeight: '800',
+  currencyIconCircle: {
+    width: isTablet ? 28 : 24,
+    height: isTablet ? 28 : 24,
+    borderRadius: isTablet ? 14 : 12,
+    backgroundColor: '#F2C94C',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
   },
   currencyLabel: {
     ...TYPOGRAPHY.small,
     color: COLORS.text.tertiary,
     fontFamily: 'Inter-Regular',
-    marginTop: -2,
+    marginTop: 0,
   },
   betInputEnhanced: {
     flex: 1,
@@ -3098,6 +3109,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 56,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  placeBetShine: {
+    position: 'absolute',
+    top: -16,
+    left: -120,
+    width: 180,
+    height: 100,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 24,
   },
   betButtonContentEnhanced: {
     flexDirection: 'row',
