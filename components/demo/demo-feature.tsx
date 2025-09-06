@@ -720,7 +720,27 @@ export function DemoFeature() {
             <LinearGradient colors={['#9945FF', '#14F195']} style={styles.loadingTextGradient}>
               <Text style={styles.enhancedLoadingTitle}>MOMENTUM MADNESS</Text>
             </LinearGradient>
-            <Text style={styles.enhancedLoadingSubtitle}>Connecting to Race Server...</Text>
+            <Text style={styles.enhancedLoadingSubtitle}>
+              {isConnected ? 'Syncing race data…' : 'Connecting to race server…'}
+            </Text>
+
+            {/* Progressive status steps */}
+            <View style={{ marginTop: 8, gap: 6 }}>
+              {[
+                { label: 'Fetch current race', done: Boolean(race) },
+                { label: 'Open WebSocket', done: Boolean(isConnected) },
+                { label: 'Subscribe to price feed', done: Boolean(isConnected) },
+              ].map((s, i) => (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <MaterialCommunityIcons
+                    name={s.done ? 'check-circle' : 'progress-clock'}
+                    size={14}
+                    color={s.done ? '#14F195' : 'rgba(255,255,255,0.6)'}
+                  />
+                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter-SemiBold', fontSize: 12 }}>{s.label}</Text>
+                </View>
+              ))}
+            </View>
 
             <View style={styles.loadingDotsContainer}>
               {loadingDotsAnim.map((anim, index) => (
@@ -752,7 +772,7 @@ export function DemoFeature() {
             style={styles.enhancedRetryButton}
             onPress={() => {
               const playerAddress = account?.publicKey?.toString()
-              fetchCommitPhaseData(undefined, playerAddress)
+              fetchCommitPhaseData(undefined, playerAddress, false)
             }}
             accessibilityLabel="Retry connection to race server"
             accessibilityRole="button"
@@ -761,6 +781,23 @@ export function DemoFeature() {
               <MaterialCommunityIcons name="refresh" size={20} color="#000" />
               <Text style={styles.enhancedRetryText}>Retry Connection</Text>
               <MaterialCommunityIcons name="rocket-launch" size={16} color="#000" />
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Offline mode: try cached data / API without socket */}
+          <TouchableOpacity
+            style={[styles.enhancedRetryButton, { marginTop: 10 }]}
+            onPress={() => {
+              const playerAddress = account?.publicKey?.toString()
+              fetchCommitPhaseData(undefined, playerAddress, true)
+            }}
+            accessibilityLabel="Continue in offline mode"
+            accessibilityRole="button"
+          >
+            <LinearGradient colors={['#4B5563', '#9CA3AF']} style={styles.enhancedRetryGradient}>
+              <MaterialCommunityIcons name="cloud-off-outline" size={20} color="#000" />
+              <Text style={styles.enhancedRetryText}>Use Cached Data</Text>
+              <MaterialCommunityIcons name="arrow-right" size={16} color="#000" />
             </LinearGradient>
           </TouchableOpacity>
 
@@ -784,7 +821,9 @@ export function DemoFeature() {
                 },
               ]}
             />
-            <Text style={styles.connectionStatusText}>Establishing secure connection...</Text>
+            <Text style={styles.connectionStatusText}>
+              {isConnected ? 'Connected' : 'Establishing secure connection…'}
+            </Text>
           </View>
         </View>
 
