@@ -26,6 +26,7 @@ import {
 
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { PoolDonut } from '@/components/ui/PoolDonut'
+import SolanaLogo from '@/components/ui/SolanaLogo'
 import { PublicKey } from '@solana/web3.js'
 
 import { useRaceStore } from '../../store/useRaceStore'

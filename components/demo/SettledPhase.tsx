@@ -34,6 +34,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 
 import { useRaceStore } from '../../store/useRaceStore'
 import { useClaimPayout } from './use-claim-payout'
+import SolanaLogo from '@/components/ui/SolanaLogo'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 const isTablet = screenWidth >= 768
