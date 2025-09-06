@@ -28,39 +28,39 @@ export class ApiService {
   }
 
   private async request<T>(path: string, options?: RequestInit): Promise<RaceServiceResponse<T>> {
-    try {
-      const fullUrl = `${this.baseUrl}${path}`;
-      console.log(`🌐 API Request: ${fullUrl}`);
-      console.log(`🌐 Base URL: ${this.baseUrl}`);
-      
-      // Add an 8-second timeout so slow requests don’t block the UI forever
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const fullUrl = `${this.baseUrl}${path}`;
+    const attempt = async (timeoutMs: number): Promise<RaceServiceResponse<T>> => {
+      try {
+        console.log(`🌐 API Request: ${fullUrl} (timeout=${timeoutMs}ms)`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        const res = await fetch(fullUrl, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
 
-      const res = await fetch(fullUrl, { ...options, signal: controller.signal });
-      clearTimeout(timeoutId);
-      
-      // Handle non-JSON responses (e.g., HTML error pages)
-      const contentType = res.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await res.text();
-        console.error(`API returned non-JSON response: ${res.status} ${res.statusText}`, text);
-        return {
-          success: false,
-          error: `Server error: ${res.status} ${res.statusText}`,
-        } as RaceServiceResponse<T>;
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await res.text();
+          console.error(`API returned non-JSON response: ${res.status} ${res.statusText}`, text);
+          return { success: false, error: `Server error: ${res.status} ${res.statusText}` } as RaceServiceResponse<T>;
+        }
+
+        const result = await res.json();
+        console.log(`✅ API Success: ${fullUrl}`, result);
+        return result;
+      } catch (err) {
+        console.error(`❌ API attempt failed for ${fullUrl}:`, err);
+        return { success: false, error: err instanceof Error ? err.message : 'Request failed' } as RaceServiceResponse<T>;
       }
-      
-      const result = await res.json();
-      console.log(`✅ API Success: ${fullUrl}`, result);
-      return result;
-    } catch (error) {
-      console.error(`❌ API request failed for ${this.baseUrl}${path}:`, error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Request failed',
-      } as RaceServiceResponse<T>;
+    };
+
+    // First attempt: 15s. If aborted/network error, retry once with 25s.
+    const first = await attempt(15000);
+    if (first.success) return first;
+    if (String(first.error || '').toLowerCase().includes('abort')) {
+      const second = await attempt(25000);
+      return second;
     }
+    return first;
   }
 
   // Asset endpoints

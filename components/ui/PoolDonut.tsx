@@ -3,12 +3,15 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native'
 import Svg, { Circle } from 'react-native-svg'
 
 interface PoolDonutProps {
-  totalPoolUsd: number // already in USD
-  yourBetUsd: number // planned/entered bet in USD
+  totalPoolUsd: number // display context (e.g., winner or net pool)
+  yourBetUsd: number // planned/entered bet in USD (ignored if sharePct provided)
   title?: string
+  sharePct?: number // override share percentage (0..100). If provided, used instead of derived share
+  subLabel?: string // optional label under the percent (defaults to "Your Share")
+  poolLabel?: string // optional label for subtext before amount (defaults to "Pool")
 }
 
-export function PoolDonut({ totalPoolUsd, yourBetUsd, title = 'Pool Dynamics' }: PoolDonutProps) {
+export function PoolDonut({ totalPoolUsd, yourBetUsd, title = 'Pool Dynamics', sharePct, subLabel, poolLabel }: PoolDonutProps) {
   const size = 140
   const strokeBase = 14
   const radius = (size - strokeBase) / 2
@@ -19,9 +22,12 @@ export function PoolDonut({ totalPoolUsd, yourBetUsd, title = 'Pool Dynamics' }:
   const stroke = strokeBase * growthFactor
 
   const share = useMemo(() => {
+    if (typeof sharePct === 'number' && isFinite(sharePct)) {
+      return Math.max(0, Math.min(1, sharePct / 100))
+    }
     const total = totalPoolUsd + Math.max(0, yourBetUsd)
     return total > 0 ? Math.max(0, Math.min(1, yourBetUsd / total)) : 0
-  }, [totalPoolUsd, yourBetUsd])
+  }, [totalPoolUsd, yourBetUsd, sharePct])
 
   const animShare = useRef(new Animated.Value(share)).current
   const pulse = useRef(new Animated.Value(1)).current
@@ -70,8 +76,8 @@ export function PoolDonut({ totalPoolUsd, yourBetUsd, title = 'Pool Dynamics' }:
       </Animated.View>
       <View style={styles.centerOverlay} pointerEvents="none">
         <Text style={styles.centerValue}>{(share * 100).toFixed(1)}%</Text>
-        <Text style={styles.centerLabel}>Your Share</Text>
-        <Text style={styles.centerSub}>Pool {formatUsd(totalPoolUsd)}</Text>
+        <Text style={styles.centerLabel}>{subLabel || 'Your Share'}</Text>
+        <Text style={styles.centerSub}>{poolLabel || 'Pool'} {formatUsd(totalPoolUsd)}</Text>
       </View>
     </View>
   )

@@ -110,6 +110,22 @@ export default function SignIn() {
   // Fetch real on-chain backed stats via backend endpoint (one-time on mount)
   useEffect(() => {
     let cancelled = false;
+    const fallbackFromRace = async () => {
+      try {
+        const raceRes = await apiService.getCurrentRace();
+        if (raceRes?.success && raceRes.data && !cancelled) {
+          const r = raceRes.data as any;
+          setRacersOnline(Math.max(0, Math.round(r?.participantCount || 0)));
+          // Heuristic: if race started within last 24h, count as 1
+          const now = Math.floor(Date.now() / 1000);
+          const rtoday = r?.startTs && (now - r.startTs <= 86400) ? 1 : 0;
+          setRacesToday(rtoday);
+          // No event scan here; leave as 0
+          setPayout24h(0);
+        }
+      } catch {}
+    };
+
     (async () => {
       try {
         const res = await apiService.getGlobalStats();
@@ -117,9 +133,12 @@ export default function SignIn() {
           setRacersOnline(Math.max(0, Math.round(res.data.racersOnline)));
           setPayout24h(Math.max(0, Math.round(res.data.usdcPaid24h)));
           setRacesToday(Math.max(0, Math.round(res.data.racesToday)));
+        } else {
+          await fallbackFromRace();
         }
       } catch (_) {
-        // Ignore errors and keep graceful fallback values
+        // Fallback to race-derived stats if global endpoint fails/aborts
+        await fallbackFromRace();
       }
     })();
     return () => { cancelled = true; };

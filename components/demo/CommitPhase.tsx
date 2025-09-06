@@ -84,67 +84,59 @@ const calculatePotentialPayout = (
   betAmount: string,
   race: any,
   selectedAssetIdx: number,
-): { totalPayout: number; profit: number; riskWarning: string } => {
-  if (!betAmount || isNaN(parseFloat(betAmount))) {
-    return { totalPayout: 0, profit: 0, riskWarning: "Enter bet amount" }
+  existingUserMicro?: number | null,
+): {
+  totalPayout: number; // USDC
+  profit: number; // USDC
+  yourSharePct: number; // 0..100
+  fieldCut: number; // USDC
+  netPool: number; // USDC
+  feePct: number; // 0..100
+  winnerPool: number; // USDC
+  note: string;
+} => {
+  const amountUsd = parseFloat(betAmount || '0')
+  if (!isFinite(amountUsd) || amountUsd <= 0) {
+    return { totalPayout: 0, profit: 0, yourSharePct: 0, fieldCut: 0, netPool: 0, feePct: (race?.feeBps||0)/100, note: 'Enter bet amount' }
   }
 
-  const betAmountNum = parseFloat(betAmount)
-
-  // If race is already settled and has a payout ratio (shouldn't happen in commit phase)
-  if (race?.payoutRatio && race.payoutRatio > 0) {
-    const totalPayout = (betAmountNum * race.payoutRatio) / 1_000_000_000_000
-    const profit = Math.max(0, totalPayout - betAmountNum)
-    return { totalPayout, profit, riskWarning: "Race settled" }
+  const pools = race?.assetPools as number[] | undefined
+  const totalMicro = Number(race?.totalPool || 0)
+  const feeBps = Number(race?.feeBps || 500)
+  if (!pools || selectedAssetIdx < 0 || selectedAssetIdx >= pools.length || totalMicro <= 0) {
+    return { totalPayout: 0, profit: 0, yourSharePct: 0, fieldCut: 0, netPool: 0, feePct: feeBps/100, note: 'Waiting for pools…' }
   }
 
-  if (race?.totalPool && race?.assetPools && selectedAssetIdx >= 0 && selectedAssetIdx < race.assetPools.length) {
-    const totalPoolUSD = race.totalPool / 1_000_000
-    const selectedPoolUSD = (race.assetPools[selectedAssetIdx] || 0) / 1_000_000
-    const feeRate = (race.feeBps || 500) / 10000
-    
-    // Calculate projected pools after this bet
-    const projectedSelectedPool = selectedPoolUSD + betAmountNum
-    const projectedTotalPool = totalPoolUSD + betAmountNum
-    const projectedNetPool = projectedTotalPool * (1 - feeRate)
+  const addMicro = Math.floor(amountUsd * 1_000_000)
+  const winnerMicro0 = Number(pools[selectedAssetIdx] || 0)
+  const otherMicro0 = Math.max(0, totalMicro - winnerMicro0)
+  const userExisting = Math.max(0, Number(existingUserMicro || 0))
 
-    // WINNER-TAKES-ALL: Only calculate payout IF your asset wins
-    // Assume worst case: you're competing against all other pools combined
-    const otherPoolsTotal = projectedTotalPool - projectedSelectedPool
-    
-    if (projectedSelectedPool > 0 && projectedNetPool > 0) {
-      // IF your asset wins (has highest performance), you get:
-      // (your_bet_amount / winning_pool) * net_pool
-      const potentialPayout = (betAmountNum / projectedSelectedPool) * projectedNetPool
-      const profit = Math.max(0, potentialPayout - betAmountNum)
-      
-      // Calculate odds of winning based on pool sizes (rough estimate)
-      const winProbability = projectedSelectedPool / projectedTotalPool
-      const riskWarning = winProbability > 0.5 ? 
-        "Leading pool - good odds" : 
-        winProbability > 0.3 ? 
-          "Competitive pool" : 
-          "Underdog pick - high risk"
-      
-      return { 
-        totalPayout: potentialPayout, 
-        profit, 
-        riskWarning 
-      }
-    }
+  const newWinnerMicro = winnerMicro0 + addMicro
+  const newTotalMicro = totalMicro + addMicro
+  if (newWinnerMicro <= 0 || newTotalMicro <= 0) {
+    return { totalPayout: 0, profit: 0, yourSharePct: 0, fieldCut: 0, netPool: 0, feePct: feeBps/100, note: 'Enter bet amount' }
   }
 
-  // Fallback: Conservative estimate for new pools
-  // Assume you win with roughly equal competition
-  const conservativeMultiplier = 2.0 // If you win against 1 other equal-sized pool
-  const totalPayout = betAmountNum * conservativeMultiplier
-  const profit = totalPayout - betAmountNum
-  
-  return { 
-    totalPayout, 
-    profit, 
-    riskWarning: "IF you win - 100% loss if you don't!" 
-  }
+  const feeMicro = Math.floor((newTotalMicro * feeBps) / 10_000)
+  const netMicro = Math.max(0, newTotalMicro - feeMicro)
+
+  const yourMicro = userExisting + addMicro
+  const yourShare = yourMicro / Math.max(1, newWinnerMicro)
+  const payoutMicro = Math.floor(yourShare * netMicro)
+  const fieldCutMicro = Math.floor(yourShare * otherMicro0)
+
+  const toUsd = (m: number) => m / 1_000_000
+  const totalPayout = toUsd(payoutMicro)
+  const profit = Math.max(0, totalPayout - amountUsd)
+  const yourSharePct = Math.max(0, Math.min(100, yourShare * 100))
+  const fieldCut = toUsd(fieldCutMicro)
+  const netPool = toUsd(netMicro)
+  const winnerPool = toUsd(newWinnerMicro)
+  const feePct = feeBps / 100
+  const note = yourSharePct >= 50 ? 'Leading pool — good odds' : yourSharePct >= 30 ? 'Competitive pool' : 'Underdog pick — high risk'
+
+  return { totalPayout, profit, yourSharePct, fieldCut, netPool, feePct, winnerPool, note }
 }
 
 interface CommitPhaseProps {
@@ -230,8 +222,8 @@ function _EnhancedCommitPhase({
   }, [userBets, race?.raceId])
 
   const payout = useMemo(
-    () => calculatePotentialPayout(betAmount, race, selectedAssetIdx),
-    [betAmount, race?.totalPool, race?.assetPools, race?.feeBps, selectedAssetIdx],
+    () => calculatePotentialPayout(betAmount, race, selectedAssetIdx, userBet?.amount ?? null),
+    [betAmount, race?.totalPool, race?.assetPools, race?.feeBps, selectedAssetIdx, userBet?.amount],
   )
 
   const handleChangeAdditional = useCallback(
@@ -443,9 +435,9 @@ function _EnhancedCommitPhase({
 
   useEffect(() => {
     if (playerAddress) {
-      fetchCommitPhaseData(undefined, playerAddress, false)
+      fetchCommitPhaseData(undefined, playerAddress, true)
     } else {
-      fetchCommitPhaseData(undefined, undefined, false)
+      fetchCommitPhaseData(undefined, undefined, true)
     }
   }, [playerAddress, fetchCommitPhaseData])
 
@@ -821,13 +813,11 @@ function _EnhancedCommitPhase({
     }
   }, [showIncreaseBet, triggerHaptic])
 
-  const formatValue = (value: number) => {
-    const solValue = value / 1_000_000_000
-    const usdcValue = solValue * 1000
-
-    if (usdcValue >= 1000000) return `$${(usdcValue / 1000000).toFixed(2)}M`
-    if (usdcValue >= 1000) return `$${(usdcValue / 1000).toFixed(1)}K`
-    return `$${usdcValue.toFixed(0)}`
+  const formatValue = (microUsdc: number) => {
+    const usdc = microUsdc / 1_000_000
+    if (usdc >= 1_000_000) return `$${(usdc / 1_000_000).toFixed(2)}M`
+    if (usdc >= 1_000) return `$${(usdc / 1_000).toFixed(1)}K`
+    return `$${usdc.toFixed(0)}`
   }
 
   const handlePlaceBet = () => {
@@ -878,31 +868,28 @@ function _EnhancedCommitPhase({
     }
   }, [placeBetMutation.isSuccess, playerAddress, fetchUserBets])
 
+  // Load user balance once when address is available
   useEffect(() => {
-    if (account?.publicKey && !userBalance && !isLoadingBalance) {
-      setIsLoadingBalance(true)
-
-      const { apiService } = useRaceStore.getState()
-      apiService
-        .getUserBalance(account.publicKey.toBase58())
-        .then((response) => {
-          if (response.success && response.data) {
-            setUserBalance(response.data.usdcBalance)
-            console.log(`💰 User USDC balance: ${response.data.usdcBalance}`)
-          } else {
-            console.warn('Failed to fetch user balance:', response.error)
-            setUserBalance(100)
-          }
-        })
-        .catch((error: any) => {
-          console.error('Failed to fetch user balance:', error)
+    if (!playerAddress || userBalance !== null || isLoadingBalance) return
+    setIsLoadingBalance(true)
+    const { apiService } = useRaceStore.getState()
+    apiService
+      .getUserBalance(playerAddress)
+      .then((response) => {
+        if (response.success && response.data) {
+          setUserBalance(response.data.usdcBalance)
+          console.log(`💰 User USDC balance: ${response.data.usdcBalance}`)
+        } else {
+          console.warn('Failed to fetch user balance:', response.error)
           setUserBalance(100)
-        })
-        .finally(() => {
-          setIsLoadingBalance(false)
-        })
-    }
-  }, [account?.publicKey, userBalance, isLoadingBalance])
+        }
+      })
+      .catch((error: any) => {
+        console.error('Failed to fetch user balance:', error)
+        setUserBalance(100)
+      })
+      .finally(() => setIsLoadingBalance(false))
+  }, [playerAddress, userBalance, isLoadingBalance])
 
   useEffect(() => {
     if (userBet) {
@@ -1132,9 +1119,9 @@ function _EnhancedCommitPhase({
               ) : race.assets[userBet.assetIdx]?.symbol === 'ETH' ? (
                 <View style={styles.assetIconCircleEth}><MaterialCommunityIcons name="ethereum" size={14} color="#FFFFFF" /></View>
               ) : race.assets[userBet.assetIdx]?.symbol === 'SOL' ? (
-                <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.assetIconCircleSol}>
-                  <MaterialCommunityIcons name="alpha-s" size={12} color="#0B0B0B" />
-                </LinearGradient>
+                <View style={styles.assetIconCircleSol}>
+                  <SolanaLogo size={14} />
+                </View>
               ) : null}
               <View style={[styles.successChip, { borderColor: 'rgba(242,201,76,0.5)', backgroundColor: 'rgba(242,201,76,0.15)' }]}>
                 <MaterialCommunityIcons name="check-decagram" size={12} color="#F2C94C" />
@@ -1164,16 +1151,28 @@ function _EnhancedCommitPhase({
               <View style={styles.raceInfoDivider} />
               <View style={styles.raceInfoItem}>
                 <Text style={styles.raceInfoLabel}>IF You Win</Text>
-                <Text style={styles.raceInfoValue}>
-                  ${userBet.potentialPayout ? (userBet.potentialPayout / 1_000_000).toFixed(2) : 'TBD'}
-                </Text>
+                {(() => {
+                  try {
+                    const pools = race?.assetPools as number[] | undefined
+                    const totalMicro = Number(race?.totalPool || 0)
+                    const feeBps = Number(race?.feeBps || 500)
+                    const assetIdx = Number(userBet.assetIdx)
+                    const userMicro = Number(userBet.amount || 0)
+                    const winnerMicro0 = pools && pools[assetIdx] ? Number(pools[assetIdx]) : 0
+                    if (pools && winnerMicro0 > 0 && totalMicro > 0 && userMicro > 0) {
+                      const feeMicro = Math.floor((totalMicro * feeBps) / 10_000)
+                      const netMicro = Math.max(0, totalMicro - feeMicro)
+                      const payoutMicro = Math.floor((userMicro / Math.max(1, winnerMicro0)) * netMicro)
+                      const usd = payoutMicro / 1_000_000
+                      return (
+                        <Text style={styles.raceInfoValue}>${usd.toFixed(2)}</Text>
+                      )
+                    }
+                  } catch {}
+                  return <Text style={styles.raceInfoValue}>—</Text>
+                })()}
               </View>
-              <View style={styles.raceInfoWarning}>
-                <MaterialCommunityIcons name="alert-circle" size={12} color="#FFD700" />
-                <Text style={styles.raceInfoWarningText}>
-                  100% loss if your asset doesn't win
-                </Text>
-              </View>
+              {/* Risk warning removed per request */}
               <View style={styles.raceInfoDivider} />
               <View style={styles.raceInfoItem}>
                 <Text style={styles.raceInfoLabel}>Race Pool</Text>
@@ -1819,9 +1818,12 @@ function _EnhancedCommitPhase({
             {/* Pool dynamics donut */}
             <View style={{ alignItems: 'center', marginBottom: 12 }}>
               <PoolDonut
-                totalPoolUsd={(race?.totalPool || 0) / 1_000_000}
-                yourBetUsd={parseFloat(betAmount) || 0}
+                totalPoolUsd={payout.winnerPool || 0}
+                yourBetUsd={0}
                 title="Pool Dynamics"
+                sharePct={payout.yourSharePct}
+                subLabel="Winner Pool Share"
+                poolLabel="Winner Pool"
               />
             </View>
             <View style={styles.betInputSectionEnhanced}>
@@ -2049,6 +2051,18 @@ function _EnhancedCommitPhase({
                       </Text>
                     </View>
                     <View style={styles.previewRow}>
+                      <Text style={styles.previewLabel}>Your share of winner pool</Text>
+                      <Text style={styles.previewValue}>{payout.yourSharePct.toFixed(1)}%</Text>
+                    </View>
+                    <View style={styles.previewRow}>
+                      <Text style={styles.previewLabel}>Net pool after fee</Text>
+                      <Text style={styles.previewValue}>${payout.netPool.toFixed(2)} ({payout.feePct.toFixed(2)}% fee)</Text>
+                    </View>
+                    <View style={styles.previewRow}>
+                      <Text style={styles.previewLabel}>Your cut of field</Text>
+                      <Text style={styles.previewValue}>${payout.fieldCut.toFixed(2)}</Text>
+                    </View>
+                    <View style={styles.previewRow}>
                       <Text style={styles.previewLabel}>If {enhancedAssets[selectedAssetIdx]?.symbol} loses</Text>
                       <Text style={[styles.previewValue, styles.previewLoss]}>
                         -${parseFloat(betAmount).toFixed(2)} (100% loss)
@@ -2057,9 +2071,7 @@ function _EnhancedCommitPhase({
                     
                     <View style={styles.riskWarningRow}>
                       <MaterialCommunityIcons name="alert" size={14} color="#FFD700" />
-                      <Text style={styles.riskWarningText}>
-                        {payout.riskWarning}
-                      </Text>
+                      <Text style={styles.riskWarningText}>{payout.note}</Text>
                     </View>
                   </View>
                 </LinearGradient>

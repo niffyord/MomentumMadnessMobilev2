@@ -790,7 +790,8 @@ export function AccountFeature() {
       return []
     }
     return userBets.map(bet => {
-      const normalizedRaceState = bet.raceState === 'SettlementReady' ? 'Settled' : bet.raceState
+      // Do not treat SettlementReady as Settled; results may still change until fully finalized
+      const normalizedRaceState = (bet.raceState === 'SettlementReady') ? 'Running' : bet.raceState
       return {
         raceId: bet.raceId,
         assetIdx: bet.assetIdx,
@@ -872,12 +873,17 @@ export function AccountFeature() {
       }
     }
     const totalBets = userPositions.length
+    // Only realized outcomes (Settled) should affect profit/win rate
+    const settled = userPositions.filter(pos => pos.raceState === 'Settled')
+    const settledWins = settled.filter(pos => pos.isWinner)
+    const totalWageredSettled = settled.reduce((sum, pos) => sum + pos.amount, 0)
+    const totalWonSettled = settledWins.reduce((sum, pos) => sum + (pos.potentialPayout || 0), 0)
+    const totalClaimed = settledWins.filter(pos => pos.claimed).reduce((sum, pos) => sum + (pos.potentialPayout || 0), 0)
+    const winRate = settled.length > 0 ? (settledWins.length / settled.length) * 100 : 0
+    const netProfit = totalWonSettled - totalWageredSettled
+    // Keep overall totals for display
     const totalWagered = userPositions.reduce((sum, pos) => sum + pos.amount, 0)
-    const wins = userPositions.filter(pos => pos.isWinner)
-    const totalWon = wins.reduce((sum, pos) => sum + (pos.potentialPayout || 0), 0)
-    const totalClaimed = wins.filter(pos => pos.claimed).reduce((sum, pos) => sum + (pos.potentialPayout || 0), 0)
-    const winRate = totalBets > 0 ? (wins.length / totalBets) * 100 : 0
-    const netProfit = totalWon - totalWagered
+    const totalWon = settledWins.reduce((sum, pos) => sum + (pos.potentialPayout || 0), 0)
     const activeBets = userPositions.filter(pos => 
       pos.raceState === 'Betting' || pos.raceState === 'Running'
     ).length
