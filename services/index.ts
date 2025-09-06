@@ -3,13 +3,9 @@ export * from './apiService';
 export * from './websocketService';
 export * from './backendTypes';
 export * from './backendConfig';
-export * from './types';
 
-// Export default instances
-export { apiService } from './apiService'
-export { websocketService } from './websocketService'
-
-// Helper function to create an API service instance
+// Export default instances via named exports are already covered by `export *` above.
+// Helper to create an API service instance (kept for convenience)
 export const createApiService = () => {
   return new (require('./apiService').default)();
 }; 

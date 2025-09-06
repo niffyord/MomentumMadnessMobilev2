@@ -83,4 +83,11 @@ export interface RaceServiceResponse<T> {
   data?: T;
   error?: string;
   transactionSignature?: string;
-} 
+}
+
+export interface GlobalStats {
+  racersOnline: number;
+  racesToday: number;
+  usdcPaid24h: number; // in USDC (decimal)
+  updatedAt: number; // unix seconds
+}

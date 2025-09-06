@@ -32,6 +32,7 @@ import CosmicBackground from '@/components/CosmicBackground'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useCluster } from '@/components/cluster/cluster-provider'
 import { AppExternalLink } from '@/components/app-external-link'
+import { apiService } from '@/services'
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -64,10 +65,10 @@ export default function SignIn() {
   const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const isAccessibleMode = isScreenReaderEnabled || reducedMotion;
-  // Live stats to add social proof and motion
-  const [racersOnline, setRacersOnline] = useState(() => 1200 + Math.floor(Math.random() * 900));
-  const [payout24h, setPayout24h] = useState(() => 1000 + Math.floor(Math.random() * 4000));
-  const [racesToday, setRacesToday] = useState(() => 8000 + Math.floor(Math.random() * 4000));
+  // Live stats (no drift, just show fetched values)
+  const [racersOnline, setRacersOnline] = useState(0);
+  const [payout24h, setPayout24h] = useState(0);
+  const [racesToday, setRacesToday] = useState(0);
 
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -104,16 +105,25 @@ export default function SignIn() {
     checkReduceMotion();
   }, []);
 
-  // Subtle live stats motion for a "living" feel
+  // No drifting animation for stats values — only show fetched values.
+
+  // Fetch real on-chain backed stats via backend endpoint (one-time on mount)
   useEffect(() => {
-    if (isAccessibleMode) return;
-    const tick = setInterval(() => {
-      setRacersOnline((n) => Math.max(800, n + (Math.random() > 0.5 ? 1 : -1) * Math.ceil(Math.random() * 7)));
-      setPayout24h((n) => Math.max(900, n + (Math.random() > 0.5 ? 1 : -1) * Math.ceil(Math.random() * 5)));
-      setRacesToday((n) => Math.max(6000, n + (Math.random() > 0.55 ? 1 : -1) * Math.ceil(Math.random() * 11)));
-    }, 2200);
-    return () => clearInterval(tick);
-  }, [isAccessibleMode]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiService.getGlobalStats();
+        if (res?.success && res.data && !cancelled) {
+          setRacersOnline(Math.max(0, Math.round(res.data.racersOnline)));
+          setPayout24h(Math.max(0, Math.round(res.data.usdcPaid24h)));
+          setRacesToday(Math.max(0, Math.round(res.data.racesToday)));
+        }
+      } catch (_) {
+        // Ignore errors and keep graceful fallback values
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   
   useEffect(() => {

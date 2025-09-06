@@ -77,6 +77,11 @@ export class ApiService {
     return this.request<EnhancedRaceDetails>(`/api/races/${raceId}`);
   }
 
+  // Stats endpoints
+  getGlobalStats() {
+    return this.request<import('./backendTypes').GlobalStats>('/api/stats/global');
+  }
+
   getRaceLeaderboard(raceId: number) {
     return this.request<any>(`/api/races/${raceId}/leaderboard`);
   }
