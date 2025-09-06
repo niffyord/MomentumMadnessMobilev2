@@ -1592,8 +1592,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#0B0B0B',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.2)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   assetBadgeText: {
     position: 'absolute',

@@ -1177,9 +1177,9 @@ function _EnhancedPerformancePhase({
                     <MaterialCommunityIcons name="ethereum" size={14} color="#FFFFFF" />
                   </View>
                 ) : userPosition.asset.symbol === 'SOL' ? (
-                  <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.assetIconCircleSol, { width: 24, height: 24, borderRadius: 12 }]}>
-                    <MaterialCommunityIcons name="alpha-s" size={12} color="#0B0B0B" />
-                  </LinearGradient>
+                  <View style={[styles.assetIconCircleSol, { width: 24, height: 24, borderRadius: 12 }]}>
+                    <SolanaLogo size={14} />
+                  </View>
                 ) : (
                   <View style={styles.assetDotWrapper}>
                     <Animated.View style={[styles.assetDotRing, { transform: [{ scale: pulseAnim }] }]} />
@@ -1453,9 +1453,9 @@ function _EnhancedPerformancePhase({
                           <MaterialCommunityIcons name="ethereum" size={12} color="#FFFFFF" />
                         </View>
                       ) : asset.symbol === 'SOL' ? (
-                        <LinearGradient colors={["#9945FF", "#14F195"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.assetIconCircleSol, { width: 20, height: 20, borderRadius: 10 }]}>
-                          <MaterialCommunityIcons name="alpha-s" size={10} color="#0B0B0B" />
-                        </LinearGradient>
+                        <View style={[styles.assetIconCircleSol, { width: 20, height: 20, borderRadius: 10 }]}>
+                          <SolanaLogo size={12} />
+                        </View>
                       ) : (
                         <View style={[styles.assetDot, { backgroundColor: asset.color }]} />
                       )}
@@ -2321,8 +2321,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+    backgroundColor: '#0B0B0B',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.2)'
+    borderColor: 'rgba(255,255,255,0.08)'
   },
   assetRaceSymbol: {
     fontSize: 16,

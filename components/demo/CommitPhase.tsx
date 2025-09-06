@@ -2743,8 +2743,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.sm,
+    backgroundColor: '#0B0B0B',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.2)'
+    borderColor: 'rgba(255,255,255,0.08)'
   },
   assetInfoEnhanced: {
     flex: 1,
