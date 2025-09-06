@@ -31,6 +31,7 @@ import RocketHero from '@/components/RocketHero'
 import CosmicBackground from '@/components/CosmicBackground'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useCluster } from '@/components/cluster/cluster-provider'
+import { AppExternalLink } from '@/components/app-external-link'
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -63,6 +64,10 @@ export default function SignIn() {
   const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const isAccessibleMode = isScreenReaderEnabled || reducedMotion;
+  // Live stats to add social proof and motion
+  const [racersOnline, setRacersOnline] = useState(() => 1200 + Math.floor(Math.random() * 900));
+  const [payout24h, setPayout24h] = useState(() => 1000 + Math.floor(Math.random() * 4000));
+  const [racesToday, setRacesToday] = useState(() => 8000 + Math.floor(Math.random() * 4000));
 
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -98,6 +103,17 @@ export default function SignIn() {
     };
     checkReduceMotion();
   }, []);
+
+  // Subtle live stats motion for a "living" feel
+  useEffect(() => {
+    if (isAccessibleMode) return;
+    const tick = setInterval(() => {
+      setRacersOnline((n) => Math.max(800, n + (Math.random() > 0.5 ? 1 : -1) * Math.ceil(Math.random() * 7)));
+      setPayout24h((n) => Math.max(900, n + (Math.random() > 0.5 ? 1 : -1) * Math.ceil(Math.random() * 5)));
+      setRacesToday((n) => Math.max(6000, n + (Math.random() > 0.55 ? 1 : -1) * Math.ceil(Math.random() * 11)));
+    }, 2200);
+    return () => clearInterval(tick);
+  }, [isAccessibleMode]);
 
   
   useEffect(() => {
@@ -413,6 +429,42 @@ export default function SignIn() {
             </Animated.View>
           </Animated.View>
 
+          {/* Live activity stats */}
+          <Animated.View
+            style={[
+              styles.statsBar,
+              {
+                opacity: contentAnim,
+                transform: [
+                  {
+                    translateY: contentAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }),
+                  },
+                ],
+              },
+            ]}
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={`${racersOnline} racers online. ${payout24h} USDC paid in 24 hours. ${racesToday} races today.`}
+          >
+            <View style={styles.statItem}>
+              <MaterialCommunityIcons name="account-group" size={16} color="#EAEAEA" />
+              <Text style={styles.statValue}>{racersOnline.toLocaleString()}</Text>
+              <Text style={styles.statLabel}>RACERS ONLINE</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <MaterialCommunityIcons name="currency-usd" size={16} color="#FFD700" />
+              <Text style={styles.statValue}>{payout24h.toLocaleString()} USDC</Text>
+              <Text style={styles.statLabel}>PAID 24H</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <MaterialCommunityIcons name="flag-checkered" size={16} color="#14F195" />
+              <Text style={styles.statValue}>{racesToday.toLocaleString()}</Text>
+              <Text style={styles.statLabel}>RACES TODAY</Text>
+            </View>
+          </Animated.View>
+
           <Animated.View
             style={[
               styles.titleSection,
@@ -594,74 +646,49 @@ export default function SignIn() {
                 </View>
               </LinearGradient>
             </TouchableOpacity>
+
+            {/* Wallet compatibility chips */}
+            <View style={styles.walletChipsRow}>
+              <View style={[styles.walletChip, { borderColor: 'rgba(153,69,255,0.5)', backgroundColor: 'rgba(153,69,255,0.15)' }]}>
+                <MaterialCommunityIcons name="alpha-p-box" size={14} color="#9945FF" />
+                <Text style={styles.walletChipText}>Phantom</Text>
+              </View>
+              <View style={[styles.walletChip, { borderColor: 'rgba(20,241,149,0.5)', backgroundColor: 'rgba(20,241,149,0.15)' }]}>
+                <MaterialCommunityIcons name="bag-personal" size={14} color="#14F195" />
+                <Text style={styles.walletChipText}>Seed Vault</Text>
+              </View>
+              <View style={[styles.walletChip, { borderColor: 'rgba(255,215,0,0.5)', backgroundColor: 'rgba(255,215,0,0.15)' }]}>
+                <MaterialCommunityIcons name="alpha-s-box" size={14} color="#FFD700" />
+                <Text style={styles.walletChipText}>Solflare</Text>
+              </View>
+            </View>
           </Animated.View>
 
-          <Animated.View 
-            style={[
-              styles.featuresSection,
-              {
-                opacity: featuresAnim,
-                transform: [
-                  {
-                    translateY: featuresAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [20, 0],
-                    }),
-                  },
-                ],
-              }
-            ]}
-          >
-            <TouchableOpacity
-              style={[
-                styles.mysteryButton,
-                {
-                  transform: [{ scale: mysteryPulseAnim }]
-                }
-              ]}
-              onPress={() => {
-                setShowOnboarding(true);
-                if (!reducedMotion) {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }
-              }}
-              accessibilityRole="button"
-            >
-              <LinearGradient
-                colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.03)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.mysteryButtonGradient}
-              >
-                <View style={styles.mysteryButtonContent}>
-                  <View style={styles.mysteryIconContainer}>
-                    <MaterialCommunityIcons name="eye-outline" size={24} color="#EAEAEA" />
-                  </View>
-                  <Text style={styles.mysteryText}>What's the secret?</Text>
-                  <View style={styles.mysteryArrow}>
-                    <MaterialCommunityIcons name="arrow-right" size={24} color="#EAEAEA" />
-                  </View>
-                </View>
-                {/* feature chips */}
-                <View style={styles.featureChipsRow}>
-                  <View style={[styles.featureChip, { borderColor: 'rgba(153,69,255,0.5)', backgroundColor: 'rgba(153,69,255,0.15)' }]}>
-                    <MaterialCommunityIcons name="shield-check" size={12} color="#9945FF" />
-                    <Text style={styles.featureChipText}>Secure</Text>
-                  </View>
-                  <View style={[styles.featureChip, { borderColor: 'rgba(20,241,149,0.5)', backgroundColor: 'rgba(20,241,149,0.15)' }]}>
-                    <MaterialCommunityIcons name="lightning-bolt" size={12} color="#14F195" />
-                    <Text style={styles.featureChipText}>Fast</Text>
-                  </View>
-                  <View style={[styles.featureChip, { borderColor: 'rgba(255,215,0,0.5)', backgroundColor: 'rgba(255,215,0,0.15)' }]}>
-                    <MaterialCommunityIcons name="wallet" size={12} color="#FFD700" />
-                    <Text style={styles.featureChipText}>Wallet Ready</Text>
-                  </View>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
+          {/* Mystery button section removed per request */}
         </Animated.ScrollView>
       </SafeAreaView>
+
+      {/* Footer links and helper */}
+      <View style={styles.footer}>
+        <View style={styles.footerLeft}>
+          <AppExternalLink href="https://momentum-madness.app/terms" style={styles.footerLink}>
+            <Text style={styles.footerLinkText}>Terms</Text>
+          </AppExternalLink>
+          <Text style={styles.footerDivider}>•</Text>
+          <AppExternalLink href="https://momentum-madness.app/privacy" style={styles.footerLink}>
+            <Text style={styles.footerLinkText}>Privacy</Text>
+          </AppExternalLink>
+        </View>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="How to connect wallet"
+          onPress={() => setShowOnboarding(true)}
+          style={styles.footerHelp}
+        >
+          <MaterialCommunityIcons name="help-circle" size={16} color="#EAEAEA" />
+          <Text style={styles.footerHelpText}>How it works</Text>
+        </TouchableOpacity>
+      </View>
 
       <OnboardingTutorial
         visible={showOnboarding}
@@ -755,6 +782,44 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     width: '100%',
     position: 'relative',
+  },
+  statsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    maxWidth: 420,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    marginBottom: 16,
+  },
+  statItem: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 2,
+    flex: 1,
+  },
+  statValue: {
+    fontFamily: 'Sora-Bold',
+    color: '#FFFFFF',
+    fontSize: 13,
+    letterSpacing: 0.4,
+  },
+  statLabel: {
+    fontFamily: 'Inter-Medium',
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+    letterSpacing: 0.6,
+  },
+  statDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    marginHorizontal: 8,
   },
   environmentBadge: {
     flexDirection: 'row',
@@ -865,6 +930,26 @@ const styles = StyleSheet.create({
     maxWidth: 380,
     marginBottom: 8,
     gap: 12,
+  },
+  walletChipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  walletChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  walletChipText: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.9)',
+    fontFamily: 'Inter-SemiBold',
   },
   raceProgressContainer: {
     alignItems: 'center',
@@ -1067,5 +1152,49 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 12,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  footerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  footerLink: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  footerLinkText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+  },
+  footerDivider: {
+    color: 'rgba(255,255,255,0.25)',
+  },
+  footerHelp: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  footerHelpText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 12,
+    color: '#EAEAEA',
   },
 });
