@@ -30,6 +30,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useRaceStore } from '../../store/useRaceStore'
 import { useConnection } from '../solana/solana-provider'
 import { useWalletUi } from '../solana/use-wallet-ui'
+// Wallet address card removed per request
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 const isTablet = screenWidth >= 768
@@ -745,6 +746,8 @@ export function AccountFeature() {
   const playerAddress = account?.publicKey?.toBase58 ? account.publicKey.toBase58() : account?.publicKey?.toString?.()
   const [activeTab, setActiveTab] = useState<'active' | 'history' | 'unclaimed'>('active')
   const [refreshing, setRefreshing] = useState(false)
+  const [betsLoading, setBetsLoading] = useState(false)
+  const [claimAllLoading, setClaimAllLoading] = useState(false)
   const [localClaimedRaces, setLocalClaimedRaces] = useState<Set<number>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'result'>('date')
@@ -896,11 +899,14 @@ export function AccountFeature() {
       unclaimedValue,
     }
   }, [userPositions])
+  // Fetch bets once on mount/address change, prefer cache to avoid redundant refetches when navigating.
   useEffect(() => {
-    if (playerAddress) {
-      fetchUserBets(playerAddress, false)
+    if (!playerAddress) return
+    if (!userBets || userBets.length === 0) {
+      setBetsLoading(true)
+      Promise.resolve(fetchUserBets(playerAddress, true)).finally(() => setBetsLoading(false))
     }
-  }, [playerAddress, fetchUserBets])
+  }, [playerAddress])
   useEffect(() => {
     const fade = Animated.timing(fadeAnim, {
       toValue: 1,
@@ -979,6 +985,33 @@ export function AccountFeature() {
       isUnclaimed={activeTab === 'unclaimed'}
     />
   ), [handleClaim, handleViewRace, formatValue, activeTab])
+
+  // Derived data
+  const unclaimedWinners = useMemo(() => (
+    userPositions.filter(p => p.isWinner && !p.claimed && p.raceState === 'Settled')
+  ), [userPositions])
+
+  // Wallet address card removed per request
+
+  const handleClaimAll = useCallback(async () => {
+    if (!playerAddress || !connection || !signAndSendTransaction) return
+    if (unclaimedWinners.length === 0) return
+    setClaimAllLoading(true)
+    try {
+      for (const pos of unclaimedWinners) {
+        // eslint-disable-next-line no-await-in-loop
+        await claimPayout(playerAddress, pos.raceId, connection, signAndSendTransaction)
+      }
+      await fetchUserBets(playerAddress, false)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      showSuccess('All rewards claimed')
+    } catch (e) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      showError('Some claims may have failed')
+    } finally {
+      setClaimAllLoading(false)
+    }
+  }, [playerAddress, connection, signAndSendTransaction, unclaimedWinners, claimPayout, fetchUserBets, showSuccess, showError])
   const renderHistoryGroup = useCallback(({ item }: { item: HistoryGroup }) => (
     <HistoryGroupComponent
       group={item}
@@ -1003,6 +1036,7 @@ export function AccountFeature() {
           },
         ]}
       >
+        {/* Hero header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Account</Text>
           <TouchableOpacity 
@@ -1019,6 +1053,7 @@ export function AccountFeature() {
             />
           </TouchableOpacity>
         </View>
+        {/* Wallet address card removed per request */}
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
@@ -1063,6 +1098,20 @@ export function AccountFeature() {
                     <View style={styles.unclaimedSummaryHeader}>
                       <MaterialCommunityIcons name="treasure-chest" size={24} color={COLORS.warning} />
                       <Text style={styles.unclaimedSummaryTitle}>Total Unclaimed Rewards</Text>
+                      {unclaimedWinners.length > 0 && (
+                        <TouchableOpacity 
+                          style={[styles.claimAllButton, claimAllLoading && { opacity: 0.7 }]}
+                          onPress={handleClaimAll}
+                          disabled={claimAllLoading}
+                        >
+                          <LinearGradient colors={[COLORS.success, COLORS.warning]} style={styles.claimAllGradient}>
+                            <MaterialCommunityIcons name="wallet-plus" size={16} color="#000" />
+                            <Text style={styles.claimAllText}>
+                              {claimAllLoading ? 'Claiming…' : `Claim All (${unclaimedWinners.length})`}
+                            </Text>
+                          </LinearGradient>
+                        </TouchableOpacity>
+                      )}
                     </View>
                     <Text style={styles.unclaimedSummaryValue}>
                       {formatValue(portfolioStats.unclaimedValue)}
@@ -1074,7 +1123,7 @@ export function AccountFeature() {
                 </View>
               )}
               <View style={styles.positionsContainer}>
-                {isLoading ? (
+                {(betsLoading || (refreshing && (!userBets || userBets.length === 0))) ? (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={COLORS.secondary} />
                     <Text style={styles.loadingText}>Loading positions...</Text>
@@ -1134,6 +1183,66 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
+  },
+  heroCard: {
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.lg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(153, 69, 255, 0.3)',
+    padding: SPACING.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#9945FF',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  heroLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  avatarCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitle: {
+    color: COLORS.text.secondary,
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 12,
+  },
+  heroAddress: {
+    color: COLORS.text.primary,
+    fontFamily: 'Sora-Bold',
+    fontSize: 16,
+    letterSpacing: 0.4,
+  },
+  claimAllButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)'
+  },
+  claimAllGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  claimAllText: {
+    color: '#000',
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 12,
+    letterSpacing: 0.3,
   },
   header: {
     flexDirection: 'row',

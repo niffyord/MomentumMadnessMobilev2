@@ -227,17 +227,22 @@ function _EnhancedSettledPhase({
   const { showSuccess, showError } = useNotification()
   // Use granular selectors to avoid snapshot churn
   const userBets = useRaceStore((s) => s.userBets)
-  const fetchSettledPhaseData = useRaceStore((s) => s.fetchSettledPhaseData)
+  const fetchRaceDetails = useRaceStore((s) => s.fetchRaceDetails)
+  const fetchUserBets = useRaceStore((s) => s.fetchUserBets)
   const connectWebSocket = useRaceStore((s) => s.connectWebSocket)
   const subscribeToRace = useRaceStore((s) => s.subscribeToRace)
   const isConnected = useRaceStore((s) => s.isConnected)
   const playerAddress = account?.publicKey?.toBase58 ? account.publicKey.toBase58() : account?.publicKey?.toString?.()
 
+  // One-time fetch on mount/when race changes: get final race state, then bets if needed
   React.useEffect(() => {
+    if (!race?.raceId) return
+    fetchRaceDetails(race.raceId, false)
     if (playerAddress) {
-      fetchSettledPhaseData(race?.raceId, playerAddress)
+      // Fetch bets once for display; claim flow will force refresh later
+      fetchUserBets(playerAddress, true)
     }
-  }, [race?.raceId, playerAddress, fetchSettledPhaseData])
+  }, [race?.raceId, playerAddress, fetchRaceDetails, fetchUserBets])
 
   // Connect to websocket for real-time settled phase updates
   React.useEffect(() => {
@@ -317,7 +322,7 @@ function _EnhancedSettledPhase({
     } catch (error) {}
   }, [])
 
-  // Poll for final settlement while cron finalizes results, then stop automatically
+  // Poll for final settlement while backend finalizes results, then stop automatically
   const settlePollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
     if (!race?.raceId) return
@@ -339,7 +344,7 @@ function _EnhancedSettledPhase({
 
     const fetchLatest = async () => {
       try {
-        await useRaceStore.getState().fetchSettledPhaseData(race.raceId, playerAddress, false)
+        await useRaceStore.getState().fetchRaceDetails(race.raceId, false)
       } catch (_) {}
     }
 

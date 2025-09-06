@@ -262,10 +262,9 @@ export function DemoFeature() {
               } else if (newPhase === 'performance') {
                 await fetchPerformancePhaseData(undefined, account?.publicKey?.toString(), false)
               } else {
-                await fetchSettledPhaseData(undefined, account?.publicKey?.toString(), false)
+                // Settled again; defer to SettledPhase
               }
 
-              // Ensure WebSocket is connected to receive live updates for the new race
               if (!isConnected) {
                 await connectWebSocket()
               }
@@ -275,15 +274,15 @@ export function DemoFeature() {
         } catch (error) {
           console.error('❌ Error checking for new race:', error)
         }
-      }, 10000)
+      }, 15000)
 
       intervalRefs.current.push(checkInterval)
 
       setTimeout(() => {
         clearInterval(checkInterval)
         setIsCheckingForNewRace(false)
-        console.log(`⏰ Stopped checking for new races after 5 minutes`)
-      }, 300000)
+        console.log(`⏰ Stopped checking for new races after 2 minutes`)
+      }, 120000)
     }
   }, [race?.raceId, currentPhase, lastRaceId, isCheckingForNewRace, account?.publicKey])
 
@@ -325,19 +324,7 @@ export function DemoFeature() {
         })
       }
     } else if (currentPhase === 'settled') {
-      fetchSettledPhaseData(undefined, playerAddress)
-      // In settled phase, briefly poll to catch backend cron finalization
-      const stopAfterMs = 120000
-      const start = Date.now()
-      const poll = setInterval(() => {
-        const elapsed = Date.now() - start
-        if (elapsed > stopAfterMs) {
-          clearInterval(poll)
-          return
-        }
-        fetchSettledPhaseData(undefined, playerAddress, false)
-      }, 2000)
-      return () => clearInterval(poll)
+      // Settled data handled by SettledPhase to avoid duplicate polling.
     }
   }, [currentPhase, playerAddress])
 
